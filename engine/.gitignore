@@ -1,0 +1,6 @@
+node_modules/
+data/
+keys/
+*.log
+.validator/
+.zcash-local/

@@ -1,0 +1,4 @@
+# Supply chain (audit/S2-SUPPLY-CHAIN.md): `bun add` records exact versions, never a caret range.
+# CI and the VPS install with `bun install --frozen-lockfile`, which refuses to move anything.
+[install]
+exact = true

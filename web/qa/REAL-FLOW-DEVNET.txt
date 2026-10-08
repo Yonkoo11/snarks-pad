@@ -1,0 +1,37 @@
+snarks-launchpad real-flow run, 2026-10-02T00:24:45.254Z
+stack: web (VITE_API=real, vite :5198) + engine API :8788 (PAD_MODE=devnet) + Solana devnet + Zcash testnet (swap simulated)
+
+[PASS] API reports devnet mode — x-pad-mode=devnet
+test wallet 2m7JVzno6CSCs87Prbcm7whnpVn7EszqSa6t4Pbpe4bN (funded by the devnet faucet key: 0.1 SOL + 5 stand-in ZEC); fresh Zcash testnet wallet qa-flow-1790900703348, UA utest1taww5s…7qcnxa
+
+[PASS] mode banner says devnet mode
+[PASS] home shows seeded $SNARKS
+[PASS] home shows SNARKS at its real stage — "99.5% to graduation" from API stage=curve curveProgress=0.9952816479952816
+[PASS] home shows the real curve progress of a coin still on the curve — 7.4% from API curveProgress=0.07425000007425 for $QC693661
+[PASS] home price is non-zero — priceZec=1.990574429724 zats/token, marketCap=1990574429 zats
+[PASS] wallet connects through the injected provider
+[PASS] opt-in succeeds in the UI
+[PASS] page never shows the full address after opt-in
+[PASS] GET /optin/:wallet -> optedIn true — {"optedIn":true,"zcashAddressMasked":"utes…cnxa","pendingZats":null}
+[PASS] GET /optin/:wallet returns the masked form only — zcashAddressMasked=utes…cnxa
+[PASS] engine stored the exact address — sqlite optins row matches (compared in sqlite, not printed)
+[PASS] UI shows the masked address
+[PASS] opt-out returns to the form
+[PASS] GET /optin/:wallet -> optedIn false after opt-out — {"optedIn":false,"zcashAddressMasked":null,"pendingZats":null}
+[PASS] opt back in (for the epoch payout)
+[PASS] trade-tx quote shows
+[PASS] buy sent from the page
+[PASS] buy confirmed on chain without error — sig 2PYLuNRKP6X51UjyvTpuMMaZBkggBENxWRb9iGqmMm2L3k8qzdfLTNSmok2BEperEVwjvoqBJeRxg7AJTmCHpWD3
+[PASS] wallet received $QC693661 and paid 1 Solana ZEC — token +150737738971677 base units, Solana ZEC -100000000 zats
+[PASS] engine recorded the trade from chain (trade-confirm) — amountZec=100000000 amountToken=150737738971677
+[PASS] launch page states the fixed fee, the 80/20 split and that Meteora can pause the graduated pool
+[PASS] launch signed, sent and confirmed from the page
+[PASS] new mint exists on devnet (Token-2022) — mint FodZjG9hWg7Bz2Chmoovo1cDamBRbiW5X7hooHjsjzQj
+[PASS] GET /coins/:mint serves the new coin with a pool — poolId=F4nEC8RkttpTEiWUT4qitts4rbgKP3dGmRMUMMomv4fj
+[PASS] new coin shows on the home page
+[PASS] devnet epoch driver exits 0 (epoch 1) — epoch epoch-1790900741652 status ok harvestedZats 1200000 2026-10-02T00:27:39.872Z EPOCH OK epoch-1790900741652
+[PASS] a wallet that bought after the last holder sample is paid nothing this epoch (minimum-balance rule) — before 0 zats, after 0 zats, payout row none
+[PASS] devnet epoch driver exits 0 (epoch 2) — epoch epoch-1790900880277 status ok harvestedZats 2400000 2026-10-02T00:40:47.908Z EPOCH OK epoch-1790900880277
+[PASS] opted-in wallet regtest balance rose by exactly its planned share — before 0 zats, after 633662 zats, planned 633662 zats, read from its own devtool wallet
+[PASS] latest epoch: status ok, shielded batch with a Zcash txid, swap simulated — id=epoch-1790900880277 shielded.count=1 txid=1693c6f1274a24112a5650b767ab3d88a89eb893ebe8dc62f543d925176f957f
+FLOW CRASH Attempted to use detached Frame '76437B1CA9149AFBAD2C21E804067423'.

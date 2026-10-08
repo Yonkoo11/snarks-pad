@@ -1,0 +1,9 @@
+/var/lib/__INSTANCE__/data/*.log {
+	weekly
+	rotate 8
+	compress
+	delaycompress
+	missingok
+	notifempty
+	create 0660 __INSTANCE__ __INSTANCE__
+}

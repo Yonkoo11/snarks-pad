@@ -1,0 +1,41 @@
+{
+  "name": "snarks-engine",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "UNLICENSED",
+  "scripts": {
+    "local:up": "bun scripts/local-up.ts",
+    "seed": "bun scripts/seed.ts",
+    "epoch": "bun scripts/epoch.ts",
+    "api": "bun scripts/api.ts",
+    "e2e": "bun scripts/e2e.ts",
+    "swap:live-check": "bun scripts/swap-live-check.ts",
+    "test": "rm -f data/test.sqlite data/test.sqlite-wal data/test.sqlite-shm && PAD_DB_FILE=data/test.sqlite bun test",
+    "test:fast": "bash scripts/test-fast.sh",
+    "typecheck": "tsc --noEmit",
+    "config:create": "bun scripts/config-create.ts",
+    "squads:create": "bun scripts/squads-create.ts",
+    "keeper": "bun scripts/keeper.ts"
+  },
+  "dependencies": {
+    "@meteora-ag/cp-amm-sdk": "1.5.1",
+    "@meteora-ag/dynamic-bonding-curve-sdk": "1.5.13",
+    "@solana/spl-token": "0.4.15",
+    "@solana/web3.js": "1.99.0",
+    "@sqds/multisig": "2.1.4",
+    "bn.js": "5.2.5",
+    "bs58": "6.0.0",
+    "decimal.js": "10.6.0",
+    "sharp": "0.35.5"
+  },
+  "devDependencies": {
+    "@types/bn.js": "5.2.0",
+    "bun-types": "1.4.2",
+    "tweetnacl": "1.0.3",
+    "typescript": "5.9.3"
+  },
+  "patchedDependencies": {
+    "bigint-buffer@1.1.5": "patches/bigint-buffer@1.1.5.patch"
+  }
+}

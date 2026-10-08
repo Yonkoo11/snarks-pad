@@ -1,0 +1,23 @@
+{
+  "name": "SNARKS pad",
+  "tagline": "The ZEC launchpad whose holder rewards can arrive shielded.",
+  "taglineStatus": "picked by model, needs owner",
+  "colorMode": "both",
+  "brandColor": "#c42f6c",
+  "accent": "#c42f6c",
+  "accentDark": "#f07aa8",
+  "ground": { "light": "#f5efe2", "dark": "#1f1b18" },
+  "surfaces": { "light": ["#f5efe2", "#fbf7ee", "#ece4d2"], "dark": ["#1f1b18", "#29241f", "#17130f"] },
+  "ink": ["#2b2420", "#5e544c", "#6f6457"],
+  "inkDark": ["#efe7da", "#bdb2a4", "#978c80"],
+  "semantic": { "success": null, "warning": null, "danger": "#9c2b1f", "dangerDark": "#ff8f7f" },
+  "fonts": { "display": "Gaegu 700", "body": "Atkinson Hyperlegible 400/700", "mono": "JetBrains Mono 400/500" },
+  "radii": { "xs": 3, "sm": 6, "md": 12, "lg": 18, "full": 999 },
+  "shadowPhilosophy": "pixel-offset",
+  "motion": { "ease": "cubic-bezier(.16,1,.3,1)", "interactionMs": 160, "pressMs": 100, "entranceMs": 700, "loops": [] },
+  "signatureElement": "Pink crayon hatching marks what is shielded, and nothing else: repeating-linear-gradient(-55deg, accent 0 3px, transparent 3px 6px) over accent at 12% alpha.",
+  "brandAsset": "web/public/mascot.jpg, a crayon drawing made by the owner (human-made; never recolour or redraw it)",
+  "logoPath": "web/public/logo.svg",
+  "logoPng": "web/public/logo.png",
+  "favicon": "web/public/favicon.ico"
+}

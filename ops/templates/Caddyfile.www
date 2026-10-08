@@ -1,0 +1,4 @@
+# www is an alias: send it to the apex so there is one canonical address.
+www.__HOST__ {
+	redir https://__HOST__{uri} permanent
+}

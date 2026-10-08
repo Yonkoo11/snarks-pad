@@ -1,0 +1,10 @@
+[Unit]
+Description=__INSTANCE__ health check
+
+[Service]
+Type=oneshot
+User=__INSTANCE__
+Group=__INSTANCE__
+EnvironmentFile=/etc/__INSTANCE__/engine.env
+EnvironmentFile=-/etc/__INSTANCE__/secrets.env
+ExecStart=/opt/__INSTANCE__/repo/ops/healthcheck.sh

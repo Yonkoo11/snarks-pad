@@ -1,0 +1,11 @@
+[Unit]
+Description=__INSTANCE__ encrypted backup
+
+[Service]
+Type=oneshot
+User=__INSTANCE__
+Group=__INSTANCE__
+UMask=0077
+EnvironmentFile=/etc/__INSTANCE__/engine.env
+EnvironmentFile=-/etc/__INSTANCE__/secrets.env
+ExecStart=/opt/__INSTANCE__/repo/ops/backup.sh

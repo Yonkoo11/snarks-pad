@@ -1,0 +1,30 @@
+[Unit]
+Description=__INSTANCE__ engine API
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=__INSTANCE__
+Group=__INSTANCE__
+UMask=0007
+WorkingDirectory=/opt/__INSTANCE__/repo/engine
+EnvironmentFile=/etc/__INSTANCE__/engine.env
+EnvironmentFile=-/etc/__INSTANCE__/secrets.env
+# The API's own RPC key (audit S6, product decision 5): written by `ops/push-secrets.sh <instance> api`, read after the shared file so its
+# SOLANA_*_RPC and HELIUS_API_KEY win; absent, the API keeps using the shared key. A public flood then burns the API's budget, never the keeper's.
+EnvironmentFile=-/etc/__INSTANCE__/secrets-api.env
+Environment=PAD_API_HOST=127.0.0.1
+ExecStart=/opt/snarks/bin/bun scripts/api.ts
+Restart=always
+RestartSec=5
+# The API never touches the keeper key (INV-17); here the kernel enforces it too.
+InaccessiblePaths=/etc/__INSTANCE__/keys
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/__INSTANCE__
+MemoryMax=1G
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,53 @@
+# Local notes
+ai/
+
+# Secrets and local environment
+.env*
+*.vars
+.config/
+.keys/
+keys/
+*keypair*.json
+*identity*
+*.age
+*.pem
+
+# Local state: databases, wallets, chain data, logs
+data/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+wallets/
+wallets-live/
+zcash-testnet/
+.zcash-local/
+.validator/
+.localnet/
+test-ledger/
+*.log
+
+# Dependencies and build output
+node_modules/
+dist/
+
+# Reference captures of other people's sites (design research only)
+design/measure/ref-*/
+design/measure/before/
+design/measure/rendered-*.html
+
+.DS_Store
+
+# Local
+
+# internal business docs (thesis, research, sources); kept local, never published
+research/
+
+# off-server backup copies pulled to the owner Mac (encrypted, still never committed)
+backups-remote/
+
+# agent worktrees
+.claude/
+
+# launch-post teaser runs (video, work tree with packages)
+brag-output*/
+ops/host.conf

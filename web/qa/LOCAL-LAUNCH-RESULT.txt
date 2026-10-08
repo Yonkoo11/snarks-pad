@@ -1,0 +1,28 @@
+snarks-launchpad launch proof (contract v2.7), 2026-10-05T02:38:29.596Z, local stack
+
+[PASS] GET /tiers names the quote mint and, on every tier, the graduation threshold and the locked liquidity — quoteMint A7bdiYdS5GjqGFtxf17ppRHtDKPkkRqbKtR27dxvQXaS, thresholds 666666666/666666666/666666666/666666666/666666666
+[PASS] the test wallet gets test money — 5 SOL and 5 ZEC to 97rRcU5zzyU2uvgYFxP5iEg1nAiisKxNjoFswycjJCSf
+[PASS] the wallet's Solana ZEC is on chain — 500000000 zats read from the local validator
+[PASS] the live form asks for a picture from the device, not a link: a drop zone, no image address field, and the Links section
+[PASS] the preview card prints the fixed facts from the API — graduation 6.67 ZEC from 666666666 zats
+[PASS] a wallet connects through the injected provider
+[PASS] the form reads the wallet's Solana ZEC from the chain — Your wallet holds 5 ZEC on Solana.
+[PASS] the picture uploads and the page says what was stored — Uploaded. 172 × 256, 16 KB.
+[PASS] Max fills in what the wallet holds (never more than the curve can take), as read from the chain — field 5, chain-based 5
+[PASS] Launch is on, with a picture, three links and a first buy
+[PASS] the launch is signed in the page, sent and recorded
+coin mint 7KzWE8k6ZMpU3i1abWJqNoZQzkYNfyT57M9ZsUNJR7nk, signatures made by the test wallet: 0 messages, 1 transactions
+[PASS] GET /coins/:mint carries the three links as https addresses — {"website":"https://snarks.fun/","x":"https://x.com/SnarksPad","telegram":"https://t.me/telegram"}
+[PASS] the coin's picture is the pad's own stored copy: /i/<24 hex>.<ext> on the pad's own address — http://127.0.0.1:8787/i/3930303783378efa1ca70dfc.jpg
+[PASS] the on-chain metadata address is the JSON, not the picture — uri on chain: http://127.0.0.1:8787/m/7KzWE8k6ZMpU3i1abWJqNoZQzkYNfyT57M9ZsUNJR7nk.json
+[PASS] the JSON is served as JSON, cached for a minute, never sniffed, readable from any page — 200 application/json public, max-age=60
+[PASS] the JSON names the coin, its picture, its description and its links — {"name":"Picture Test 15895","symbol":"PIC15895","description":"A test coin that proves a picture picked from a device and three links reach the chain. Launched by web/qa/live-launch.cjs.","image":"http://127.0.0.1:8787/i/3930303783378efa1ca70dfc.jpg","external_url":"https://snarks.fun/","extensions":{"website":"https://snarks.fun/","twitter":"https://x.com/
+[PASS] the picture is served as a picture, cached for a year, never sniffed, readable from any page — 200 image/jpeg public, max-age=31536000, immutable 16859 bytes
+[PASS] the file is named by the hash of its own bytes, and fits inside 1000 x 1000 without EXIF — name 3930303783378efa1ca70dfc, sha256 of the 16859 bytes 3930303783378efa1ca70dfc
+[PASS] the coin page shows the picture and three link chips (Website with its host) that open in a new tab, and the warning — ["Websitesnarks.fun↗","X↗","Telegram↗"]
+[PASS] the 0.05 ZEC first buy reached the creator in the launch transaction — 9827029481770 base units of the new coin
+[PASS] no page errors
+proof coin: http://localhost:5198/#/coin/7KzWE8k6ZMpU3i1abWJqNoZQzkYNfyT57M9ZsUNJR7nk
+metadata JSON: http://127.0.0.1:8787/m/7KzWE8k6ZMpU3i1abWJqNoZQzkYNfyT57M9ZsUNJR7nk.json
+
+RESULT: PASS (21 checks)

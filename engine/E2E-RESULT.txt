@@ -1,0 +1,159 @@
+snarks-engine e2e run, 2026-10-04T19:20:19.109Z
+PAD_MODE=local
+
+owner's view of the proposal:
+Squads proposal #1 (Active), approvals 1 of 2
+  dbc claim_trading_fee: pays token account EGY91evYufYiXLqs6vvsaqPjCABCJTaynpsmaiNY76ET (owner ANcxBq4HpuCXhZxJE2MC6QXG1gkV9NFEYMrvcttnXAcL, mint JC7FXpMpmCVaKvWWc3NbRaie3PUK4vffTNtXdKX32wMg)
+  dbc claim_trading_fee: pays token account 127Wyh7xVq5jVV6dbbYQh2nFDkxrqChnD1nTDaEZbuH (owner ANcxBq4HpuCXhZxJE2MC6QXG1gkV9NFEYMrvcttnXAcL, mint A7bdiYdS5GjqGFtxf17ppRHtDKPkkRqbKtR27dxvQXaS)
+
+epoch: epoch-1791141660969  status=ok  claimedZats=3424000  feeZats=20000
+epoch: epoch-1791141686067  status=ok  claimedZats=1963206  feeZats=0
+epoch: epoch-1791141689203  status=ok  claimedZats=399999  feeZats=0
+epoch: epoch-1791141698697  status=ok  claimedZats=480000  feeZats=0
+epoch: epoch-1791141708105  status=ok  claimedZats=2800000  feeZats=0
+
+[PASS] epoch 60969: solana payout to 7qqgBojv… — expected +539390 zats, observed +539390 zats (sig/txid vTmAyu6nVJHVCtBznY6NcREhGt2B4ZhH51uSNATbpJCBiEnGg1jo3CgjMHQsHLYWRa7UnvFczjt5ogyMnB5vkuq)
+[PASS] epoch 60969: solana payout to Bs9oKDTV… — expected +663852 zats, observed +663852 zats (sig/txid vTmAyu6nVJHVCtBznY6NcREhGt2B4ZhH51uSNATbpJCBiEnGg1jo3CgjMHQsHLYWRa7UnvFczjt5ogyMnB5vkuq)
+[PASS] epoch 60969: solana payout to DkyTaq9m… — expected +178695 zats, observed +178695 zats (sig/txid vTmAyu6nVJHVCtBznY6NcREhGt2B4ZhH51uSNATbpJCBiEnGg1jo3CgjMHQsHLYWRa7UnvFczjt5ogyMnB5vkuq)
+[PASS] epoch 60969: shielded payout to 2kJCvz3b… — expected +321292 zats, observed +321292 zats (sig/txid bd4c7df718decaca2fa7c26a228521784f5f7326afcf7278bc51014f925f5019)
+[PASS] epoch 60969: shielded payout to 9m9o2UfE… — expected +446930 zats, observed +446930 zats (sig/txid bd4c7df718decaca2fa7c26a228521784f5f7326afcf7278bc51014f925f5019)
+[PASS] epoch 60969: shielded payout to FnCzukTF… — expected +376366 zats, observed +376366 zats (sig/txid bd4c7df718decaca2fa7c26a228521784f5f7326afcf7278bc51014f925f5019)
+[PASS] shielded batch bd4c7df718… is an Ironwood tx (no Orchard actions) — ironwood actions=4 orchard actions=0
+[PASS] 9m9o2UfE… own wallet received its payout as an Ironwood note — received output pools: Ironwood
+[PASS] FnCzukTF… own wallet received its payout as an Ironwood note — received output pools: Ironwood
+[PASS] 2kJCvz3b… own wallet received its payout as an Ironwood note — received output pools: Ironwood
+[PASS] epoch 1: status ok (no fallback needed) — status=ok
+[PASS] epoch 1: every payout went to a wallet this run created (no pool vault or program account was paid) — unknown recipients=none
+[PASS] epoch 1: the team kept exactly 25% of the claim (rounded down) and holders' shares + team == claimed to the zat — claimed=3424000 team=856000 holders' shares=2568000
+[PASS] epoch 1: the team ledger closed (delivery resolved) — teamGross=856000 teamSolana=792554 cost=55021 native=8425
+[PASS] epoch 1: the shielded leg's delivery cost (swap fee, spread, Zcash fee) was paid from the team's reserve, nothing taken from the shielded holders — reserve=63446 cost=55021 native left for the team=8425 shortfall=0
+[PASS] epoch 60969: 9m9o2UfE… sees "SNARKS pad reward, epoch epoch-1791141660969" on its shielded note — memos seen=["SNARKS pad reward, epoch epoch-1791141660969"]
+[PASS] epoch 60969: FnCzukTF… sees "SNARKS pad reward, epoch epoch-1791141660969" on its shielded note — memos seen=["SNARKS pad reward, epoch epoch-1791141660969"]
+[PASS] epoch 60969: 2kJCvz3b… sees "SNARKS pad reward, epoch epoch-1791141660969" on its shielded note — memos seen=["SNARKS pad reward, epoch epoch-1791141660969"]
+[PASS] epoch 1: the snapshot's sha256 is written in a Solana memo the keeper signed — memo tx=Nj3w3U4Rzn4ErPdVJZtTWnb3mxE1PHDT96RVPPCrT4kqw3Ne7YF7kWbcWjpCjJz9J1vLeiZbvRhbJNSjYHYgTxW sha256=b53a4ae72c0ae4a6…
+[PASS] epoch 1: the snapshot's arithmetic checks out and no shielded wallet or amount is in the file — 1 coin(s), problems=none
+[PASS] epoch 1: claimed ZEC equals the fee the pool had accrued for the partner — claimed=3424000 pool partnerQuoteFee=3424000
+[PASS] epoch 1: creator is paid like any holder and flagged — creator row={"epochId":"epoch-1791141660969","wallet":"DkyTaq9mTVBYtp4H2NGHqE2mNFEPs3CAHgVx3Vq3MaqU","kind":"solana","amountZats":"178695","sig":"vTmAyu6nVJHVCtBznY6NcREhGt2B4ZhH51uSNATbpJCBiEnGg1jo3CgjMHQsHLYWRa7UnvFczjt5ogyMnB5vkuq","sentAt":"2026-10-04T19:21:04.586Z","zcashAddress":null,"flag":"creator","rawTx":null,"lastValidBlockHeight":223}
+[PASS] epoch 1: creator + 2 default holders paid Solana ZEC — count=3
+[PASS] epoch 1: 3 opted-in holders paid shielded — count=3
+[PASS] epoch 1: a wallet with no ZEC account and a share under the account rent is carried, and no account is created for it — row=carried:new_account_below_rent carry=11913 balance=0
+[PASS] epoch 1: a shielded share under 100,000 zats is held, not sent — carry=29562
+[PASS] epoch 1: treasury covers owed — treasuryZats=12174153739 owedZats=29562
+[PASS] epoch 1: records the shielded batch's real network fee (> 0) — feeZats=20000
+[PASS] curve filled by partial-fill buys — buys=1
+[PASS] epoch 2: the keeper migrated the coin to DAMM v2 and recorded the pool and the partner position — dammPool=6fGrrvfAUfT1U7mJACcNqgvHV36goaWZeTnmQ9mypoEj positionNft=GnXybKY9YBEPvndqxYTFqNqnYxbNxn94Ff2e4Eku6Dw8
+[PASS] epoch 2: the coin reads as graduated on venue meteora-damm-v2 — stage=graduated venue=meteora-damm-v2 priceZec=2
+[PASS] epoch 2: claimed ZEC equals the accrued curve fee plus the partner surplus — claimed=1963206 pool partnerQuoteFee=1963206 surplus=0
+[PASS] epoch 86067: solana payout to 7qqgBojv… — expected +240361 zats, observed +240361 zats (sig/txid 33P5ETbyRiR4qJk5gifQXesE1HhJddXsm8M5YSd2R9kBotobQzwtMr2cckeT9NeTggDUH4yyyey2h6zbB9XfZivU)
+[PASS] epoch 86067: solana payout to Bs9oKDTV… — expected +295823 zats, observed +295823 zats (sig/txid 33P5ETbyRiR4qJk5gifQXesE1HhJddXsm8M5YSd2R9kBotobQzwtMr2cckeT9NeTggDUH4yyyey2h6zbB9XfZivU)
+[PASS] epoch 86067: solana payout to Da2BVi2M… — expected +328063 zats, observed +328063 zats (sig/txid 33P5ETbyRiR4qJk5gifQXesE1HhJddXsm8M5YSd2R9kBotobQzwtMr2cckeT9NeTggDUH4yyyey2h6zbB9XfZivU)
+[PASS] epoch 86067: solana payout to DkyTaq9m… — expected +79629 zats, observed +79629 zats (sig/txid 33P5ETbyRiR4qJk5gifQXesE1HhJddXsm8M5YSd2R9kBotobQzwtMr2cckeT9NeTggDUH4yyyey2h6zbB9XfZivU)
+[PASS] epoch 2: status ok (no fallback needed) — status=ok
+[PASS] epoch 2: every payout went to a wallet this run created (no pool vault or program account was paid) — unknown recipients=none
+[PASS] epoch 2: the team kept exactly 25% of the claim (rounded down) and holders' shares + team == claimed to the zat — claimed=1963206 team=490801 holders' shares=1472405
+[PASS] epoch 2: the team ledger closed (delivery resolved) — teamGross=490801 teamSolana=490801 cost=0 native=0
+[PASS] epoch 2: the snapshot's sha256 is written in a Solana memo the keeper signed — memo tx=54Ar5B5b6A8HpTyXArLWyEdgbXdVCetasrmU5Viikr1wyRkxUDtPp3eZuBVp1yPMPjwZHmJJ9SCTuVpQhFtBWF3G sha256=278979cd3b4e08a8…
+[PASS] epoch 2: the snapshot's arithmetic checks out and no shielded wallet or amount is in the file — 1 coin(s), problems=none
+[PASS] epoch 2: the whale holding graduated tokens is paid, pool vaults are not — whale in payout rows
+[PASS] epoch 3: the post-migration DAMM v2 position fee was claimed and equals 80% of the pool fee (within 2 zats) — claimed=399999 expected~400000 epochClaimed=399999
+[PASS] epoch 89203: solana payout to 7qqgBojv… — expected +47337 zats, observed +47337 zats (sig/txid 3cLXtL9uHy6KtvpX1Baq585v8zsCQpQZycsvnnk17z3mVs2Rqnq6kNgDV1WM36xVTv9rWStmmPyVP2odC7otGa5r)
+[PASS] epoch 89203: solana payout to Bs9oKDTV… — expected +58260 zats, observed +58260 zats (sig/txid 3cLXtL9uHy6KtvpX1Baq585v8zsCQpQZycsvnnk17z3mVs2Rqnq6kNgDV1WM36xVTv9rWStmmPyVP2odC7otGa5r)
+[PASS] epoch 89203: solana payout to Da2BVi2M… — expected +74630 zats, observed +74630 zats (sig/txid 3cLXtL9uHy6KtvpX1Baq585v8zsCQpQZycsvnnk17z3mVs2Rqnq6kNgDV1WM36xVTv9rWStmmPyVP2odC7otGa5r)
+[PASS] epoch 89203: solana payout to DkyTaq9m… — expected +15683 zats, observed +15683 zats (sig/txid 3cLXtL9uHy6KtvpX1Baq585v8zsCQpQZycsvnnk17z3mVs2Rqnq6kNgDV1WM36xVTv9rWStmmPyVP2odC7otGa5r)
+[PASS] epoch 3: status ok (no fallback needed) — status=ok
+[PASS] epoch 3: every payout went to a wallet this run created (no pool vault or program account was paid) — unknown recipients=none
+[PASS] epoch 3: the team kept exactly 25% of the claim (rounded down) and holders' shares + team == claimed to the zat — claimed=399999 team=99999 holders' shares=300000
+[PASS] epoch 3: the team ledger closed (delivery resolved) — teamGross=99999 teamSolana=99999 cost=0 native=0
+[PASS] epoch 3: the snapshot's sha256 is written in a Solana memo the keeper signed — memo tx=5NHpGVQu9xpFheWspRoKXxCvAPws5iwqumeFqjMr2ErkyXKaPekSff5EfCMD79Mup6UXEmA1ygFJAahUM2hKcxVU sha256=fa13eafad2a5c277…
+[PASS] epoch 3: the snapshot's arithmetic checks out and no shielded wallet or amount is in the file — 1 coin(s), problems=none
+[PASS] epoch 3: TEAM_WALLET was set, so the team's Solana ZEC from epochs 1 to 3 (the backlog held in the keeper plus this epoch's) went to it in one transfer, exactly once — held before=1283355 row=1383354 on chain=1383354 held after=0
+[PASS] epoch 4: the second coin's DBC config names the Squads vault as fee claimer (read back and verified field by field) — fee claimer=8Sz99p5aqkU6ZqT3DjWX8Btm4zaNYWPuB8vCdRtQTwJp config=6gJZC1P1Sz1Aoid6cBcztgbNLjMP2TnAc8Te6M8bTk1o
+[PASS] epoch 4: the keeper proposed the claim and the run STOPPED: nothing finalized, nothing paid, no epoch recorded — phase=await epochs=3
+[PASS] epoch 4: the proposal, decoded from the STORED message, pays only token accounts owned by the keeper; the keeper alone has approved (1 of 2) — Squads proposal #1 (Active), approvals 1 of 2 |   dbc claim_trading_fee: pays token account EGY91evYufYiXLqs6vvsaqPjCABCJTaynpsmaiNY76ET (owner ANcxBq4HpuCXhZxJE2MC6QXG1gkV9NFEYMrvcttnXAcL, mint JC7FXpMpmCVaKvWWc3NbRaie3PUK4vffTNtXdKX32wMg) |   dbc claim_trading_fee: pays token account 127Wyh7xVq5jVV6dbbYQh2nFDkxrqChnD1nTDaEZbuH (owner ANcxBq4HpuCXhZxJE2MC6QXG1gkV9NFEYMrvcttnXAcL, mint A7bdiYdS5GjqGFtxf17ppRHtDKPkkRqbKtR27dxvQXaS)
+[PASS] epoch 4: before approval no ZEC left the pool (the keeper could not claim alone) — pool partnerQuoteFee=480000
+[PASS] epoch 98697: solana payout to ARisBZV8… — expected +141095 zats, observed +141095 zats (sig/txid 3yhKZzdhr8bMz5nscTezqaG9FbUGtrBVpeyai4qSPVVqmmc1D5Hb4Tt8ZweYBmEWXHAoAJFTW8HyeosFY6jWScFw)
+[PASS] epoch 98697: solana payout to Da2BVi2M… — expected +218905 zats, observed +218905 zats (sig/txid 3yhKZzdhr8bMz5nscTezqaG9FbUGtrBVpeyai4qSPVVqmmc1D5Hb4Tt8ZweYBmEWXHAoAJFTW8HyeosFY6jWScFw)
+[PASS] epoch 4: status ok (no fallback needed) — status=ok
+[PASS] epoch 4: every payout went to a wallet this run created (no pool vault or program account was paid) — unknown recipients=none
+[PASS] epoch 4: the team kept exactly 25% of the claim (rounded down) and holders' shares + team == claimed to the zat — claimed=480000 team=120000 holders' shares=360000
+[PASS] epoch 4: the team ledger closed (delivery resolved) — teamGross=120000 teamSolana=120000 cost=0 native=0
+[PASS] epoch 4: the snapshot's sha256 is written in a Solana memo the keeper signed — memo tx=5PrhuLez8mSaZU28KnrmBXvzAugpPXVXUaxacRSZGnAGQUtjf8CUw5XeXVwzFmosYeZzm1Rvmy3vxAUEp4iSzJZE sha256=a584166d8c418045…
+[PASS] epoch 4: the snapshot's arithmetic checks out and no shielded wallet or amount is in the file — 1 coin(s), problems=none
+[PASS] epoch 4: claimed ZEC equals the fee the pool had accrued for the partner (executed by the keeper after the owner approved) — claimed=480000 pool partnerQuoteFee=480000
+[PASS] epoch 4: the multisig's owner and backup (members), the vault and the keeper were not paid although the owner and the vault hold the coin — paid=78UiX3,9QRMD7,ARisBZ,Da2BVi
+[PASS] epoch 4: the keeper's net SOL cost of the whole vault claim is small (proposal rent is refunded to it; at local rent a new base-token account is 2,074,080 lamports) — keeper spent 2114080 lamports incl. payouts' new accounts
+[PASS] epoch 4: the multisig's members were recorded for the holder exclusion — members=3
+[PASS] epoch 5: the 4% coin is on its own tier config, read back and verified field by field (fee 4%, creator 75%, DAMM v2 4% pool, LP 25/75) — config=3vAnF2xbuCT4hi4FCeCZG49pbvwbrPVnYhxju1cTmNJF coin fee=400
+[PASS] epoch 5: the pool accrued exactly the modelled split of the two buys: creator 75%, the pad 25% of what Meteora leaves (to the zat) — partner=2800000 creator=8400000
+[PASS] epoch 08105: solana payout to 4upkSxuH… — expected +788811 zats, observed +788811 zats (sig/txid 5TZY2NW4MdsU3gYBEU9izEUtLqphMQ3sMxQgHJwevyxAa9A7A51EsuerM3nhnBiUvPr26w4wTsZ5apakzmYVcEPR)
+[PASS] epoch 08105: solana payout to Da2BVi2M… — expected +1311189 zats, observed +1311189 zats (sig/txid 5TZY2NW4MdsU3gYBEU9izEUtLqphMQ3sMxQgHJwevyxAa9A7A51EsuerM3nhnBiUvPr26w4wTsZ5apakzmYVcEPR)
+[PASS] epoch 5: status ok (no fallback needed) — status=ok
+[PASS] epoch 5: every payout went to a wallet this run created (no pool vault or program account was paid) — unknown recipients=none
+[PASS] epoch 5: the team kept exactly 25% of the claim (rounded down) and holders' shares + team == claimed to the zat — claimed=2800000 team=700000 holders' shares=2100000
+[PASS] epoch 5: the team ledger closed (delivery resolved) — teamGross=700000 teamSolana=700000 cost=0 native=0
+[PASS] epoch 5: the snapshot's sha256 is written in a Solana memo the keeper signed — memo tx=SJUmCckS5XcKnaENGZMey1J9DqyvWe4u13JhJMTcKSLsKMEG2D3Dw4yhbqff1dt8579KkuZk4dcG2kC5AeFmKnm sha256=6cd0e79e193ae348…
+[PASS] epoch 5: the snapshot's arithmetic checks out and no shielded wallet or amount is in the file — 1 coin(s), problems=none
+[PASS] epoch 5: the epoch claimed exactly the partner part of the 4% coin's fee, and left the creator's share untouched in the pool — claimed=2800000 partner owed=2800000 creator in pool=8400000
+[PASS] epoch 5: the creator claimed their own share with their own signature: it landed in their wallet and nowhere else, and nothing was left in the pool — creator received=8400000 owed=8400000
+[PASS] epoch 5: another wallet cannot get a claim transaction for the creator's fees — answer=not_creator
+[PASS] ops: PAYOUTS_PAUSED=1 stops an epoch run before any claim or payout (no epoch recorded, no draft) — payouts are paused, nothing was claimed or sent: payouts are paused (PAYOUTS_PAUSED=1): nothing was claimed or sent
+trea
+[PASS] ops: GET /treasury says paused: true while the switch is on, false after — paused=true
+[PASS] ops: the keeper loop (one tick) runs no epoch before its cadence is due, publishes the next due time (48 h after the last epoch) on /treasury and writes a health line — nextEpochAt=2026-10-06T19:21:48.105Z expected=2026-10-06T19:21:48.105Z health lines=39 
+[PASS] api: GET /treasury publishes the policy (holders 75%, team 25% of what is claimed) and the team ledger — {"wallet":"78UiX34fPz9VLSa6jQ7EnCW21zAgrqBKE9TN2vcxv6id","grossZats":"2266800","deliveryCostZats":"55021","nativeZats":"8425","heldInKeeperZats":"0","sweptZats":"2203354"}
+[PASS] api: GET /epochs shows holders, team and delivery cost per epoch, and the snapshot hash with its memo signature — {"holdersZats":"2568000","teamZats":"856000","deliveryCostZats":"55021","teamNetZats":"800979","holderShortfallZats":"0"}
+[PASS] api: GET /tiers lists the five tiers; the 4% one is available (its config exists) and splits the fee Meteora 20 / creator 60 / holders 15 / team 5 percent — [[100,true],[200,false],[400,true],[600,false],[1000,false]]
+[PASS] api: the 4% coin reports its tier and who gets what of the fee (claimed 2000, holders 1500, creator 6000) — {"mint":"72rAv1KCaw5oaJq45Z7idTq3nuqz7cAJhk16hmYwantP","name":"TIER4","symbol":"TR4","imageUrl":"","description":"a 4% creator-fee coin","creator":"4upkSxuHdq2PPVFUst3KgFvYHmF8gpyWkkhpESQ7NMc5","createdAt":"2026-10-04T19:21:46.655Z","graduatedAt":null,"feeBps":400,"claimedShareBps":2000,"holderShareBps":1500,"teamShareBps":500,"creatorShareBps":6000,"postGraduationFeeBps":400,"stage":"curve","venue":"meteora-dbc","curveProgress":0.504000000504,"priceZec":"1.131008183866","marketCapZec":"1131008183","poolId":"4xtmhgwkBkHXBkqwSJhX5DDNxWaakFdC7pqTvq4c38oY","volume24hZats":"0","trades24h":0,"priceChange24hBps":null,"holders":2,"recentTrades":[],"rewards":{"paidSolanaZec":"2100000","paidShieldedZec":"0","epochs":1}}
+[PASS] api: a launch on a fee that is not a tier is refused (400 bad_request feeTier); a creator-claim for a wallet that is not the creator is refused (403 not_creator) — launch=400 claim=403
+[PASS] api: GET /coins gives every coin its 24-hour volume and trade count from the recorded trades, newest-window only, and sort=volume puts the biggest first — HRPo1M vol=408000000 n=6; 72rAv1 vol=0 n=0; JC7FXp vol=0 n=0
+[PASS] api: the migrated coin reads graduated with the graduation time the keeper recorded; a coin on the curve has none and no price change without a trade — graduatedAt=2026-10-04T19:21:26.801Z recorded=2026-10-04T19:21:26.801Z
+[PASS] api: stage, limit and offset: stage=graduated lists only the migrated coin; stage=curve with limit=1&offset=1 is one coin and total counts them all — graduated=1 curve total=2
+[PASS] api: GET /stats equals the database: launched and graduated coins, the board's 24-hour volume, what GET /epochs adds up per rail, and the active opt-ins — {"coins":3,"graduated":1,"volume24hZats":"408000000","paidSolanaZats":"4981723","paidShieldedZats":"1144588","optIns":4}
+[PASS] api: a bad list parameter is refused with 400 bad_request and its field (sort, limit) — sort=400 limit=400
+[PASS] api v2.6 quote: a buy on the graduated coin routes to damm and equals the numbers trade-tx builds for the same trade — api={"side":"buy","in":"20000000","out":"7687069652122","minOut":"7686300945156","feeZec":"239979","priceImpactBps":265,"route":"damm","slippageBps":50,"at":"2026-10-04T19:21:53.997Z"} builder={"in":"20000000","out":"7687069652122","minOut":"7686300945156","feeZec":"239979"}
+[PASS] api v2.6 quote: a sell on the graduated coin routes to damm and equals the numbers trade-tx builds for the same trade — api={"side":"sell","in":"1000000000","out":"2473","minOut":"2472","feeZec":"31","priceImpactBps":0,"route":"damm","slippageBps":50,"at":"2026-10-04T19:21:53.997Z"} builder={"in":"1000000000","out":"2473","minOut":"2472","feeZec":"31"}
+[PASS] api v2.6 quote: a buy on the curve routes to curve and equals the numbers trade-tx builds for the same trade — api={"side":"buy","in":"20000000","out":"15046321997113","minOut":"14971090387127","feeZec":"800000","priceImpactBps":181,"route":"curve","slippageBps":50,"at":"2026-10-04T19:21:54.073Z"} builder={"in":"20000000","out":"15046321997113","minOut":"14971090387127","feeZec":"800000"}
+[PASS] api v2.6 quote: a sell on the curve routes to curve and equals the numbers trade-tx builds for the same trade — api={"side":"sell","in":"1000000000","out":"1202","minOut":"1195","feeZec":"51","priceImpactBps":2,"route":"curve","slippageBps":50,"at":"2026-10-04T19:21:54.073Z"} builder={"in":"1000000000","out":"1202","minOut":"1195","feeZec":"51"}
+[PASS] api v2.6 quote: the fee on a curve buy is the 4% tier's to the zat, and a quote sent no slippage uses 100 bps — 20M: 800000 (model 800000), 200M: 8000000 (model 8000000)
+[PASS] api v2.6 quote: price impact grows with the size of the buy, and a buy past the fundraising target is 400 bad_amount on amount — impact 181 bps at 0.2 ZEC, 1819 bps at 2 ZEC; past the target: 400 bad_amount
+[PASS] api v2.6 pot: a curve coin's accrued fee is what the pool itself holds for the partner, and equals the modelled split of the two buys just made, to the zat — answer=440000 pool counter=440000 model=440000
+[PASS] api v2.6 pot: a graduated coin's accrued fee is its locked position's unclaimed fee: 80% of the pool fee the buy paid (within 1% of it) — answer=287974 model=287974 pool fee=359968
+[PASS] api v2.6 pot: holders' part and the team's floor(25%) add up to the accrued fee; the minimum claim and the next payout are the engine's own (the same instant /treasury shows) — tier=["330000","110000"] next=2026-10-06T19:21:48.105Z treasury=2026-10-06T19:21:48.105Z
+[PASS] api v2.6 pot: the last payout is the newest round that paid the coin's holders (the vault coin's round 4, the tier coin's round 5, the graduated coin's round 3), with what that round paid on both rails — tier={"epochId":"epoch-1791141708105","at":"2026-10-04T19:21:48.105Z","totalZats":"2100000","shieldedZats":"0"} vault=epoch-1791141698697 graduated=epoch-1791141689203
+[PASS] api v2.6 fixed: the graduated 1% coin: every value equals the chain's (config, mint, DAMM v2 config and pool accounts) and every source account exists — all equal
+[PASS] api v2.6 fixed: the Squads-vault coin: every value equals the chain's (config, mint, DAMM v2 config and pool accounts) and every source account exists — all equal
+[PASS] api v2.6 fixed: the 4% tier coin: every value equals the chain's (config, mint, DAMM v2 config and pool accounts) and every source account exists — all equal
+[PASS] api v2.6 fixed: the graduated coin reads its pool as enabled; nothing here can pause a pool or the curve, and the answer says Meteora can pause the pool — {"padCanPause":false,"curve":{"pausableByMeteoraCurrentCode":false,"source":"dbcij3LWUppWqq96dh6gJWwBifmcGfLSB5D4DuSMaqN"},"pool":{"pausableByMeteora":true,"paused":false,"source":"6fGrrvfAUfT1U7mJACcNqgvHV36goaWZeTnmQ9mypoEj"}}
+[PASS] api v2.6 fixed: the 4% tier coin: curve fee 400 bps, creator share 6000 bps (75%), DAMM v2 pool fee 400..480 bps, pool not created yet (paused null, source the DAMM v2 program) — [{"bps":400,"source":"3vAnF2xbuCT4hi4FCeCZG49pbvwbrPVnYhxju1cTmNJF"},{"bps":6000,"percentage":75,"source":"3vAnF2xbuCT4hi4FCeCZG49pbvwbrPVnYhxju1cTmNJF"},{"minBps":400,"maxBps":480,"source":"AkmQWebAwFvWk55wBoCr5D62C6VVDTzi84NJuD9H7cFD"},{"partnerLockedPct":25,"creatorLockedPct":75,"unlockedPct":0,"source":"3vAnF2xbuCT4hi4FCeCZG49pbvwbrPVnYhxju1cTmNJF"}]
+[PASS] api v2.6 fixed: the Squads-vault coin names the vault as fee claimer and its multisig: 2 of 3, no time lock, no config authority (nobody can change the members alone) — kind=squads_vault multisig={"address":"4zp9fe7PaJDAyvzKJwwysv1bK62n9AJp3n1kQJbj5qYz","threshold":2,"members":3,"timeLock":0,"autonomous":true}
+[PASS] api v2.6 holders: the numbers come from the chain read in the background (source chain, taken just now), not only from the keeper's sample — source=chain asOf=2026-10-04T19:21:55.086Z
+[PASS] api v2.6 holders: the wallets listed are exactly the wallets that hold the coin on chain (every wallet this run made, read here), each with its on-chain balance, largest first — 9 listed, 9 hold the coin on chain
+[PASS] api v2.6 holders: the DAMM v2 pool's vault is a row tagged pool with its on-chain balance, labelled, and never counted as a holder — vault 6rdp8HgFQgm7jXT4SvPEJ46T199WmpMA4oinSAHLQCiL balance=297303130937923 row={"rank":1,"wallet":"6rdp8HgFQgm7jXT4SvPEJ46T199WmpMA4oinSAHLQCiL","balance":"297303130937923","pct":29.7303,"tags":["pool"],"label":"Meteora DAMM v2 pool"}
+[PASS] api v2.6 holders: supply is the mint's; holdersCount counts the wallets (pool vaults left out) and total adds the pool rows; every pct is a share of total supply — supply=1000000000000000 holdersCount=9 total=11
+[PASS] api v2.6 holders: top10Pct, devPct and poolPct equal the shares worked out from the balances above — top10=70.203 dev=3.6054 pool=29.7969
+[PASS] api v2.6 holders: the creator's row is tagged dev; optedIn marks exactly the wallets with shielded delivery on and optedInCount counts them; no Zcash address is in the answer — optedInCount=4 (4 listed)
+[PASS] api v2.6 trades: GET /trades gives the newest trades of every coin first: the three just recorded, newest block time first (trades of the same second by signature, as the price chart orders them) — got 19:21:52 4YUFsh, 19:21:52 3qeBEC, 19:21:51 5XUuNU
+[PASS] api v2.6 trades: a coin's tape is exactly the trades the database recorded for it, with its symbol, and `dev` marks the creator's own buy and nothing else — 2 trades, 1 by the creator
+[PASS] api v2.6 trades: the buy made on the graduated pool is in its tape with the ZEC the chain moved, next to the trades the seed recorded — 7 trades
+[PASS] api v2.6 stream: GET /events/trades answers 200 as text/event-stream and sends its retry line at once — status=200 first bytes="retry: 3000\n\nid: 10\nevent: trade\ndata: {"
+[PASS] api v2.6 stream: a trade this process recorded reaches the stream of the API process within 10 s, once, as a trade event with the tape's fields — event={"id":10,"data":{"sig":"3iFEvzfZch71myV5taZrv1fuxidFswHgnQhM8uY1ett53AdtppdvmogfNkKxKh4PbTFTZnKUzxzqeuSPodm5196C","mint":"72rAv1KCaw5oaJq45Z7idTq3nuqz7cAJhk16hmYwantP","symbol":"TR4","side":"buy","wallet":"Da2BVi2MTGyb65356SyRcZBVCZr3F8Uv1WNzBuftT5Fe","amountToken":"3052898871269","amountZec":"4000000","at":"2026-10-04T19:21:54.000Z","tags":[]}}
+[PASS] api v2.6 stream: a reconnect with Last-Event-ID replays the trade recorded after that id — replayed 1 event(s) after id 9
+[PASS] api v2.6 stream: a fifth stream from one address is 429 rate_limited with retry-after 5, and a client behind the proxy (x-forwarded-for) has its own four — fifth=429 retry-after=5 proxied client=200
+[PASS] api v2.6 stream: closing a stream frees its slot — reopened with status 200
+[PASS] api v2.6 rewards: a Solana-rail holder: every round it was paid (count, total, transaction, amount and its share from each coin) equals the payout rows, and it has no shielded rounds — 3 rounds in the rows, 3 in the answer, total 1017935
+[PASS] api v2.6 rewards: a shielded holder: the rounds it was paid equal the payout rows, and each round lists its commitments, all of them found in that round's published snapshot file — 1 shielded rounds in the rows, 1 listed
+[PASS] api v2.6 rewards: a shielded holder's answer holds no Zcash address, no transaction id and no amount (compared as whole values) — 3 secrets looked for
+[PASS] api v2.6 verify-memo: the memo a holder's own wallet shows on a real shielded note, with the transaction id it shows, is matched to its round: the round's coins, its transactions and its snapshot hash — SNARKS pad reward, epoch epoch-1791141660969 -> epoch 60969 matches=true checks={"memo":true,"txid":true,"commitment":null}
+[PASS] api v2.6 verify-memo: the same memo with a transaction id that is not in the round's batch does not match (checks.txid false, checks.memo still true) — {"memo":true,"txid":false,"commitment":null}
+[PASS] api v2.6 verify-memo: a round that paid no shielded batch (the Squads-vault round) is named but its memo fails: the pad never wrote it; text that is not the pad's names no round — no batch: {"memo":false,"txid":null,"commitment":null}; foreign: epochId=null
+[PASS] api v2.6 verify-memo: with a signed proof the wallet gets its own rows of the round (coin, share, commitment), every commitment is in the published file, and the answer says the wallet's commitment is there — 1 row(s), checks={"memo":true,"txid":null,"commitment":true}
+[PASS] api v2.6 verify-memo: a nonce works once (400 stale_nonce on the replay) and a proof signed by another key is 400 invalid_signature — replay=400 stale_nonce; forged=400 invalid_signature
+[PASS] api v2.6 epochs: every round carries deliveryCostZats and teamNetZats at its top level, the same as split's; the first round's are the ledger's (delivery cost, and the team's gross share less it) — cost=55021 net=800979 ledger gross=856000
+[PASS] api v2.6 epochs.csv: served as an attachment named snarks-epochs.csv; the header is the contract's columns in order, one row per published round, newest first — 200 text/csv; charset=utf-8, 5 rows for 5 rounds
+[PASS] api v2.6 epochs.csv: every cell equals what GET /epochs says for that round (claimed, holders, team, delivery cost, team net, shortfall, Zcash fee, both rails' counts and totals, snapshot hash and memo signature) — 5 rows
+[PASS] api v2.6 epochs.csv: public numbers only: no wallet, no Zcash address and no single holder's shielded amount in any cell — 16 private values looked for in 85 cells, 0 cell(s) equal one
+[PASS] verify script: bun scripts/verify-snapshot.ts on 60969 prints VERIFIED (file hash, Solana memo, arithmetic) — epoch epoch-1791141660969 |   ok    the file hashes to b53a4ae72c0ae4a6aca4b17318d38363f7bbd5439df9ac5d57e2377b502a06b7 |   ok    the Solana memo Nj3w3U4Rzn4ErPdVJZtTWnb3mxE1PHDT96RVPPCrT4kqw3Ne7YF7kWbcWjpCjJz9J1vLeiZbvRhbJNSjYHYgTxW says the same hash |   ok    the split adds up for 1 coin(s) | VERIFIED
+[PASS] verify script: bun scripts/verify-snapshot.ts on 98697 prints VERIFIED (file hash, Solana memo, arithmetic) — epoch epoch-1791141698697 |   ok    the file hashes to a584166d8c418045353a3ed69964c4d69b600699b13f7eda45ea04812b008623 |   ok    the Solana memo 5PrhuLez8mSaZU28KnrmBXvzAugpPXVXUaxacRSZGnAGQUtjf8CUw5XeXVwzFmosYeZzm1Rvmy3vxAUEp4iSzJZE says the same hash |   ok    the split adds up for 1 coin(s) | VERIFIED
+[PASS] verify script: bun scripts/verify-snapshot.ts on 08105 prints VERIFIED (file hash, Solana memo, arithmetic) — epoch epoch-1791141708105 |   ok    the file hashes to 6cd0e79e193ae3489286abbb869172507abaab373d2d612b13d203037c159120 |   ok    the Solana memo SJUmCckS5XcKnaENGZMey1J9DqyvWe4u13JhJMTcKSLsKMEG2D3Dw4yhbqff1dt8579KkuZk4dcG2kC5AeFmKnm says the same hash |   ok    the split adds up for 1 coin(s) | VERIFIED
+
+RESULT: PASS (142 checks)

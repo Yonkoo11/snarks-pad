@@ -1,0 +1,44 @@
+snarks-launchpad real-flow run, 2026-10-02T04:23:59.741Z
+stack: web (VITE_API=real, vite :5198) + engine API :8787 + solana-test-validator :8899 + Zcash regtest
+
+[PASS] API reports local mode — x-pad-mode=local
+test wallet A1k3rVran8d5hXUSxLzFWQYBjCBJyEsanqhedWqa1MZy (funded by the local helper: 5 SOL + 5 local Solana ZEC); fresh regtest wallet qa-flow-1790915043476, UA uregtest1z9f…u49762
+
+[PASS] mode banner says local mode
+[PASS] home shows seeded $SNARKS
+[PASS] home shows SNARKS at its real stage — "graduated to Meteora" from API stage=graduated curveProgress=1
+[PASS] home shows the real curve progress of a coin still on the curve — 7.4% from API curveProgress=0.07425000007425 for $QC041697
+[PASS] home price is non-zero — priceZec=5.567032463309 zats/token, marketCap=5567032463 zats
+[PASS] wallet connects through the injected provider
+[PASS] opt-in succeeds in the UI
+[PASS] page never shows the full address after opt-in
+[PASS] GET /optin/:wallet -> optedIn true — {"optedIn":true,"zcashAddressMasked":"ureg…9762","pendingZats":null}
+[PASS] GET /optin/:wallet returns the masked form only — zcashAddressMasked=ureg…9762
+[PASS] engine stored the exact address — sqlite optins row matches (compared in sqlite, not printed)
+[PASS] UI shows the masked address
+[PASS] opt-out returns to the form
+[PASS] GET /optin/:wallet -> optedIn false after opt-out — {"optedIn":false,"zcashAddressMasked":null,"pendingZats":null}
+[PASS] opt back in (for the epoch payout)
+[PASS] trade-tx quote shows
+[PASS] buy sent from the page
+[PASS] buy confirmed on chain without error — sig 2vRetRk4AEffUesuWW1YtLxpXQreejKQDevYGgLN9SVaMgx3tD4nnYird9tUJCdFbvJiijkSgxd6tcp1CEFrfNxc
+[PASS] wallet received $SNARKS and paid 1 Solana ZEC — token +16296833834027 base units, Solana ZEC -100000000 zats
+[PASS] engine recorded the trade from chain (trade-confirm) — amountZec=100000000 amountToken=16296833834027
+[PASS] launch page states the fixed fee, the 80/20 split and that Meteora can pause the graduated pool
+[PASS] launch signed, sent and confirmed from the page
+[PASS] new mint exists on local (Token-2022) — mint 9iesMkxGSc3CsHpiuey86eEQKShYSRPu5vnHk9YT9jrH
+[PASS] GET /coins/:mint serves the new coin with a pool — poolId=38AFSoJDyjLUJanMWJKvnJkwK6wXUDj6EJhZnT2VfZYV
+[PASS] new coin shows on the home page
+[PASS] bun run epoch exits 0 (epoch 1) — epoch epoch-1790915058481 status ok harvestedZats 959913
+[PASS] a wallet that bought after the last holder sample is paid nothing this epoch (minimum-balance rule) — before 0 zats, after 0 zats, payout row none
+[PASS] bun run epoch exits 0 (epoch 2) — epoch epoch-1790915083778 status ok harvestedZats 2879739
+[PASS] opted-in wallet regtest balance rose by exactly its planned share — before 0 zats, after 51172 zats, planned 51172 zats, read from its own devtool wallet
+[PASS] latest epoch: status ok, shielded batch with a Zcash txid, swap simulated — id=epoch-1790915083778 shielded.count=6 txid=863218885d04381e5fba4cf0243af14aebb94119d81b8ed62274639ea3c42274
+[PASS] treasury shows the real regtest Zcash txid — 863218885d04381e5fba4cf0243af14aebb94119d81b8ed62274639ea3c42274
+[PASS] treasury shows the real Solana payout signature — 2MVr6Y5gS1hQrh16HGitvxAhWSGXbujXJeS7Tfrvhu9VK6gfEVdC8aZeXbMeZ1oMKRAeaimJaWcL7c5u8KDZCDmp
+[PASS] treasury labels the swap leg "simulated"
+[PASS] no page errors
+[PASS] "anonymous" never rendered
+signatures made by the injected wallet: 3 messages, 2 transactions
+
+RESULT: PASS (36 checks)

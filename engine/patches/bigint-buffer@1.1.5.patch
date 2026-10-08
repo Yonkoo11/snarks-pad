@@ -1,0 +1,142 @@
+diff --git a/binding.gyp b/binding.gyp
+deleted file mode 100644
+index 77f2ecd7f6a6bcb01fb2865348a5988b60690b7d..0000000000000000000000000000000000000000
+diff --git a/dist/node.js b/dist/node.js
+index 513168c89e387668a79b6beb109587b3eb41a7d0..8c49a9f7873019f709ab692d20845b4601456a50 100644
+--- a/dist/node.js
++++ b/dist/node.js
+@@ -1,77 +1,41 @@
+ 'use strict';
++// Replacement for the npm package bigint-buffer 1.1.5, which has an unfixed high advisory
++// (GHSA-3gc7-fjrx-p6mg, buffer overflow in the NATIVE toBigIntLE). No patched version exists, and the
++// maintained fork ships the identical C source, so the pad takes the native addon out of the tree instead:
++// this file implements the package's four exports with plain BigInt/Buffer code, the same behavior as
++// the package's own pure-JS fallback (the one that has always been running here, because the addon is never built).
++// The only consumer is @solana/buffer-layout-utils (u64/u128 fields of SPL account data). Applied with `bun patch`
++// (engine/patches/bigint-buffer@1.1.5.patch, recorded in bun.lock); binding.gyp, the C source and the install
++// scripts are deleted, so nothing can build the addon. engine/test/supply-chain.test.ts checks the result.
+ 
+-Object.defineProperty(exports, "__esModule", { value: true });
+-let converter;
+-{
+-    try {
+-        converter = require('bindings')('bigint_buffer');
+-    }
+-    catch (e) {
+-        console.warn('bigint: Failed to load bindings, pure JS will be used (try npm run rebuild?)');
+-    }
+-}
+-/**
+- * Convert a little-endian buffer into a BigInt.
+- * @param buf The little-endian buffer to convert
+- * @returns A BigInt with the little-endian representation of buf.
+- */
++/** Little-endian buffer -> BigInt. */
+ function toBigIntLE(buf) {
+-    if (converter === undefined) {
+-        const reversed = Buffer.from(buf);
+-        reversed.reverse();
+-        const hex = reversed.toString('hex');
+-        if (hex.length === 0) {
+-            return BigInt(0);
+-        }
+-        return BigInt(`0x${hex}`);
+-    }
+-    return converter.toBigInt(buf, false);
++  const reversed = Buffer.from(buf).reverse();
++  const hex = reversed.toString('hex');
++  return hex.length === 0 ? BigInt(0) : BigInt(`0x${hex}`);
+ }
+-exports.toBigIntLE = toBigIntLE;
+-/**
+- * Convert a big-endian buffer into a BigInt
+- * @param buf The big-endian buffer to convert.
+- * @returns A BigInt with the big-endian representation of buf.
+- */
++
++/** Big-endian buffer -> BigInt. */
+ function toBigIntBE(buf) {
+-    if (converter === undefined) {
+-        const hex = buf.toString('hex');
+-        if (hex.length === 0) {
+-            return BigInt(0);
+-        }
+-        return BigInt(`0x${hex}`);
+-    }
+-    return converter.toBigInt(buf, true);
++  const hex = Buffer.from(buf).toString('hex');
++  return hex.length === 0 ? BigInt(0) : BigInt(`0x${hex}`);
+ }
+-exports.toBigIntBE = toBigIntBE;
+-/**
+- * Convert a BigInt to a little-endian buffer.
+- * @param num   The BigInt to convert.
+- * @param width The number of bytes that the resulting buffer should be.
+- * @returns A little-endian buffer representation of num.
+- */
++
++/** BigInt -> little-endian buffer of `width` bytes. */
+ function toBufferLE(num, width) {
+-    if (converter === undefined) {
+-        const hex = num.toString(16);
+-        const buffer = Buffer.from(hex.padStart(width * 2, '0').slice(0, width * 2), 'hex');
+-        buffer.reverse();
+-        return buffer;
+-    }
+-    // Allocation is done here, since it is slower using napi in C
+-    return converter.fromBigInt(num, Buffer.allocUnsafe(width), false);
++  const hex = num.toString(16);
++  const buffer = Buffer.from(hex.padStart(width * 2, '0').slice(0, width * 2), 'hex');
++  buffer.reverse();
++  return buffer;
+ }
+-exports.toBufferLE = toBufferLE;
+-/**
+- * Convert a BigInt to a big-endian buffer.
+- * @param num   The BigInt to convert.
+- * @param width The number of bytes that the resulting buffer should be.
+- * @returns A big-endian buffer representation of num.
+- */
++
++/** BigInt -> big-endian buffer of `width` bytes. */
+ function toBufferBE(num, width) {
+-    if (converter === undefined) {
+-        const hex = num.toString(16);
+-        return Buffer.from(hex.padStart(width * 2, '0').slice(0, width * 2), 'hex');
+-    }
+-    return converter.fromBigInt(num, Buffer.allocUnsafe(width), true);
++  const hex = num.toString(16);
++  return Buffer.from(hex.padStart(width * 2, '0').slice(0, width * 2), 'hex');
+ }
++
++exports.toBigIntLE = toBigIntLE;
++exports.toBigIntBE = toBigIntBE;
++exports.toBufferLE = toBufferLE;
+ exports.toBufferBE = toBufferBE;
+diff --git a/package.json b/package.json
+index ea456c2fb65a6e891fb0dff5fbb254fc267fdc22..0cf69f9c9d2298a2c9a7b55f2894e375d4926043 100644
+--- a/package.json
++++ b/package.json
+@@ -12,8 +12,6 @@
+     "coverage": "istanbul cover ./test/index.js",
+     "coveralls": "npm run coverage && coveralls <coverage/lcov.info",
+     "lint": "gts check",
+-    "install": "npm run rebuild || echo \"Couldn't build bindings. Non-native version used.\"",
+-    "prepare": "npm run compile",
+     "prepublishOnly": "rm -rf build/Release; rm build/Makefile; rm build/gyp-*; rm build/*.mk; rm build/*.Makefile; rm *.tgz",
+     "test:browser": "karma start karma.conf.js",
+     "test:node": "mocha -r ts-node/register src/**/*.spec.ts --timeout 40000",
+@@ -41,9 +39,7 @@
+     "napi"
+   ],
+   "license": "Apache-2.0",
+-  "dependencies": {
+-    "bindings": "^1.3.0"
+-  },
++  "dependencies": {},
+   "devDependencies": {
+     "@types/benchmark": "^1.0.31",
+     "@types/bn.js": "^4.11.2",
+diff --git a/src/bigint-buffer.c b/src/bigint-buffer.c
+deleted file mode 100644
+index e57d5166f4ea0f25924d20bad85572f7f1c49d0d..0000000000000000000000000000000000000000

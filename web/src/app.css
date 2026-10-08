@@ -1,0 +1,201 @@
+@import '@fontsource/gaegu/latin-700.css';
+@import '@fontsource/atkinson-hyperlegible/latin-400.css';
+@import '@fontsource/atkinson-hyperlegible/latin-700.css';
+@import '@fontsource/jetbrains-mono/latin-400.css';
+@import '@fontsource/jetbrains-mono/latin-500.css';
+
+/* Direction A "Fridge door, working". Values from design/build-brief.md. */
+:root {
+  --paper: #f5efe2; --paper-2: #fbf7ee; --paper-3: #ece4d2;
+  --ink: #2b2420; --ink-2: #5e544c; --ink-3: #6f6457;
+  --pink: #c42f6c; --pink-ink: #fbf7ee;
+  --pink-soft: rgba(196, 47, 108, .12);
+  --line: rgba(43, 36, 32, .14);
+  --warn-bg: #2b2420; --warn-ink: #f5efe2;
+  --bad: #9c2b1f;
+
+  --sh-1: 0 2px 0 var(--line);
+  --sh-2: 3px 4px 0 rgba(43, 36, 32, .16);
+  --sh-3: 6px 8px 0 rgba(43, 36, 32, .18);
+
+  --f-display: 'Gaegu', 'Comic Sans MS', cursive;
+  --f-body: 'Atkinson Hyperlegible', system-ui, sans-serif;
+  --f-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  --t-12: 12px; --t-14: 14px; --t-16: 16px; --t-20: 20px;
+  /* the headline is a one-line banner over the market, not a poster: 28px at 1440, 24px at 390 */
+  --t-display: clamp(24px, 2vw, 28px);
+  --t-h2: 24px;
+
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px;
+  --s-6: 32px; --s-7: 48px; --s-8: 64px; --s-9: 96px;
+
+  --r-xs: 3px; --r-sm: 6px; --r-md: 12px; --r-lg: 18px; --r-full: 999px;
+  /* one curve for every interaction and the one entrance (R6.2) */
+  --ease: cubic-bezier(.16, 1, .3, 1);
+  --d-fn: 160ms; --d-press: 100ms; --d-in: 700ms;
+  /* data that arrives moves once: a number or bar to its new value, the curve bar's first fill, a new trade row */
+  --d-data: 240ms; --d-fill: 600ms; --d-row: 400ms;
+
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --paper: #1f1b18; --paper-2: #29241f; --paper-3: #17130f;
+    --ink: #efe7da; --ink-2: #bdb2a4; --ink-3: #978c80;
+    --pink: #f07aa8; --pink-ink: #1f1b18;
+    --pink-soft: rgba(240, 122, 168, .14);
+    --line: rgba(239, 231, 218, .14);
+    --warn-bg: #5a4f45; --warn-ink: #efe7da;
+    --bad: #ff8f7f;
+    --sh-2: 3px 4px 0 rgba(0, 0, 0, .45);
+    --sh-3: 6px 8px 0 rgba(0, 0, 0, .5);
+    color-scheme: dark;
+  }
+}
+:root[data-theme='dark'] {
+  --paper: #1f1b18; --paper-2: #29241f; --paper-3: #17130f;
+  --ink: #efe7da; --ink-2: #bdb2a4; --ink-3: #978c80;
+  --pink: #f07aa8; --pink-ink: #1f1b18;
+  --pink-soft: rgba(240, 122, 168, .14);
+  --line: rgba(239, 231, 218, .14);
+  --warn-bg: #5a4f45; --warn-ink: #efe7da;
+  --bad: #ff8f7f;
+  --sh-2: 3px 4px 0 rgba(0, 0, 0, .45);
+  --sh-3: 6px 8px 0 rgba(0, 0, 0, .5);
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 400 var(--t-16)/1.5 var(--f-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+}
+#app { position: relative; z-index: 1; min-height: 100svh; display: flex; flex-direction: column; }
+/* on a phone the fixed bottom bar (56px plus the home indicator) takes the bottom of the screen; the page keeps that room below the footer */
+@media (max-width: 640px) { #app { padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px)); } }
+
+h1, h2, h3 { margin: 0; font-weight: 700; }
+p { margin: 0; }
+a { color: inherit; }
+/* plain text links answer a hover by their underline only (RULEBOOK R12); buttons and rows have their own states */
+@media (hover: hover) { main a:not(.btn):hover { text-decoration-thickness: 2px; } }
+button, input, textarea, select { font: inherit; color: inherit; }
+img { display: block; max-width: 100%; }
+
+.display {
+  font-family: var(--f-display);
+  font-size: var(--t-display);
+  line-height: 1.1;
+  letter-spacing: -.01em;
+  text-wrap: balance;
+}
+.display em, .h2 em { font-style: normal; color: var(--pink); }
+/* the device on the word itself: the hatch underlines "shielded" in a headline, the width of the word, from first paint */
+.display em { padding-bottom: 3px; background: repeating-linear-gradient(-55deg, var(--pink) 0 3px, transparent 3px 6px) left bottom / 100% 4px no-repeat; }
+.h2 { font-family: var(--f-display); font-size: var(--t-h2); line-height: 1.15; letter-spacing: -.01em; text-wrap: balance; }
+.h3 { font-family: var(--f-body); font-size: var(--t-20); line-height: 1.25; font-weight: 700; }
+/* The one caps rule: every small all-caps word (BUY/SELL, a status tag, the Copy button) takes this class. */
+.caps { text-transform: uppercase; }
+.label {
+  font-size: var(--t-12); text-transform: uppercase; letter-spacing: .06em;
+  color: var(--ink-3); font-weight: 700;
+}
+.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.muted { color: var(--ink-2); }
+.measure { max-width: 60ch; }
+
+.wrap { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 var(--s-6); }
+@media (max-width: 640px) { .wrap { padding: 0 var(--s-4); } }
+
+/* Raised panels: background step plus the hard crayon cut-out shadow (one recipe, R4.7) */
+.panel {
+  background: var(--paper-2);
+  border-radius: var(--r-lg);
+  padding: var(--s-5);
+  box-shadow: var(--sh-2);
+}
+:root[data-theme='dark'] .panel { box-shadow: var(--sh-2), inset 0 1px 0 rgba(239, 231, 218, .07); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .panel { box-shadow: var(--sh-2), inset 0 1px 0 rgba(239, 231, 218, .07); }
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--s-2);
+  min-height: 48px; padding: 0 var(--s-5);
+  border: 0; border-radius: var(--r-md);
+  background: var(--paper-3); color: var(--ink);
+  font-weight: 700; font-size: var(--t-16); text-decoration: none; cursor: pointer;
+  box-shadow: var(--sh-2);
+  transition: transform var(--d-fn) var(--ease), box-shadow var(--d-fn) var(--ease), background-color var(--d-fn) var(--ease);
+  user-select: none;
+}
+.btn.primary { background: var(--pink); color: var(--pink-ink); }
+.btn.ghost { background: transparent; box-shadow: inset 0 0 0 2px var(--line); }
+.btn.block { width: 100%; }
+@media (hover: hover) {
+  .btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: var(--sh-3); }
+  .btn.ghost:hover:not(:disabled) { box-shadow: inset 0 0 0 2px var(--ink-3); }
+}
+.btn:active:not(:disabled) { transform: translateY(1px); box-shadow: var(--sh-1); transition-duration: var(--d-press); }
+.btn:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; }
+
+:focus-visible { outline: 3px solid var(--pink); outline-offset: 2px; border-radius: var(--r-sm); }
+
+/* Inputs */
+.field { display: grid; gap: var(--s-2); }
+.field > span { font-weight: 700; font-size: var(--t-14); }
+.field small { color: var(--ink-3); font-size: var(--t-14); }
+.input {
+  width: 100%; min-height: 48px; padding: var(--s-3) var(--s-4);
+  font-size: var(--t-16);
+  background: var(--paper); border: 2px solid var(--line); border-radius: var(--r-sm);
+  transition: border-color var(--d-fn) var(--ease);
+}
+@media (hover: hover) { .input:hover { border-color: var(--ink-3); } }
+.input:focus { outline: none; border-color: var(--pink); }
+.input::placeholder { color: var(--ink-3); opacity: 1; }
+input[type='checkbox'] { accent-color: var(--ink); }
+.input[aria-invalid='true'] { border-color: var(--bad); }
+textarea.input { resize: vertical; min-height: 96px; }
+
+.error { color: var(--bad); font-weight: 700; font-size: var(--t-14); display: flex; gap: var(--s-2); align-items: baseline; }
+.field small.error { color: var(--bad); }
+.error::before { content: '!'; display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: var(--r-full); background: var(--bad); color: var(--paper); font-size: var(--t-12); flex: none; }
+
+/* The device: crayon hatching marks what is shielded, and nothing else */
+.hatch { background: repeating-linear-gradient(-55deg, var(--pink) 0 3px, transparent 3px 6px), var(--pink-soft); }
+
+/* Segmented control: the tabs and view toggles of Explore, the coin page and the buy box share one track. A switch animates nothing. */
+.seg { display: flex; gap: var(--s-1); background: var(--paper-3); padding: var(--s-1); border-radius: var(--r-md); }
+.seg > button {
+  min-height: 44px; padding: 0 var(--s-4); border: 0; background: transparent; border-radius: var(--r-sm); font-weight: 700; cursor: pointer; color: var(--ink-2);
+  transition: background-color var(--d-fn) var(--ease), box-shadow var(--d-fn) var(--ease), color var(--d-fn) var(--ease);
+}
+@media (hover: hover) { .seg > button:hover:not(.on) { color: var(--ink); box-shadow: inset 0 0 0 2px var(--line); } }
+.seg > button:active { box-shadow: inset 0 0 0 2px var(--ink-3); transition-duration: var(--d-press); }
+.seg > button.on { background: var(--paper-2); color: var(--ink); box-shadow: var(--sh-2); }
+
+.chip {
+  display: inline-flex; align-items: center; gap: var(--s-1);
+  padding: 2px var(--s-2); border-radius: var(--r-full);
+  font-size: var(--t-12); font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+  background: var(--paper-3); color: var(--ink-2); white-space: nowrap;
+}
+.chip.sim { background: transparent; box-shadow: inset 0 0 0 1.5px var(--ink-3); }
+
+.skel { background: var(--paper-3); border-radius: var(--r-sm); min-height: 1em; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+  /* every finite animation by name: the taped drawing's settle, the curve bar's first fill, a new trade row */
+  .taped, .curve .fill, .curve .capwrap, .trow.new, .row.new { animation: none !important; }
+}

@@ -1,0 +1,19 @@
+snarks-launchpad live check, 2026-10-06T23:15:46.030Z, https://test.snarks.fun/
+[PASS] API answers over HTTPS in devnet mode — x-pad-mode=devnet
+test wallet E4DtQ74mX6T2w1FaMUNFPyRQiyov9NTw3433tdFF8NjT (fresh, funded only by the site's faucet button)
+[PASS] site loads and the banner says DEVNET MODE
+[PASS] home lists $SNARKS
+[PASS] wallet connects
+faucet status (GET /api/treasury): {"available":true,"fillsLeft":137}
+[PASS] faucet button shows for a connected wallet
+[PASS] faucet sends test SOL and ZEC — 0.02 SOL and 5 ZEC
+[PASS] the page shows what the faucet sent
+[PASS] chain shows the faucet SOL and 5 test ZEC — 0.02 SOL; stand-in ZEC mint FD8j798WSyoJH6CkpdDTVAJoDLq6buVLL9fW4ovosRid
+[PASS] buy quote shows
+[PASS] buy sent from the page
+[PASS] buy confirmed on chain without error — sig 2RwEA9i42SmurFvkvFv8i6aqX1xXmVbLveDDKVaeEM1iXFqu8bgVwbH8vmGBSWaeHWYMzR7xzcxZgEiBNp8cXZqi
+[PASS] wallet received $BLUES and paid 0.5 test ZEC — token +75030614202255, ZEC -50000000 zats
+[PASS] the API lists the buy in recentTrades
+[PASS] no page errors
+
+14/14 checks passed: PASS

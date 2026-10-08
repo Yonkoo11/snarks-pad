@@ -1,0 +1,52 @@
+__HOSTS__ {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer"
+		# The site asks a wallet to sign; no other page may frame it (clickjacking).
+		X-Frame-Options "DENY"
+		Content-Security-Policy "frame-ancestors 'none'"
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
+		-Server
+	}
+
+	# The engine API lives only on 127.0.0.1:__PORT__ (PAD_API_HOST); Caddy is its one public door.
+	handle /api/* {
+		reverse_proxy 127.0.0.1:__PORT__
+	}
+
+	# Coin images and metadata JSON: static files the instance's API writes under __PUBLIC__ (contract v2.7). An image is named by the hash
+	# of its bytes and never changes, so it is cached for a year; a metadata file is read by wallets and explorers and is cached for a minute.
+	# Anyone may fetch them from any page (the picture and the JSON are public by design), and nothing here is ever interpreted as a page.
+	handle /i/* {
+		header Cache-Control "public, max-age=31536000, immutable"
+		header Access-Control-Allow-Origin "*"
+		header X-Content-Type-Options "nosniff"
+		file_server {
+			root __PUBLIC__
+		}
+	}
+	handle /m/* {
+		header Cache-Control "public, max-age=60"
+		header Access-Control-Allow-Origin "*"
+		header X-Content-Type-Options "nosniff"
+		file_server {
+			root __PUBLIC__
+		}
+	}
+
+	# The static site (hash router: no history fallback needed).
+	handle {
+		root * __WEB__
+		file_server
+	}
+
+	log {
+		output file /var/log/caddy/__LOGNAME__-access.log {
+			roll_size 20MiB
+			roll_keep 10
+		}
+	}
+}

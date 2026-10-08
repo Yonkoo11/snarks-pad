@@ -1,0 +1,27 @@
+[Unit]
+Description=__INSTANCE__ keeper (epochs, holder samples, payouts)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=__INSTANCE__
+Group=__INSTANCE__
+UMask=0007
+WorkingDirectory=/opt/__INSTANCE__/repo/engine
+EnvironmentFile=/etc/__INSTANCE__/engine.env
+EnvironmentFile=-/etc/__INSTANCE__/secrets.env
+ExecStart=/opt/snarks/bin/bun scripts/keeper.ts
+Restart=always
+RestartSec=5
+# SIGTERM is a graceful stop: the epoch in flight halts at its next safe point and the next start resumes it.
+TimeoutStopSec=120
+KillSignal=SIGTERM
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/__INSTANCE__ /etc/__INSTANCE__/keys
+MemoryMax=2G
+
+[Install]
+WantedBy=multi-user.target
