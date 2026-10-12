@@ -79,7 +79,7 @@ describe("audit S6-A1: a measured claim with no harvest row keeps the draft open
     expect(db.listMeasuredClaimsWithoutHarvest(draftId)).toEqual([]);
     const harvest = db.listEpochCoinHarvests(draftId).find((h) => h.mint === coin.mint);
     expect(harvest?.soldForZatsQuote).toBe("1000");
-    expect(db.combineEpochCoinShares(draftId).get(holder)).toBe(750n); // 75% to the holder, the team keeps 25%
+    expect(db.combineEpochCoinShares(draftId).get(holder)).toBe(125n); // 12.5% to the holder, the team keeps 87.5%
   });
 
   test("a chain-down error is not swallowed per coin: the run fails, the scheduler backs off, the draft stays", async () => {

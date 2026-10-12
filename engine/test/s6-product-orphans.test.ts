@@ -71,7 +71,7 @@ describe("no claim without an eligible holder", () => {
     const e2 = draft(iso(t1 + 3 * 3_600_000));
     await claimRemainingCoins(e2, deps);
     expect(claims).toBe(1);
-    expect(db.combineEpochCoinShares(e2).get(holder)).toBe(750n); // the whole 1,000 claim: the team's quarter, the holder the rest
+    expect(db.combineEpochCoinShares(e2).get(holder)).toBe(125n); // the whole 1,000 claim: the team 87.5% (policy 2026-10-12), the holder the rest
   });
 
   test("a coin with an eligible holder is claimed as before; a draft that skipped nothing and claimed nothing does not move the window", async () => {

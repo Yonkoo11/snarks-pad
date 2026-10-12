@@ -13,7 +13,7 @@ export interface Coin {
   feeBps: number // the coin's fee TIER: the pool trading fee ON THE BONDING CURVE, flat, fixed for life by the DBC config it launched on (100, 200, 400, 600 or 1000 = 1% to 10%), paid in ZEC on every buy and sell. After graduation the DAMM v2 pool charges postGraduationFeeBps rising by up to a fifth in volatile trading (feeLabel in format.ts)
   // Of the whole trading fee (10000 bps), for THIS coin's tier (owner policy 2026-10-02). Meteora keeps 2000 at every tier.
   claimedShareBps: number // what the pad claims from Meteora's pool: 8000 on the 1% tier, less the creator's part on the others
-  holderShareBps: number // what holders receive: 75% of the claimed part (6000 on the 1% tier = 0.60% of volume)
+  holderShareBps: number // what holders receive: 12.5% of the claimed part (1000 on the 1% tier = 0.10% of volume)
   teamShareBps: number // the team: 25% of the claimed part, which first pays the cost of delivering shielded rewards
   creatorShareBps: number // the creator's own part, claimed by the creator's wallet; 0 on the 1% tier
   postGraduationFeeBps: number // the fee of the graduated DAMM v2 pool before its dynamic part: equal to feeBps except the 10% tier, which drops to 600
@@ -123,6 +123,17 @@ export interface Pot {
   minClaimZats: string // the keeper claims a coin only above this
   nextPayoutAt: string | null
   lastPayout: { epochId: string; at: string; totalZats: string; shieldedZats: string } | null
+  asOf: string
+}
+
+/** GET /pot: every listed coin's pot added up, what is waiting for holders across the pad. `unread` coins could not be read this time and are not in the sum. */
+export interface PadPot {
+  accruedZats: string
+  holdersZats: string
+  teamZats: string
+  coins: number
+  unread: number
+  nextPayoutAt: string | null
   asOf: string
 }
 
@@ -248,6 +259,11 @@ export interface Treasury {
   covered: boolean
   lastEpochAt: string | null
   nextEpochAt: string | null
+  // The keeper's last due run, paying or not: a round that found nothing to claim writes no epoch but still ends its cycle (2026-10-12).
+  lastRunAt: string | null
+  lastRunFoundNothing: boolean
+  // How often rounds run and how often the shielded share goes out, as the keeper is configured (48 h and 7 days by default).
+  cadence: { roundEveryMs: number; shieldedEveryMs: number }
   zcashNetwork: 'regtest' | 'test' | 'main'
   // The kill switch is on: the keeper is not claiming or paying. Nothing is lost by a pause.
   paused: boolean

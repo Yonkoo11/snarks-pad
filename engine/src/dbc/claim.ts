@@ -314,7 +314,10 @@ export async function claimCoinFees(epochId: string, coin: CoinRow, claimer: Fee
   steps.push({ kind: "surplus", build: surplusBuilder(coin, claimer), due: () => hasPartnerSurplus(coin) });
   let total = 0n;
   for (const s of steps) {
-    if (!db.getClaimProgress(epochId, coin.mint, s.kind) && !(await s.due())) continue;
+    const started = db.getClaimProgress(epochId, coin.mint, s.kind);
+    // A held kind stays in the pool this round (config.epoch.heldClaimKinds), unless its claim already started.
+    if (!started && config.epoch.heldClaimKinds.has(s.kind)) continue;
+    if (!started && !(await s.due())) continue;
     total += await runClaim(epochId, coin.mint, s.kind, s.build, claimer);
   }
   return total;

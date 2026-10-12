@@ -3,7 +3,7 @@
 // and on its DAMM v2 pool after (venue, docs/API.md v2.0; the trading
 // fee on both is paid in ZEC. Quote numbers come straight off each SDK's own
 // curve computation, the same numbers baked into the instruction's minimum out.
-import { PublicKey, type TransactionInstruction } from "@solana/web3.js";
+import { PublicKey, type TokenBalance, type TransactionInstruction } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync, unpackAccount } from "@solana/spl-token";
 import { getCurrentPoint, SwapMode as DbcSwapMode, type PoolConfig } from "@meteora-ag/dynamic-bonding-curve-sdk";
 import { SwapMode as DammSwapMode, getCurrentPoint as getDammCurrentPoint, getTokenProgram } from "@meteora-ag/cp-amm-sdk";
@@ -11,6 +11,7 @@ import BN from "bn.js";
 import { config } from "../config";
 import { getConnection, getCpAmm, getDbcClient, toUnsignedV0Base64, withPriorityFee, waitForSignature } from "../solana";
 import * as db from "../db";
+import { poolVaults, type PoolVaults } from "./poolVaults";
 
 export type TradeSide = "buy" | "sell";
 
@@ -163,7 +164,7 @@ export function recordTrade(sig: string, p: TradeParams, quote: TradeQuote): voi
  * the signed tx). Everything recorded is read back from the chain: the tx
  * must have confirmed without error and touched this coin's pool (the DBC
  * curve or, after migration, its DAMM v2 pool); side and amounts come from the
- * fee payer's pre/post token balances. Idempotent per sig.
+ * pool's own vault balances before and after (tradeFromTx). Idempotent per sig.
  */
 export async function confirmTrade(sig: string, mint: string): Promise<db.TradeRow> {
   const coin = db.getCoin(mint);
@@ -174,37 +175,80 @@ export async function confirmTrade(sig: string, mint: string): Promise<db.TradeR
   return recordTradeFromTx(sig, mint);
 }
 
+/** What the reader needs of a confirmed transaction: every account it named (static keys, then the lookup-table ones), its token balance lists and its block time. */
+export interface TradeTx {
+  keys: string[];
+  preTokenBalances: TokenBalance[];
+  postTokenBalances: TokenBalance[];
+  /** Unix seconds; null when the node does not know. */
+  blockTime: number | null;
+}
+
+/** The token balance (base units) of the account at `index` in a balance list; null when the list has no entry for it. */
+const balanceAt = (list: TokenBalance[], index: number): bigint | null => {
+  const b = list.find((x) => x.accountIndex === index);
+  return b ? BigInt(b.uiTokenAmount.amount) : null;
+};
+
+/**
+ * The trade a confirmed transaction made in `coin`, read from the pool it touched: a buy takes ZEC into the pool's quote vault and sends
+ * tokens out of its base vault, a sell the reverse. Reading the vaults instead of the fee payer's balances records a trade that a router,
+ * a terminal or another wallet sent for the payer (the payer's own balances move by a different amount or not at all), and refuses a
+ * transaction that moved both vaults the same way (adding or removing liquidity by hand), which the payer's balances cannot tell from a sell.
+ * `amountZec` is what the pool received (a buy, fee included) or paid out (a sell, fee already taken), the same meaning as before.
+ * The launch transaction creates the curve's vaults, so they have no balance before it: that one transaction (and only one with no vault
+ * entry before) falls back to the fee payer's own balance change, which is the launcher's first buy. The pool's address must appear in the
+ * transaction's accounts, else not_a_trade; `wallet` is the fee payer, who is the trader for every wallet and terminal seen so far.
+ */
+export function tradeFromTx(coin: Pick<db.CoinRow, "mint" | "poolId" | "dammPool">, sig: string, tx: TradeTx, vaults: PoolVaults): db.TradeRow {
+  const { keys } = tx;
+  if (!(coin.poolId && keys.includes(coin.poolId)) && !(coin.dammPool && keys.includes(coin.dammPool))) throw new TradeError("not_a_trade");
+  const payer = keys[0]!;
+  const at = new Date((tx.blockTime ?? Math.floor(Date.now() / 1000)) * 1000).toISOString();
+  const row = (side: TradeSide, dToken: bigint, dZec: bigint): db.TradeRow => ({
+    sig, mint: coin.mint, side, wallet: payer, amountToken: (dToken < 0n ? -dToken : dToken).toString(), amountZec: (dZec < 0n ? -dZec : dZec).toString(), at,
+  });
+
+  const baseIdx = keys.indexOf(vaults.base);
+  const quoteIdx = keys.indexOf(vaults.quote);
+  const basePre = baseIdx === -1 ? null : balanceAt(tx.preTokenBalances, baseIdx);
+  if (baseIdx !== -1 && quoteIdx !== -1 && basePre !== null) {
+    const dBase = (balanceAt(tx.postTokenBalances, baseIdx) ?? 0n) - basePre;
+    const dQuote = (balanceAt(tx.postTokenBalances, quoteIdx) ?? 0n) - (balanceAt(tx.preTokenBalances, quoteIdx) ?? 0n);
+    if (dBase < 0n && dQuote > 0n) return row("buy", dBase, dQuote);
+    if (dBase > 0n && dQuote < 0n) return row("sell", dBase, dQuote);
+    throw new TradeError("not_a_trade");
+  }
+
+  // The launch transaction: the vaults did not exist before it, so the launcher's own balances say what the first buy was.
+  const quoteMint = config.solana.dbc.quoteMint.toBase58();
+  const delta = (m: string): bigint => {
+    const sum = (list: TokenBalance[]) => list.filter((b) => b.mint === m && b.owner === payer).reduce((a, b) => a + BigInt(b.uiTokenAmount.amount), 0n);
+    return sum(tx.postTokenBalances) - sum(tx.preTokenBalances);
+  };
+  const dToken = delta(coin.mint);
+  if (dToken === 0n) throw new TradeError("not_a_trade");
+  return row(dToken > 0n ? "buy" : "sell", dToken, delta(quoteMint));
+}
+
 /**
  * Records the trade a confirmed transaction made in this coin, read from the transaction once with no wait (the caller saw it confirmed): the confirm of a
- * trade, and a launch's own first buy (api.ts, audit S5-02). Throws not_a_trade when the transaction moved none of the coin for its fee payer.
+ * trade, a launch's own first buy (api.ts, audit S5-02) and the trade sweep (dbc/tradeIndex.ts). Throws not_a_trade when the transaction is not a swap
+ * in the coin's pool (tradeFromTx). A pool whose vaults cannot be read throws, and the trade is read again later.
  */
 export async function recordTradeFromTx(sig: string, mint: string): Promise<db.TradeRow> {
   const coin = db.getCoin(mint);
   if (!coin || coin.status !== "launched" || !coin.poolId) throw new TradeError("unknown_mint");
-  const tx = await getConnection().getTransaction(sig, { commitment: "confirmed", maxSupportedTransactionVersion: 0 });
+  // maxSupportedTransactionVersion 1: terminals send version-1 transactions (seen on mainnet 2026-10-12, 260 refused reads in 12 min); the SDK reads v0 and v1.
+  const tx = await getConnection().getTransaction(sig, { commitment: "confirmed", maxSupportedTransactionVersion: 1 });
   if (!tx || !tx.meta) throw new TradeError("tx_not_found");
-  const keys = tx.transaction.message.getAccountKeys({ accountKeysFromLookups: tx.meta.loadedAddresses }).staticAccountKeys.map((k) => k.toBase58());
-  if (!keys.includes(coin.poolId) && !(coin.dammPool && keys.includes(coin.dammPool))) throw new TradeError("not_a_trade");
-  const payer = keys[0]!;
-
-  const quoteMint = config.solana.dbc.quoteMint.toBase58();
-  const delta = (m: string): bigint => {
-    const sum = (list: typeof tx.meta.preTokenBalances) =>
-      (list ?? []).filter((b) => b.mint === m && b.owner === payer).reduce((a, b) => a + BigInt(b.uiTokenAmount.amount), 0n);
-    return sum(tx.meta!.postTokenBalances) - sum(tx.meta!.preTokenBalances);
-  };
-  const dToken = delta(mint);
-  const dZec = delta(quoteMint);
-  if (dToken === 0n) throw new TradeError("not_a_trade");
-  const row: db.TradeRow = {
-    sig,
-    mint,
-    side: dToken > 0n ? "buy" : "sell",
-    wallet: payer,
-    amountToken: (dToken < 0n ? -dToken : dToken).toString(),
-    amountZec: (dZec < 0n ? -dZec : dZec).toString(),
-    at: new Date((tx.blockTime ?? Math.floor(Date.now() / 1000)) * 1000).toISOString(),
-  };
+  const accountKeys = tx.transaction.message.getAccountKeys({ accountKeysFromLookups: tx.meta.loadedAddresses });
+  const keys: string[] = [];
+  for (let i = 0; i < accountKeys.length; i++) keys.push(accountKeys.get(i)!.toBase58());
+  const onCurve = keys.includes(coin.poolId);
+  if (!onCurve && !(coin.dammPool && keys.includes(coin.dammPool))) throw new TradeError("not_a_trade");
+  const vaults = await poolVaults(onCurve ? { id: coin.poolId, kind: "curve", mint } : { id: coin.dammPool!, kind: "pool", mint });
+  const row = tradeFromTx(coin, sig, { keys, preTokenBalances: tx.meta.preTokenBalances ?? [], postTokenBalances: tx.meta.postTokenBalances ?? [], blockTime: tx.blockTime ?? null }, vaults);
   db.insertTrade(row);
   return row;
 }

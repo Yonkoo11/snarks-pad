@@ -16,6 +16,7 @@ The engine serves one JSON API on `/api`. Read routes need no key. Write routes 
 | `GET /api/epochs/:id` | One round. `GET /api/epochs/:id/receipt` returns a wallet's own payout line against a signed message. |
 | `GET /api/treasury` | The pad's public ledger: the last and next round times, whether payouts are paused, the published fee policy, the team's running totals, and fees held for coins with no eligible holder with their release dates. |
 | `GET /api/stats` | Pad-wide totals for the explore page. |
+| `GET /api/pot` | The pots of the coins the board lists, added up: `accruedZats`, `holdersZats`, `teamZats`, `coins` read, `unread`, `nextPayoutAt`, `asOf`. `all=1` counts every coin. 503 when no coin could be read. |
 | `GET /api/optin/status` | Whether a wallet is opted in to shielded delivery, shown only against a signed message from that wallet. |
 
 ## Write routes

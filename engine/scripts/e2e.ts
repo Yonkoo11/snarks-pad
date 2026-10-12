@@ -6,7 +6,7 @@
 // claimer (the keeper proposes, the run stops and waits, the "owner" approves
 // after reading the decoded receiver, the next run executes and pays)
 // -> epoch 5: a coin on the 4% creator-fee tier launched through the API builder: the pad claims only the partner part and splits it
-// 75/25 as at every tier, and the creator claims their own share by their own signature.
+// 12.5/87.5 as at every tier, and the creator claims their own share by their own signature.
 // Last, the API (a real server process) answers every contract v2.6 route (quote, pot, what is fixed, holders, trades and the live stream,
 // rewards and the memo check, epochs.csv) and each answer is checked against the chain and the database (scripts/e2e-trader.ts).
 // Every epoch asserts money moved exactly as planned on both chains, and that
@@ -445,7 +445,7 @@ async function main(): Promise<void> {
       await Bun.sleep(500);
     }
     const apiTreasury = (await (await fetch(`http://localhost:${config.api.port}/api/treasury`)).json()) as { policy: Record<string, number>; team: Record<string, string | null> };
-    checks.push({ label: "api: GET /treasury publishes the policy (holders 75%, team 25% of what is claimed) and the team ledger", pass: apiTreasury.policy.holdersShareOfClaimedBps === 7500 && apiTreasury.policy.teamShareOfClaimedBps === 2500 && apiTreasury.team.wallet === teamWallet.toBase58() && apiTreasury.team.heldInKeeperZats === "0" && BigInt(apiTreasury.team.grossZats!) === BigInt(apiTreasury.team.sweptZats!) + BigInt(apiTreasury.team.deliveryCostZats!) + BigInt(apiTreasury.team.nativeZats!), detail: JSON.stringify(apiTreasury.team) }); // gross = swept to the team wallet + delivery cost + native ZEC left in the treasury, to the zat
+    checks.push({ label: "api: GET /treasury publishes the policy (holders 12.5%, team 87.5% of what is claimed) and the team ledger", pass: apiTreasury.policy.holdersShareOfClaimedBps === 1250 && apiTreasury.policy.teamShareOfClaimedBps === 8750 && apiTreasury.team.wallet === teamWallet.toBase58() && apiTreasury.team.heldInKeeperZats === "0" && BigInt(apiTreasury.team.grossZats!) === BigInt(apiTreasury.team.sweptZats!) + BigInt(apiTreasury.team.deliveryCostZats!) + BigInt(apiTreasury.team.nativeZats!), detail: JSON.stringify(apiTreasury.team) }); // gross = swept to the team wallet + delivery cost + native ZEC left in the treasury, to the zat
     const apiEpochs = ((await (await fetch(`http://localhost:${config.api.port}/api/epochs`)).json()) as { epochs: { id: string; split: Record<string, string | null>; snapshot: { sha256: string; memoSig: string | null } | null }[] }).epochs;
     const apiE1 = apiEpochs.find((e) => e.id === e1.id)!;
     checks.push({ label: "api: GET /epochs shows holders, team and delivery cost per epoch, and the snapshot hash with its memo signature", pass: BigInt(apiE1.split.holdersZats!) + BigInt(apiE1.split.teamZats!) === BigInt(e1.harvestedZats) && apiE1.split.deliveryCostZats !== null && apiE1.snapshot?.memoSig === db.getEpochSnapshot(e1.id)!.memoSig, detail: JSON.stringify(apiE1.split) });

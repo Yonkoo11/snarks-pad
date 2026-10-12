@@ -1,5 +1,6 @@
-// dbc/cosign.ts (audit S5-01): the engine adds the coin's signature only to the launch it built, after the creator's wallet signed it. A wallet may add a
-// priority fee and Phantom's Lighthouse checks; nothing else may change.
+// dbc/cosign.ts (audit S5-01): the engine adds the coin's signature only to the launch it built, after the creator's wallet signed it. A wallet may add
+// instructions that name no key the pad signs with (a priority fee, Phantom's Lighthouse checks, its own guards) and may replace a built Compute Budget
+// instruction; nothing else may change.
 import { describe, expect, test } from "bun:test";
 import bs58 from "bs58";
 import nacl from "tweetnacl";
@@ -52,17 +53,83 @@ describe("the engine signs only the launch it built, after the wallet", () => {
     expect(allSigned(out)).toBe(true);
   });
 
-  test("an added transfer, a changed instruction, or a Lighthouse instruction naming the coin is refused", () => {
+  test("an added transfer (a new signer), a changed or dropped instruction, or any added instruction naming the coin is refused", () => {
     const steal = SystemProgram.transfer({ fromPubkey: Keypair.generate().publicKey, toPubkey: Keypair.generate().publicKey, lamports: 1 });
+    const other = Keypair.generate().publicKey;
     for (const change of [
       (s: ReturnType<typeof setup>) => [...s.ixs, steal],
       (s: ReturnType<typeof setup>) => [s.ixs[0]!, new TransactionInstruction({ ...s.ixs[1]!, data: Buffer.from("sell") })],
       (s: ReturnType<typeof setup>) => [s.ixs[0]!],
       (s: ReturnType<typeof setup>) => [...s.ixs, lighthouse([s.coin.publicKey])],
+      (s: ReturnType<typeof setup>) => [...s.ixs, new TransactionInstruction({ programId: other, keys: [{ pubkey: s.coin.publicKey, isSigner: false, isWritable: true }], data: Buffer.from([9]) })],
     ]) {
       const s = setup();
       expect(() => cosignLaunch(s.mint, s.walletSigned(change(s)))).toThrow("tx_mismatch");
     }
+  });
+
+  test("an added instruction from any program naming neither the coin nor the pad's signer is allowed (a wallet's own guard or memo)", () => {
+    const s = setup();
+    const guard = new TransactionInstruction({ programId: Keypair.generate().publicKey, keys: [{ pubkey: s.pool, isSigner: false, isWritable: true }, { pubkey: s.creator.publicKey, isSigner: false, isWritable: false }], data: Buffer.from([7, 7, 7, 7]) });
+    expect(allSigned(cosignLaunch(s.mint, s.walletSigned([guard, ...s.ixs, guard])))).toBe(true);
+  });
+
+  test("a built Compute Budget instruction is optional: the wallet may drop it or set its own; the rest must stay", () => {
+    const creator = Keypair.generate();
+    const coin = Keypair.generate();
+    const hash = blockhash();
+    const create = new TransactionInstruction({ programId: PROGRAM, keys: [{ pubkey: creator.publicKey, isSigner: true, isWritable: true }, { pubkey: coin.publicKey, isSigner: true, isWritable: true }], data: Buffer.from("create") });
+    const builtIxs = [ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }), create];
+    const signed = (instructions: TransactionInstruction[]) => {
+      const msg = new TransactionMessage({ payerKey: creator.publicKey, recentBlockhash: hash, instructions }).compileToV0Message();
+      const tx = new VersionedTransaction(msg);
+      tx.signatures[0] = nacl.sign.detached(msg.serialize(), creator.secretKey);
+      return Buffer.from(tx.serialize()).toString("base64");
+    };
+    const hold = () => holdLaunchKey(coin, new TransactionMessage({ payerKey: creator.publicKey, recentBlockhash: hash, instructions: builtIxs }).compileToV0Message(), creator.publicKey);
+    hold();
+    expect(allSigned(cosignLaunch(coin.publicKey.toBase58(), signed([create])))).toBe(true);
+    hold();
+    expect(allSigned(cosignLaunch(coin.publicKey.toBase58(), signed([ComputeBudgetProgram.setComputeUnitLimit({ units: 250_000 }), ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 5 }), create])))).toBe(true);
+    hold();
+    expect(() => cosignLaunch(coin.publicKey.toBase58(), signed([ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 })]))).toThrow("tx_mismatch");
+  });
+
+  test("a refusal says what the wallet added or changed, in the log's shape", () => {
+    const s = setup();
+    // An unknown program's instruction naming the coin, with no new signer (a new signer is refused earlier, as "signers").
+    const other = Keypair.generate().publicKey;
+    const added = new TransactionInstruction({ programId: other, keys: [{ pubkey: s.coin.publicKey, isSigner: false, isWritable: true }], data: Buffer.from([7, 7, 7, 7]) });
+    let detail = "";
+    try {
+      cosignLaunch(s.mint, s.walletSigned([...s.ixs, added]));
+    } catch (e) {
+      detail = (e as { detail: string }).detail;
+    }
+    const prog = PROGRAM.toBase58().slice(0, 8);
+    expect(detail).toBe(`instructions: got =${prog}:3k/6b! =${prog}:1k/3b ?${other.toBase58().slice(0, 8)}:1k/4b!; built ${prog}:3k/6b! ${prog}:1k/3b; found 2 of 2`);
+  });
+
+  test("an added instruction naming the pad's launch signer (a read-only signer after the coin) is refused; one naming only the creator is not", () => {
+    const creator = Keypair.generate();
+    const coin = Keypair.generate();
+    const pad = Keypair.generate();
+    const hash = blockhash();
+    const ixs = [
+      new TransactionInstruction({ programId: PROGRAM, keys: [{ pubkey: creator.publicKey, isSigner: true, isWritable: true }, { pubkey: coin.publicKey, isSigner: true, isWritable: true }], data: Buffer.from("create") }),
+      new TransactionInstruction({ programId: PROGRAM, keys: [{ pubkey: pad.publicKey, isSigner: true, isWritable: false }], data: Buffer.from("memo") }),
+    ];
+    const signed = (instructions: TransactionInstruction[]) => {
+      const msg = new TransactionMessage({ payerKey: creator.publicKey, recentBlockhash: hash, instructions }).compileToV0Message();
+      const tx = new VersionedTransaction(msg);
+      tx.signatures[0] = nacl.sign.detached(msg.serialize(), creator.secretKey);
+      return Buffer.from(tx.serialize()).toString("base64");
+    };
+    const hold = () => holdLaunchKey(coin, new TransactionMessage({ payerKey: creator.publicKey, recentBlockhash: hash, instructions: ixs }).compileToV0Message(), creator.publicKey);
+    hold();
+    expect(() => cosignLaunch(coin.publicKey.toBase58(), signed([...ixs, lighthouse([pad.publicKey])]))).toThrow("tx_mismatch");
+    hold();
+    expect(() => cosignLaunch(coin.publicKey.toBase58(), signed([lighthouse([creator.publicKey]), ...ixs]))).not.toThrow();
   });
 
   test("not signed by the creator, another fee payer, or another blockhash is refused", () => {

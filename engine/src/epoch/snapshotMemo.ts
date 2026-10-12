@@ -1,15 +1,15 @@
 // Writes an epoch snapshot's sha256 into a Solana memo transaction signed by the keeper, so the file the API serves
 // can be checked against the chain. Same pattern as every payout: sign, persist the signature and bytes, then
 // broadcast; a resume checks that signature's chain status and resends the same bytes, never a second memo.
-import { PublicKey, Transaction, TransactionInstruction } from "@solana/web3.js";
+import { type PublicKey, Transaction, TransactionInstruction } from "@solana/web3.js";
 import bs58 from "bs58";
 import * as db from "../db";
 import { loadKeeperKeypair } from "../keeper";
 import { broadcastAndConfirm, getConnection, resolvePendingTx } from "../solana";
 import { snapshotMemoText } from "./snapshotFile";
 
-/** SPL Memo v2 (same id on every cluster; the local validator ships it too). */
-export const MEMO_PROGRAM_ID = new PublicKey("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr");
+import { MEMO_PROGRAM_ID } from "../memoProgram";
+export { MEMO_PROGRAM_ID };
 
 export function buildMemoTransaction(memo: string, signer: PublicKey): Transaction {
   return new Transaction().add(new TransactionInstruction({

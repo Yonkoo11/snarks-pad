@@ -86,7 +86,7 @@
   <div class="top">
     <div class="intro">
       <h1 class="display">Get your rewards <em>shielded.</em></h1>
-      <p class="lede measure muted">By default your rewards arrive as Solana ZEC. Add your Zcash address and they arrive as native ZEC in your own shielded wallet instead, once a week.</p>
+      <p class="lede measure muted">By default your rewards arrive as Solana ZEC every 48 hours. Add your Zcash address and they arrive as native ZEC in your own shielded wallet instead, in one batch about once a week.</p>
     </div>
     <div class="draw"><Taped size="sm" /></div>
   </div>
@@ -166,7 +166,7 @@
         <h2 class="h3" id="covers-h">What this covers</h2>
         <ul>
           <li><strong>Only coins launched on SNARKS pad.</strong></li>
-          <li><strong>Paid once a week</strong> in one shielded Zcash transaction. Your share goes out once it reaches <span class="mono">0.001 ZEC</span>; nothing is lost while it waits. Every payout is on the <a href="#/treasury">Payouts page</a>.</li>
+          <li><strong>Rounds run every 48 hours; the shielded share goes out about once a week</strong> in one shielded Zcash transaction. Your share goes out once it reaches <span class="mono">0.001 ZEC</span>; nothing is lost while it waits. Every payout is on the <a href="#/treasury">Payouts page</a>.</li>
           <li><strong>Tested with Zodl 3.8.0 or newer.</strong> Other Zcash wallets should work if they show a unified address starting <span class="mono">u1</span>.</li>
           <li><strong>Stop any time</strong> with one more signature on this page. Your rewards then go back to your Solana wallet.</li>
         </ul>

@@ -10,14 +10,14 @@
 // `amount` is the trade's gross quote amount: the buyer's input on a buy, the curve's output before the fee on a sell
 // (fees are collected in the quote token on both sides, CollectFeeMode::QuoteToken). With a referral, 20% of `protocol`
 // goes to the referrer instead of Meteora (HOST_FEE_PERCENT); that never changes `creator` or `partner`.
-// The pad's own 75/25 holders/team policy then applies to what the keeper claims (`partner`), in epoch/split.ts.
+// The pad's own 12.5/87.5 holders/team policy then applies to what the keeper claims (`partner`), in epoch/split.ts.
 import { feeSplitBps, splitClaim } from "../epoch/split";
 import { reviewedTier, windowScheduleOf } from "./reviewed";
 
 const FEE_DENOMINATOR = 1_000_000_000n;
 const PROTOCOL_PERCENT = 20n;
-/** The pad's published policy: of what the keeper claims, holders get 75% and the team 25% (config.epoch.team.shareBps default). */
-export const POLICY_TEAM_SHARE_BPS = 2500;
+/** The pad's published policy (2026-10-12): of what the keeper claims, holders get 12.5% and the team 87.5% (config.epoch.team.shareBps default). */
+export const POLICY_TEAM_SHARE_BPS = 8750;
 
 export interface SwapFeeSplit {
   fee: bigint;

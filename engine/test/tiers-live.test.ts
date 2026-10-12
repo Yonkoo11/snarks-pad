@@ -5,7 +5,7 @@
 //  - what the program accrues for Meteora, the creator and the pad on real buys and sells equals src/dbc/tiers.ts to the zat
 //    (that is the check that creator_trading_fee_percentage > 0 behaves as the source says: research Unverified item 1);
 //  - the creator claims their share with their own signature; nobody else can, through our API or straight at the program;
-//  - the pad's claim for a tier coin is exactly the partner part, and the 75/25 policy is applied to that.
+//  - the pad's claim for a tier coin is exactly the partner part, and the 12.5/87.5 policy is applied to that.
 import { afterAll, describe, expect, test } from "bun:test";
 import { Keypair, PublicKey, VersionedTransaction, sendAndConfirmTransaction } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID, getAccount, getAssociatedTokenAddressSync } from "@solana/spl-token";
@@ -161,7 +161,7 @@ describe.if(live)("fee tiers on the real DBC program (local validator, mainnet b
     expect((await poolFees(coin.poolId!)).creator).toBe(0n);
     await expect(buildCreatorClaimTx(coin.mint, creator.publicKey.toBase58())).rejects.toMatchObject({ code: "nothing_to_claim" });
 
-    // 5) the pad claims exactly the partner part; holders/team 75/25 of THAT, whatever the tier
+    // 5) the pad claims exactly the partner part; holders/team 12.5/87.5 of THAT, whatever the tier
     const epoch = `epoch-tier-${crypto.randomUUID()}`;
     const claimed = await claimCoinFees(epoch, coin, loadFeeClaimer());
     expect(claimed).toBe(totals.partner);

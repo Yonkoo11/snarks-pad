@@ -103,7 +103,7 @@ describe.if(await validatorUp())("a sniper that buys before the claim-time sampl
     return { mint, epochId, run, claimedCoins, cleanup };
   }
 
-  // Owner policy 2026-10-02: the team keeps 25% of each claim, so holders split 75% of `claimed`.
+  // Owner policy 2026-10-12: the team keeps 87.5% of each claim, so holders split 12.5% of `claimed`.
   test("the sniper holds only at claim time: the honest holder takes the whole holders' share of the claim", async () => {
     const honest = w();
     const sniper = w();
@@ -115,7 +115,7 @@ describe.if(await validatorUp())("a sniper that buys before the claim-time sampl
     (config.epoch.snapshots as { minWindowSamples: number }).minWindowSamples = 3;
     const shares = await s.run();
     expect(shares.get(sniper) ?? 0n).toBe(0n);
-    expect(shares.get(honest)).toBe(750_000n); // 1,000,000 claimed: team 250,000, holders 750,000
+    expect(shares.get(honest)).toBe(125_000n); // 1,000,000 claimed: team 875,000, holders 125,000
     s.cleanup();
   });
 
@@ -135,8 +135,8 @@ describe.if(await validatorUp())("a sniper that buys before the claim-time sampl
     (config.epoch.snapshots as { minWindowSamples: number }).minWindowSamples = 3;
     const shares = await s.run();
     expect(shares.get(sniper) ?? 0n).toBe(0n);
-    expect(shares.get(honest)).toBe(750n); // 1,400 claimed: team 350, holders 1,050; 100 of (100 + 40)
-    expect(shares.get(seller)).toBe(300n);
+    expect(shares.get(honest)).toBe(125n); // 1,400 claimed: team 1,225, holders 175; 100 of (100 + 40)
+    expect(shares.get(seller)).toBe(50n);
     s.cleanup();
   });
 
@@ -154,7 +154,7 @@ describe.if(await validatorUp())("a sniper that buys before the claim-time sampl
     const honest = w();
     const s = setup({ samples: [], now: [[honest, 100n]], claimed: 500n });
     (config.epoch.snapshots as { minWindowSamples: number }).minWindowSamples = 0;
-    expect((await s.run()).get(honest)).toBe(375n); // 500 claimed: team 125, holders 375
+    expect((await s.run()).get(honest)).toBe(63n); // 500 claimed: team 437, holders 63
     s.cleanup();
   });
 });

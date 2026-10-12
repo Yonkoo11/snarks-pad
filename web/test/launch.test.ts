@@ -88,30 +88,30 @@ describe('graduation and liquidity, in true words', () => {
 })
 
 // The five tiers as GET /tiers sends them (engine/src/dbc/tiers.ts): Meteora keeps 20% of the fee, the creator takes a share of the rest and the pad
-// splits what it claims 75/25 between holders and the team. engine/test/tiers-view.test.ts checks these against the engine itself.
+// splits what it claims 12.5/87.5 between holders and the team (policy of 2026-10-12). engine/test/tiers-view.test.ts checks these against the engine itself.
 const tier = (feeBps: number, creatorShareBps: number, holderShareBps: number, postGraduationFeeBps = feeBps): Tier => ({
   feeBps, available: true, postGraduationFeeBps, roundTripCostBps: 0, meteoraShareBps: 2000, creatorShareBps, holderShareBps,
   teamShareBps: 8000 - creatorShareBps - holderShareBps, claimedShareBps: 8000 - creatorShareBps,
 })
 
 describe('the facts of a tier', () => {
-  test('the 1% tier: holders get 60% of the fee, and the creator gets none', () => {
-    const f = factsOfTier(tier(100, 0, 6000))
+  test('the 1% tier: holders get 10% of the fee, and the creator gets none', () => {
+    const f = factsOfTier(tier(100, 0, 1000))
     expect(f.fee).toBe('1%')
-    expect(f.holdersShare).toBe('60%')
+    expect(f.holdersShare).toBe('10%')
     expect(f.creatorShare).toBeNull()
   })
 
-  test('the 4% tier: the creator has 60% of the fee, holders 15%', () => {
-    const f = factsOfTier(tier(400, 6000, 1500))
+  test('the 4% tier: the creator has 60% of the fee, holders 2.5%', () => {
+    const f = factsOfTier(tier(400, 6000, 250))
     expect(f.fee).toBe('4%')
     expect(f.creatorShare).toBe('60%')
-    expect(f.holdersShare).toBe('15%')
+    expect(f.holdersShare).toBe('2.5%')
   })
 
-  test('the 6% tier keeps its odd decimals (10.2% to holders, 66.4% to the creator); the 10% tier\'s pool still charges 6%, rising to about 7.2%, where the pages say it', () => {
-    const six = factsOfTier(tier(600, 6640, 1020))
-    expect(six.holdersShare).toBe('10.2%')
+  test('the 6% tier keeps its odd decimals (1.7% to holders, 66.4% to the creator); the 10% tier\'s pool still charges 6%, rising to about 7.2%, where the pages say it', () => {
+    const six = factsOfTier(tier(600, 6640, 170))
+    expect(six.holdersShare).toBe('1.7%')
     expect(six.creatorShare).toBe('66.4%')
     expect(feeLabel({ feeBps: 1000, stage: 'graduated', postGraduationFeeBps: 600 })).toBe('6%, rising to about 7.2% when trading is volatile')
   })

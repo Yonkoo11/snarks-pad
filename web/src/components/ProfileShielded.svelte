@@ -19,7 +19,7 @@
     <p class="muted small">One signature, no transaction, no fee. Your wallet shows the exact text first.</p>
     {#if shieldedView.error}<p class="error">{shieldedView.error}</p>{/if}
   {:else if status.optedIn}
-    <p>Shielded delivery is <strong>on</strong>. Your rewards go to <span class="mono">{status.zcashAddressMasked}</span> as native ZEC, once a week in one batch.</p>
+    <p>Shielded delivery is <strong>on</strong>. Your rewards go to <span class="mono">{status.zcashAddressMasked}</span> as native ZEC, in one batch about once a week (rounds run every 48 hours; shielded shares wait for the weekly batch).</p>
     {#if pending > 0n}
       <p class="muted">Waiting for the next weekly batch: <span class="mono">{zec(pending, 6)} ZEC</span>. A share is held until it reaches <span class="mono">0.001 ZEC</span>, then goes out in the next batch; nothing is lost while it waits.</p>
     {:else}

@@ -28,7 +28,7 @@ The owner's crayon drawing of a pink pizza-slice monster holding a ZEC card is t
 - Input: `.input` (48px min height, 16px text, `--paper` fill, 2px `--line` border, `--r-sm`), `aria-invalid` turns the border `--bad`; `.field` wraps label, input and help text.
 - Card: `.panel` (see Craft); hatched band: a 6px `.hatch` strip across the top of an opt-in panel.
 - Badge: `.chip` (12px caps, `--r-full`, `--paper-3`); `.chip.sim` outlined, for "simulated".
-- Components: Taped (the drawing, -2deg, two tape strips), CurveBar (solid `--ink-2` fill with a triangle cap), FeeSplit (Meteora 20% outline segment, holders 60% with Solana ZEC solid and shielded hatched, team 20% outline segment), HiddenList (verbatim contract list, hatched marks on hidden items), ModeBanner, PauseBanner.
+- Components: Taped (the drawing, -2deg, two tape strips), CurveBar (solid `--ink-2` fill with a triangle cap), FeeSplit (Meteora 20% outline segment, holders 10% with Solana ZEC solid and shielded hatched, team 70% outline segment; the live strip reads the API policy), HiddenList (verbatim contract list, hatched marks on hidden items), ModeBanner, PauseBanner.
 
 ## Motion
 - Curve: `--ease cubic-bezier(.16,1,.3,1)`, the only one.

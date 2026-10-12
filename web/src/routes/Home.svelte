@@ -1,9 +1,9 @@
 <script lang="ts">
   import { api, ApiError, onMode } from '../lib/api'
-  import type { Coin, Epoch, PadMode, Stats, Treasury } from '../lib/types'
+  import type { Coin, Epoch, PadMode, PadPot, Stats, Treasury } from '../lib/types'
   import type { CoinQuery, CoinSort, CoinStage } from '../lib/coins'
   import { filterCoins, sortCoins, pinFirst, serverSort, FEATURED } from '../lib/coins'
-  import { zec, pct, ago } from '../lib/format'
+  import { zec, pct, ago, usdOfZats } from '../lib/format'
   import type { FeedState } from '../lib/tape'
   import { zecUsd } from '../lib/usd.svelte'
   import { poll } from '../lib/poll'
@@ -63,6 +63,7 @@
   let stats = $state<Stats | null>(null)
   let treasury = $state<Treasury | null>(null)
   let epochs = $state<Epoch[] | null>(null)
+  let padPot = $state<PadPot | null>(null) // GET /pot (v2.10): what every listed coin has accrued for the next round; null = not known, shown as a dash
   let err = $state<string | null>(null)
   let pollErr = $state(false)
   let lastRead = $state<number | null>(null)
@@ -96,10 +97,11 @@
   // The market line's numbers: /stats when the engine has it (v2.5), else what /coins and /epochs allow; a failure here is a dash, never an error.
   // A v2.4 engine answers /stats with 404: it is asked once per page, not every 10 s.
   let statsGone = false
+  let padPotGone = false
   async function loadSide() {
     const readStats = statsGone ? Promise.resolve(null) : api.stats().catch((e) => { if (e instanceof ApiError && e.status === 404) statsGone = true; return null })
-    const [s, t, e] = await Promise.all([readStats, api.treasury().catch(() => null), api.epochs().catch(() => null)])
-    stats = s; treasury = t; epochs = e ? e.epochs : null
+    const [s, t, e, p] = await Promise.all([readStats, api.treasury().catch(() => null), api.epochs().catch(() => null), padPotGone ? Promise.resolve(null) : api.padPot().catch((e) => { if (e instanceof ApiError && e.status === 404) padPotGone = true; return null })])
+    stats = s; treasury = t; epochs = e ? e.epochs : null; padPot = p
   }
   $effect(() => { zecUsd.refresh() })
   // load() reads the controls before its first await, so a tab, sort, search or page change restarts the poll and reads at once.
@@ -121,6 +123,8 @@
   const paidShd = $derived(stats?.paidShieldedZats !== undefined ? BigInt(stats.paidShieldedZats) : epochs ? epochs.reduce((a, e) => a + BigInt(e.shielded.totalZats), 0n) : null)
   const paidAll = $derived(paidSol !== null && paidShd !== null ? paidSol + paidShd : null)
   const sideLoading = $derived(nCoins === null && paidAll === null && !failed && coins === null)
+  // the last round that paid anyone, as the Payouts page orders them (newest first); its wallet count is already public there
+  const lastPaid = $derived(epochs?.find((e) => e.shielded.count + e.solanaPayouts.count > 0) ?? null)
   // the tape tags a row "dev" when its wallet created that coin; the creators are read off the coins the page already holds
   const creators = $derived(Object.fromEntries([...(coins ?? []), ...(near ?? []), ...(fullList ?? [])].map((c) => [c.mint, c.creator])))
   // a board with fewer coins than a row holds offers the next slot to the visitor instead of an empty cell
@@ -195,11 +199,16 @@
       <div><dt class="label">Coins</dt><dd class="mono">{nCoins ?? '–'}</dd></div>
       <div><dt class="label">Graduated</dt><dd class="mono">{nGrad ?? '–'}</dd></div>
       <div><dt class="label">24h volume on this pad</dt><dd class="mono">{vol === null ? '–' : `${vol} ZEC`}</dd></div>
+      <div><dt class="label">In the pot now</dt><dd class="mono">{padPot ? `${zec(padPot.accruedZats)} ZEC` : '–'}{#if padPot && usdOfZats(padPot.accruedZats, zecUsd.rate)} <span class="usd">{usdOfZats(padPot.accruedZats, zecUsd.rate)}</span>{/if}</dd></div>
       <div><dt class="label">Paid to holders so far</dt><dd class="mono">{paidAll === null ? '–' : paidAll === 0n ? 'None yet' : `${zec(paidAll)} ZEC`}</dd></div>
       {#if paidAll === 0n}
         <div><dt class="label">Next payout</dt><dd class="next">{#if treasury}<NextPayout at={treasury.nextEpochAt} {now} />{:else}<span class="mono">–</span>{/if}</dd></div>
       {:else}
         <div><dt class="label"><span class="key hatch" aria-hidden="true"></span>Of it shielded</dt><dd class="mono">{paidAll === null ? '–' : `${zec(paidShd ?? 0n)} ZEC`}</dd></div>
+        {#if lastPaid}
+          {@const n = lastPaid.shielded.count + lastPaid.solanaPayouts.count}
+          <div><dt class="label">Last payout</dt><dd class="next"><a href="#/treasury">{ago(lastPaid.at, now)}, {n} {n === 1 ? 'wallet' : 'wallets'}{lastPaid.shielded.count > 0 ? ', shielded' : ''}</a></dd></div>
+        {/if}
       {/if}
     </dl>
   {/if}
@@ -296,6 +305,7 @@
   .stats { display: flex; flex-wrap: wrap; gap: var(--s-3) var(--s-6); margin: 0; }
   .stats dd { margin: var(--s-1) 0 0; font-size: var(--t-20); font-weight: 500; }
   .stats dd.next { font-size: var(--t-16); font-weight: 400; }
+  .stats dd .usd { margin-left: 0.5em; font-size: var(--t-14); font-weight: 400; color: var(--ink-3); }
   .stats .label { display: flex; align-items: center; gap: var(--s-1); }
   .stats-sk { height: 52px; max-width: 70ch; }
   /* as many cards as fit at 250px and up; with fewer coins than a row the cards grow to fill it, up to 440px each */

@@ -106,9 +106,9 @@ export function windowScheduleOf(endBps: number): WindowSchedule {
  * partner / creator split of the graduated LP (all of it permanently locked).
  *
  * `creatorFeePercentage` is a SHARE of what is left after Meteora's 20%, rounded down (DBC state/config.rs:1014-1033), so it is
- * chosen to leave the vault 0.80% of every trade at every tier: 0.8 x fee x (100 - pct) / 100. That keeps holders at 0.60% and the
- * team at 0.20% (the 75/25 policy of the epoch engine), except 6% where a whole-number percentage cannot be exact (83 leaves
- * 0.816%: holders 0.612%, team 0.204%). The LP split after graduation uses the same percentages, so the vault earns the same
+ * chosen to leave the vault 0.80% of every trade at every tier: 0.8 x fee x (100 - pct) / 100. That keeps holders at 0.10% and the
+ * team at 0.70% (the 12.5/87.5 policy of the epoch engine since 2026-10-12), except 6% where a whole-number percentage cannot be exact (83 leaves
+ * 0.816%: holders 0.102%, team 0.714%). The LP split after graduation uses the same percentages, so the vault earns the same
  * share of the graduated pool's fee. The tier id is its curve fee in bps. Changing any value needs a new S1 review.
  */
 export interface ReviewedTier {

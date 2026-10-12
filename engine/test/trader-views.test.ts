@@ -1,5 +1,5 @@
 // The pot, the fixed-facts panel and the holders route docs/API.md v2.6, the parts that need no chain: the last payout of each coin
-// (from the rows the keeper wrote), the pot's split (the engine's own 75/25 rule), the Token-2022 metadata parse, and a hostile pass on
+// (from the rows the keeper wrote), the pot's split (the engine's own 12.5/87.5 rule), the Token-2022 metadata parse, and a hostile pass on
 // the three routes' parameters. Real pools: trader-live.test.ts.
 import { afterAll, describe, expect, test } from "bun:test";
 import { ExtensionType } from "@solana/spl-token";

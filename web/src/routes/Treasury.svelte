@@ -2,6 +2,8 @@
   import { api, apiUrl, onMode } from '../lib/api'
   import type { Epoch, PadMode, Treasury } from '../lib/types'
   import { zec, short, ago } from '../lib/format'
+  // A cadence in words from its milliseconds: "48 hours", "7 days". Under a day it is said in hours; the drills set odd values and this still reads.
+  const every = (ms: number): string => (ms >= 3 * 86_400_000 && ms % 86_400_000 === 0 ? `${ms / 86_400_000} days` : `${Math.max(1, Math.round(ms / 3_600_000))} hours`)
   import { sharesFromPolicy } from '../lib/fees'
   import { poll } from '../lib/poll'
   import FeeSplit from '../components/FeeSplit.svelte'
@@ -41,8 +43,12 @@
   let showAll = $state(false)
   // Newest first. The latest round that paid anything shielded leads the page; Solana-only rounds hide behind "show all".
   const latestShielded = $derived(epochs?.find((e) => e.shielded.count > 0 && e.shielded.zcashTxids.length > 0) ?? null)
-  // A round that did not go to plan (swap fell back, partly paid, parked) always stays visible; only normal Solana-only rounds collapse.
-  const withShielded = $derived(epochs ? epochs.filter((e) => e.shielded.count > 0 || e.status !== 'ok') : [])
+  // The newest round, when it is newer than the shielded one above: a Solana-only round gets its own line so the page says what just went out.
+  const latestSolanaOnly = $derived(epochs && epochs[0] && epochs[0] !== latestShielded && epochs[0].shielded.count === 0 ? epochs[0] : null)
+  // The newest round always shows, so the page reads "updated" the hour a round runs (owner report, 2026-10-12: a Solana-only round 1
+  // was hidden behind "show all"). A round that did not go to plan (swap fell back, partly paid, parked) always stays visible too;
+  // only older, normal Solana-only rounds collapse.
+  const withShielded = $derived(epochs ? epochs.filter((e, i) => i === 0 || e.shielded.count > 0 || e.status !== 'ok') : [])
   const shownEpochs = $derived(!epochs ? [] : showAll ? epochs : withShielded)
   const hiddenCount = $derived(epochs ? epochs.length - withShielded.length : 0)
   const numberOf = (id: string): number => (epochs ? epochs.length - epochs.findIndex((e) => e.id === id) : 0)
@@ -89,7 +95,8 @@
   {#if !failed}
   <div class="sheet panel">
     {#if t}
-      <p class="when">{#if t.lastEpochAt}Last payout {ago(t.lastEpochAt, now)}. {/if}<NextPayout at={t.nextEpochAt} {now} />.</p>
+      <p class="when">{#if t.lastEpochAt}Last payout {ago(t.lastEpochAt, now)}.{/if}{#if latestSolanaOnly} Round #{numberOf(latestSolanaOnly.id)} paid <span class="mono">{zec(latestSolanaOnly.solanaPayouts.totalZats)} ZEC</span> as Solana ZEC to {latestSolanaOnly.solanaPayouts.count} wallets in {latestSolanaOnly.solanaPayouts.sigs.length} {latestSolanaOnly.solanaPayouts.sigs.length === 1 ? 'transaction' : 'transactions'}. Shares under the payout floor carry to the next round. It is listed below.{/if} {#if t.lastRunFoundNothing && t.lastRunAt}Last round ran {ago(t.lastRunAt, now)} and found nothing to claim yet.{/if} <NextPayout at={t.nextEpochAt} {now} />.</p>
+      <p class="muted small">Rounds run every {every(t.cadence.roundEveryMs)} and pay Solana ZEC. The shielded share goes out about every {every(t.cadence.shieldedEveryMs)} in one batch.</p>
     {:else}
       <div class="skel" style="height: 48px" aria-busy="true" aria-label="Loading the payouts"></div>
     {/if}

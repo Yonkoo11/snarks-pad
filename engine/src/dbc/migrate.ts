@@ -4,51 +4,15 @@
 // is decided from chain state, never from a remembered "I sent it": a crash
 // between sending and recording is healed by the next call reading
 // `isMigrated` off the pool, so no migration transaction needs to be persisted.
+// Keeper-side: it loads the keeper key. The key-free reads (the curve's stage,
+// recording a migration the chain shows, the API's sweep) are dbc/graduation.ts.
 import { PublicKey, sendAndConfirmTransaction } from "@solana/web3.js";
-import { deriveDammV2PoolAddress } from "@meteora-ag/dynamic-bonding-curve-sdk";
-import { config } from "../config";
-import { getConnection, getCpAmm, getDbcClient } from "../solana";
+import { getConnection, getDbcClient } from "../solana";
 import { loadKeeperKeypair } from "../keeper";
-import * as db from "../db";
 import type { CoinRow } from "../db";
+import { dammConfigOf, readCurveStage, recordMigration } from "./graduation";
 
-export type CurveStage = "open" | "complete" | "migrated";
-
-// DBC `MigrationProgress` (state/virtual_pool.rs:83): PreBondingCurve 0,
-// PostBondingCurve 1 (curve full, a vesting locker must still be created),
-// LockedVesting 2 (ready to migrate), CreatedPool 3. migrate_damm_v2 requires 2.
-const LOCKED_VESTING = 2;
-const POST_BONDING_CURVE = 1;
-
-/**
- * "complete" means the migration instruction can run NOW (progress 2). A full
- * curve that still needs a vesting locker (progress 1) is an error here: this
- * pad's config has no vesting, so it can only mean a different config.
- */
-export async function readCurveStage(poolId: string): Promise<CurveStage> {
-  const pool = await getDbcClient().state.getPool(poolId);
-  if (!pool) throw new Error(`DBC pool ${poolId} not found`);
-  if (pool.poolState.isMigrated !== 0) return "migrated";
-  if (pool.poolState.migrationProgress === POST_BONDING_CURVE) {
-    throw new Error(`DBC pool ${poolId} is full but needs a vesting locker before it can migrate; this pad's config has no vesting`);
-  }
-  return pool.poolState.migrationProgress === LOCKED_VESTING ? "complete" : "open";
-}
-
-/** The DAMM v2 config a coin migrates into: the one its own DBC config names (a fee tier graduates into its own fee's pool). */
-export function dammConfigOf(coin: CoinRow): PublicKey {
-  const row = coin.configId ? db.getDbcConfig(coin.configId) : null;
-  return row ? new PublicKey(row.dammConfig) : config.solana.dbc.dammConfig;
-}
-
-async function recordMigration(coin: CoinRow, feeClaimer: PublicKey): Promise<CoinRow> {
-  const { dbc } = config.solana;
-  const dammPool = deriveDammV2PoolAddress(dammConfigOf(coin), new PublicKey(coin.mint), dbc.quoteMint);
-  const positions = await getCpAmm().getUserPositionByPool(dammPool, feeClaimer);
-  const nft = positions[0]?.positionState.nftMint.toBase58() ?? null;
-  db.markCoinMigrated(coin.mint, dammPool.toBase58(), nft);
-  return db.getCoin(coin.mint)!;
-}
+export { readCurveStage, dammConfigOf, type CurveStage } from "./graduation";
 
 async function sendMigration(coin: CoinRow): Promise<void> {
   const keeper = loadKeeperKeypair();

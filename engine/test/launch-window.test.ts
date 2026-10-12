@@ -56,8 +56,8 @@ describe("what a trade pays in each second of the window, by hand: cliff - perio
     const inWindow = tradeSplit(amount, 100, feeNumeratorAt(scheduleOfState(configOf(100)), new BN(ACTIVATION), at(0)));
     const after = tradeSplit(amount, 100);
     expect([inWindow.fee, after.fee]).toEqual([99_000_000n, 1_000_000n]);
-    // the shares of the fee do not move, only its size: Meteora 20%, the pad's claim the rest, split 75/25
-    expect([inWindow.meteora, inWindow.partner, inWindow.holders, inWindow.team]).toEqual([19_800_000n, 79_200_000n, 59_400_000n, 19_800_000n]);
+    // the shares of the fee do not move, only its size: Meteora 20%, the pad's claim the rest, split 12.5/87.5
+    expect([inWindow.meteora, inWindow.partner, inWindow.holders, inWindow.team]).toEqual([19_800_000n, 79_200_000n, 9_900_000n, 69_300_000n]);
     // on a tier with a creator share the creator's part moves with it too: 2%, a 99,000,000 fee: Meteora 19,800,000, the creator half of the rest, the pad's claim the other half
     const two = tradeSplit(amount, 200, 990_000_000n);
     expect([two.fee, two.meteora, two.creator, two.partner]).toEqual([99_000_000n, 19_800_000n, 39_600_000n, 39_600_000n]);

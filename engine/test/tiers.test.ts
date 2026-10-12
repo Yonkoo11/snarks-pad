@@ -15,12 +15,12 @@ const HUNDRED = 100n * 100_000_000n;
 
 const EXPECTED_PER_100: Record<number, { fee: bigint; meteora: bigint; creator: bigint; partner: bigint; holders: bigint; team: bigint }> = {
   // zats out of 10,000,000,000
-  100: { fee: 100_000_000n, meteora: 20_000_000n, creator: 0n, partner: 80_000_000n, holders: 60_000_000n, team: 20_000_000n },
-  200: { fee: 200_000_000n, meteora: 40_000_000n, creator: 80_000_000n, partner: 80_000_000n, holders: 60_000_000n, team: 20_000_000n },
-  400: { fee: 400_000_000n, meteora: 80_000_000n, creator: 240_000_000n, partner: 80_000_000n, holders: 60_000_000n, team: 20_000_000n },
+  100: { fee: 100_000_000n, meteora: 20_000_000n, creator: 0n, partner: 80_000_000n, holders: 10_000_000n, team: 70_000_000n },
+  200: { fee: 200_000_000n, meteora: 40_000_000n, creator: 80_000_000n, partner: 80_000_000n, holders: 10_000_000n, team: 70_000_000n },
+  400: { fee: 400_000_000n, meteora: 80_000_000n, creator: 240_000_000n, partner: 80_000_000n, holders: 10_000_000n, team: 70_000_000n },
   // 83% is the closest whole percent to the 83.33% that would leave exactly 0.80%: 480,000,000 x 83 / 100 = 398,400,000 creator
-  600: { fee: 600_000_000n, meteora: 120_000_000n, creator: 398_400_000n, partner: 81_600_000n, holders: 61_200_000n, team: 20_400_000n },
-  1000: { fee: 1_000_000_000n, meteora: 200_000_000n, creator: 720_000_000n, partner: 80_000_000n, holders: 60_000_000n, team: 20_000_000n },
+  600: { fee: 600_000_000n, meteora: 120_000_000n, creator: 398_400_000n, partner: 81_600_000n, holders: 10_200_000n, team: 71_400_000n },
+  1000: { fee: 1_000_000_000n, meteora: 200_000_000n, creator: 720_000_000n, partner: 80_000_000n, holders: 10_000_000n, team: 70_000_000n },
 };
 
 describe("the menu", () => {
@@ -83,11 +83,11 @@ describe("the exact split of a $100 trade, Meteora / creator / holders / team", 
     expect(s.meteora + s.creator + s.holders + s.team).toBe(s.fee);
   });
 
-  test("holders get 0.60% and the team 0.20% of volume at every tier except 6%, which leaves 0.612% and 0.204%", () => {
+  test("holders get 0.10% and the team 0.70% of volume at every tier except 6%, which leaves 0.102% and 0.714%", () => {
     for (const bps of TIER_MENU_BPS) {
       const s = tradeSplit(HUNDRED, bps);
-      if (bps === 600) expect([s.holders, s.team]).toEqual([61_200_000n, 20_400_000n]);
-      else expect([s.holders, s.team]).toEqual([60_000_000n, 20_000_000n]);
+      if (bps === 600) expect([s.holders, s.team]).toEqual([10_200_000n, 71_400_000n]);
+      else expect([s.holders, s.team]).toEqual([10_000_000n, 70_000_000n]);
     }
   });
 });
@@ -141,11 +141,11 @@ describe("rounding, from the program source", () => {
 describe("shares of the whole fee, for the copy", () => {
   test("Meteora 20% at every tier; creator, holders and team fill the rest; each tier's five numbers add to 100%", () => {
     expect(TIER_MENU_BPS.map((b) => tierShares(b))).toEqual([
-      { meteoraBps: 2000, creatorBps: 0, claimedBps: 8000, holdersBps: 6000, teamBps: 2000 },
-      { meteoraBps: 2000, creatorBps: 4000, claimedBps: 4000, holdersBps: 3000, teamBps: 1000 },
-      { meteoraBps: 2000, creatorBps: 6000, claimedBps: 2000, holdersBps: 1500, teamBps: 500 },
-      { meteoraBps: 2000, creatorBps: 6640, claimedBps: 1360, holdersBps: 1020, teamBps: 340 },
-      { meteoraBps: 2000, creatorBps: 7200, claimedBps: 800, holdersBps: 600, teamBps: 200 },
+      { meteoraBps: 2000, creatorBps: 0, claimedBps: 8000, holdersBps: 1000, teamBps: 7000 },
+      { meteoraBps: 2000, creatorBps: 4000, claimedBps: 4000, holdersBps: 500, teamBps: 3500 },
+      { meteoraBps: 2000, creatorBps: 6000, claimedBps: 2000, holdersBps: 250, teamBps: 1750 },
+      { meteoraBps: 2000, creatorBps: 6640, claimedBps: 1360, holdersBps: 170, teamBps: 1190 },
+      { meteoraBps: 2000, creatorBps: 7200, claimedBps: 800, holdersBps: 100, teamBps: 700 },
     ]);
     for (const b of TIER_MENU_BPS) {
       const s = tierShares(b);

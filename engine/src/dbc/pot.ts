@@ -92,3 +92,55 @@ export function buildPot(accrued: Accrued, nextPayoutAt: string | null, lastPayo
 export async function potOf(coin: CoinRow): Promise<PotView> {
   return buildPot(await accruedFees(coin), db.getMeta(NEXT_EPOCH_AT_META), lastPayouts.get().get(coin.mint) ?? null);
 }
+
+/** GET /api/pot: the pots of every coin the board lists, added up: what is waiting for holders across the pad right now. */
+export interface PadPotView {
+  accruedZats: string;
+  holdersZats: string;
+  teamZats: string;
+  /** Coins whose pot was read and is in the sum. */
+  coins: number;
+  /** Coins whose pool could not be read this time; their pots are not in the sum. */
+  unread: number;
+  nextPayoutAt: string | null;
+  asOf: string;
+}
+
+/** The pad's pot is one read for everyone who asks within this window: one home-page poll should not cost one chain read per coin per visitor. */
+export const PAD_POT_MAX_AGE_MS = Number(process.env.PAD_PAD_POT_MAX_AGE_MS ?? 30_000);
+
+/** The sum of what was read; the oldest read dates it. Every coin unread is counted, never guessed. All unread = nothing to show, so the caller answers 503. */
+export function buildPadPot(read: Accrued[], unread: number, nextPayoutAt: string | null, nowMs: number = Date.now()): PadPotView {
+  if (read.length === 0 && unread > 0) throw new Error(`the pad's pot: none of ${unread} coins could be read`);
+  const total = read.reduce((sum, a) => sum + a.curve + a.pool, 0n);
+  const { holders, team } = splitClaim(total, config.epoch.team.shareBps);
+  const oldest = read.reduce((t, a) => Math.min(t, a.readAtMs), nowMs);
+  return { accruedZats: total.toString(), holdersZats: holders.toString(), teamZats: team.toString(), coins: read.length, unread, nextPayoutAt, asOf: new Date(oldest).toISOString() };
+}
+
+async function readPadPot(coins: CoinRow[]): Promise<PadPotView> {
+  const results = await Promise.allSettled(coins.map((c) => accruedFees(c)));
+  const read = results.flatMap((r) => (r.status === "fulfilled" ? [r.value] : []));
+  for (const [i, r] of results.entries()) if (r.status === "rejected") console.error(`[pot] ${coins[i]!.mint} not read: ${(r.reason as Error)?.message ?? r.reason}`);
+  return buildPadPot(read, results.length - read.length, db.getMeta(NEXT_EPOCH_AT_META));
+}
+
+let padPotKept: { atMs: number; coins: string; value: Promise<PadPotView> } | null = null;
+
+/** The pad's pot for `coins` (the board's launched coins), read at most once per PAD_POT_MAX_AGE_MS for the same list; a failed read is not kept. */
+export function padPotOf(coins: CoinRow[], now: number = Date.now()): Promise<PadPotView> {
+  const key = coins.map((c) => c.mint).join(",");
+  if (padPotKept && padPotKept.coins === key && now - padPotKept.atMs < PAD_POT_MAX_AGE_MS && now >= padPotKept.atMs) return padPotKept.value;
+  const value = readPadPot(coins);
+  const kept = { atMs: now, coins: key, value };
+  padPotKept = kept;
+  value.catch(() => {
+    if (padPotKept === kept) padPotKept = null;
+  });
+  return value;
+}
+
+/** For tests: forget the kept pad pot. */
+export function clearPadPot(): void {
+  padPotKept = null;
+}

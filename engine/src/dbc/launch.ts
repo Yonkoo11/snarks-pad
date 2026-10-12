@@ -84,11 +84,12 @@ async function buildCreateTx(p: LaunchParams, cfg: db.DbcConfigRow, baseMint: Pu
         createPoolParam,
         firstBuyParam: { buyer: creator, buyAmount, minimumAmountOut: new BN(0), referralTokenAccount: null },
       });
-  const instructions = receiver ? [...tx.instructions, await handoverIx(cfg, baseMint, creator, new PublicKey(receiver))] : tx.instructions;
+  // The pad's launch signer rides along as a read-only signer named by a memo instruction, last (dbc/launchSigner.ts): terminals attribute the launch by it,
+  // and a wallet that rebuilds the transaction keeps it. The engine signs with it here when it signs at all (a script); on the site's order the co-sign
+  // step adds it with the coin's signature.
+  const instructions = withLaunchpadSigner(receiver ? [...tx.instructions, await handoverIx(cfg, baseMint, creator, new PublicKey(receiver))] : tx.instructions);
   const { blockhash } = await getConnection().getLatestBlockhash("confirmed");
-  // The pad's launch signer rides along as a read-only signer (dbc/launchSigner.ts): terminals attribute the launch by it. The engine signs with it here
-  // when it signs at all (a script); on the site's order the co-sign step adds it with the coin's signature.
-  const message = withLaunchpadSigner(new TransactionMessage({ payerKey: creator, recentBlockhash: blockhash, instructions }).compileToV0Message());
+  const message = new TransactionMessage({ payerKey: creator, recentBlockhash: blockhash, instructions }).compileToV0Message();
   const vtx = new VersionedTransaction(message);
   const pad = launchpadSigner();
   if (signers.length) vtx.sign(pad ? [...signers, pad] : signers);

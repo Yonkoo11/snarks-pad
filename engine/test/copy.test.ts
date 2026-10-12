@@ -125,7 +125,7 @@ describe("fee copy", () => {
   });
 });
 
-describe("fee split copy (owner policy 2026-10-02: Meteora 20%, holders 60%, team 20% of each trade's fee)", () => {
+describe("fee split copy (owner policy 2026-10-12: Meteora 20%, holders 10%, team 70% of each trade's fee)", () => {
   test("no page or component still says holders get 80%", () => {
     expect(filesMatching(/80% of it goes to holders|Holders 80%|their 80%|holders 80%|HOLDER_PCT = 80/)).toEqual([]);
     expect(repo("web", "src", "lib", "mock", "index.ts")).not.toMatch(/80% of it goes to holders|Holders 80%|their 80%|holders 80%|HOLDER_PCT = 80/);
@@ -133,7 +133,7 @@ describe("fee split copy (owner policy 2026-10-02: Meteora 20%, holders 60%, tea
 
   test("Launch, How it works, the coin page and the cards say what holders get, and the fee strip shows Meteora 20, holders 60, team 20", () => {
     const launch = route("Launch.svelte");
-    expect(launch).toContain("HOLDER_PCT = 60");
+    expect(launch).toContain("HOLDER_PCT = 10");
     // for an engine with no tier menu the page falls back to HOLDER_PCT; since 2026-10-06 the line under the tier picker says only the fee ("remove the per $100 lines too"),
     // so the holders' part is said by the preview card's "To holders" row below, never by a per-$100 split under the picker
     expect(launch).toContain("holderShareBps: HOLDER_PCT * 100");
@@ -141,7 +141,7 @@ describe("fee split copy (owner policy 2026-10-02: Meteora 20%, holders 60%, tea
     // the picked tier's holders' part is printed by the preview card's "To holders" row, from the tier's own holderShareBps (web/src/lib/launch.ts)
     expect(component("LaunchPreview.svelte")).toContain("{facts.holdersShare}</span> of every fee, in ZEC");
     expect(repo("web", "src", "lib", "launch.ts")).toContain("holdersShare: shareText(t.holderShareBps)");
-    expect(route("How.svelte")).toContain("holders still get 0.60% of every trade");
+    expect(route("How.svelte")).toContain("holders still get 0.10% of every trade");
     expect(route("Coin.svelte")).toMatch(/holders get \{coin\.holderShareBps \/ 100\}%|holders' \{coin\.holderShareBps \/ 100\}% of the trading fee/); // the coin page states the holders' share from holderShareBps
     expect(component("CoinCard.svelte")).toMatch(/\{holderPct\}% to holders|pays holders \{holderPct\}% in ZEC/); // the card chip states what holders get, from feeBps x holderShareBps
     // the strip on How it works is drawn from the published policy, one row per owner of the fee
@@ -150,15 +150,15 @@ describe("fee split copy (owner policy 2026-10-02: Meteora 20%, holders 60%, tea
     for (const who of ["Holders", "Team", "Meteora"]) expect(strip).toContain(`who: '${who}'`);
   });
 
-  test("the strip draws Meteora 20, holders 60, team 20 for the policy the engine publishes (engine/src/ledger.ts)", () => {
-    const s = sharesFromPolicy({ meteoraShareOfFeeBps: 10_000 - config.solana.dbc.holderShareBps, holdersShareOfClaimedBps: 7_500, teamShareOfClaimedBps: 2_500 });
-    expect([s.meteoraBps, s.holdersBps, s.teamBps, s.creatorBps]).toEqual([2000, 6000, 2000, 0]);
-    expect(per100(s.feeBps, s.holdersBps)).toBe("$0.60");
+  test("the strip draws Meteora 20, holders 10, team 70 for the policy the engine publishes (engine/src/ledger.ts)", () => {
+    const s = sharesFromPolicy({ meteoraShareOfFeeBps: 10_000 - config.solana.dbc.holderShareBps, holdersShareOfClaimedBps: 1_250, teamShareOfClaimedBps: 8_750 });
+    expect([s.meteoraBps, s.holdersBps, s.teamBps, s.creatorBps]).toEqual([2000, 1000, 7000, 0]);
+    expect(per100(s.feeBps, s.holdersBps)).toBe("$0.10");
   });
 
   test("the engine's published numbers are the ones the pages say", () => {
-    const { holders, team, meteora } = feeSplitBps(config.solana.dbc.holderShareBps, 2500);
-    expect([meteora, holders, team]).toEqual([2000, 6000, 2000]);
+    const { holders, team, meteora } = feeSplitBps(config.solana.dbc.holderShareBps, 8750);
+    expect([meteora, holders, team]).toEqual([2000, 1000, 7000]);
   });
 });
 
@@ -438,7 +438,7 @@ describe("the fee line under the tier picker: one line per tier, the facts that 
     expect(form).toContain('{#if feeLine}<p class="fee-fixed"><span class="mono">{feeLine.fee}</span>{feeLine.rest}</p>{/if}');
     expect(form).toContain("const feeLine = $derived(tier ? feeLineOfTier(tier) : tiers === null ? feeLineOfTier(SNARKS_TIER) : null)");
     expect(form.match(/class="fee-fixed"/g)).toHaveLength(1);
-    const snarks = feeLineOfTier({ feeBps: 100, creatorShareBps: 0, holderShareBps: 6000, teamShareBps: 2000, meteoraShareBps: 2000 });
+    const snarks = feeLineOfTier({ feeBps: 100, creatorShareBps: 0, holderShareBps: 1000, teamShareBps: 7000, meteoraShareBps: 2000 });
     expect(snarks.fee + snarks.rest).toBe(LINE[100]!);
     expect(form).toContain("const SNARKS_TIER: FeeSplitOfTier = { feeBps: FEE_PCT * 100, creatorShareBps: 0, holderShareBps: HOLDER_PCT * 100, teamShareBps: TEAM_PCT * 100, meteoraShareBps: (100 - HOLDER_PCT - TEAM_PCT) * 100 }");
     expect(form).not.toContain("HIGH_FEE_BPS");
@@ -525,6 +525,6 @@ describe("the fee line under the tier picker: one line per tier, the facts that 
       expect(printed.reduce((sum, text) => sum + Math.round(Number(text.slice(1)) * 1000), 0)).toBe(bps * 10);
     }
     const four = tierShares(400, config.epoch.team.shareBps);
-    expect([four.creatorBps, four.holdersBps, four.teamBps, four.meteoraBps].map((share) => per100(400, share))).toEqual(["$2.40", "$0.60", "$0.20", "$0.80"]);
+    expect([four.creatorBps, four.holdersBps, four.teamBps, four.meteoraBps].map((share) => per100(400, share))).toEqual(["$2.40", "$0.10", "$0.70", "$0.80"]);
   });
 });

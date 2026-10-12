@@ -14,13 +14,14 @@ interface Injected {
   signMessage(msg: Uint8Array, enc?: string): Promise<{ signature: Uint8Array } | Uint8Array>
   signTransaction<T>(tx: T): Promise<T>
 }
-type W = Window & { phantom?: { solana?: Injected & { isPhantom?: boolean } }; backpack?: Injected; solflare?: Injected & { isSolflare?: boolean } }
+type W = Window & { phantom?: { solana?: Injected & { isPhantom?: boolean } }; solana?: Injected & { isPhantom?: boolean }; backpack?: Injected; solflare?: Injected & { isSolflare?: boolean } }
 
 export interface WalletOption { id: string; name: string; installed: boolean; url?: string }
 
 function injected(id: string): Injected | undefined {
   const w = window as W
-  if (id === 'phantom') return w.phantom?.solana
+  // Phantom injects window.phantom.solana; a wallet or harness that only injects window.solana with isPhantom (the legacy spot) is accepted too (2026-10-12).
+  if (id === 'phantom') return w.phantom?.solana ?? (w.solana?.isPhantom ? w.solana : undefined)
   if (id === 'backpack') return w.backpack
   if (id === 'solflare') return w.solflare
 }

@@ -3,13 +3,14 @@
 # SNARKS pad
 
 ![engine tests](https://img.shields.io/badge/engine%20tests-1450%20of%201450%20pass%2C%202026--10--07-3fb950)
+![fast lane](https://img.shields.io/badge/fast%20lane-823%20pass%2C%204%20fail%20on%20missing%20private%20fixtures%2C%202026--10--12-dfb317)
 ![web check](https://img.shields.io/badge/web%20check-0%20errors%20in%20171%20files-121212)
-![mainnet](https://img.shields.io/badge/mainnet%20rounds-1%20paid%2C%202026--10--07-3fb950)
+![mainnet](https://img.shields.io/badge/mainnet%20rounds-2%20paid%2C%202026--10--12-3fb950)
 [![live](https://img.shields.io/badge/live-snarks.fun-3fb950)](https://snarks.fun)
 
 ### Coins on Meteora that pay their holders in ZEC, shielded if you opt in.
 
-**A Solana launchpad on Meteora's Dynamic Bonding Curve where every coin is quoted in ZEC. Each trade pays a 1% fee; 60% of it goes to the coin's holders every 48 hours as Solana ZEC, or as native ZEC in their own shielded Zcash wallet if they opt in once. The first mainnet round ran on 2026-10-07: two vault claims, one bridge swap, one shielded batch.**
+**A Solana launchpad on Meteora's Dynamic Bonding Curve where every coin is quoted in ZEC. Each trade pays a 1% fee; 10% of it goes to the coin's holders every 48 hours as Solana ZEC, or as native ZEC in their own shielded Zcash wallet if they opt in once. The first mainnet round ran on 2026-10-07 (two vault claims, one bridge swap, one shielded batch). The second ran on 2026-10-12: 47 holder payouts of 3,073,969 zats in total as Solana ZEC across three coins; shares under 5,000 zats carried to the next round, and shares up to 30,000 zats carried for wallets that have no ZEC token account yet.**
 
 **[ Live ↗ ](https://snarks.fun)** · **[ Test site, free test money ↗ ](https://test.snarks.fun)** · **[ Verify it yourself ↗ ](#verify-it-yourself-in-90-seconds)** · **[ The receipt ↗ ](https://mainnet.zcashexplorer.app/transactions/63a85230d6cef5a5465b3d9a34327de89f8c63c47a5a6b8e01e31004ca7d961c)** · **[ Payouts page ↗ ](https://snarks.fun/#/treasury)**
 
@@ -66,7 +67,7 @@ A launchpad and a payout engine. The loop:
 </div>
 
 1. **Launch.** A creator launches a coin on Meteora DBC quoted in Solana ZEC. The fee tier, name and image are fixed at launch. The config's fee scheduler is a five-second launch window (99% in the first second, falling to the tier fee), and every launch carries the pad's common signer so trading terminals can attribute it.
-2. **Trade.** Buys and sells on the bonding curve pay the tier fee in ZEC: 20% to Meteora, the rest claimed by the pad and split 75% to holders and 25% to the team. On the 1% tier a trade pays holders 0.60% and the team 0.20%. At graduation the pool migrates to DAMM v2 with all liquidity permanently locked.
+2. **Trade.** Buys and sells on the bonding curve pay the tier fee in ZEC: 20% to Meteora, the rest claimed by the pad and split 12.5% to holders and 87.5% to the team (policy since 2026-10-12; 75/25 before). On the 1% tier a trade pays holders 0.10% and the team 0.70%. At graduation the pool migrates to DAMM v2 with all liquidity permanently locked.
 3. **Claim.** Every 48 hours the keeper samples holders six times at random moments, then claims each coin's fees through a 2-of-3 Squads vault (the DAMM v2 position fee after graduation).
 4. **Swap.** Once a week the opted-in holders' share is swapped from Solana ZEC to native ZEC through NEAR's 1Click bridge into the pad's Zcash treasury. A refused or refunded swap carries the share to the next shielded round; it never falls back to the public rail.
 5. **Pay.** Holders who did not opt in get Solana ZEC every round. Opted-in holders get one Orchard transaction a week from the treasury, up to 350 recipients a transaction. The public sees that a batch was paid, not which address got what.
@@ -75,12 +76,12 @@ A launchpad and a payout engine. The loop:
 
 ## Verify it yourself in 90 seconds
 
-No wallet, no key and no chain are needed for the first four lines; the test suite needs Bun. Every expected result below was produced by a run on 2026-10-08 before it was written here.
+No wallet, no key and no chain are needed for the first four lines; the test suite needs Bun. Every expected result below was produced by a run on 2026-10-12 before it was written here.
 
 ```bash
-# 1. The mainnet instance: payouts running, the first round recorded
+# 1. The mainnet instance: payouts running, two rounds recorded
 curl -s https://snarks.fun/api/treasury | jq '{lastEpochAt, nextEpochAt, paused, zcashNetwork}'
-# → {"lastEpochAt":"2026-10-07T13:10:54.800Z","nextEpochAt":"2026-10-09T13:10:54.800Z","paused":false,"zcashNetwork":"main"}
+# → {"lastEpochAt":"2026-10-12T07:58:27.676Z","nextEpochAt":"2026-10-14T07:58:27.676Z","paused":false,"zcashNetwork":"main"}
 
 # 2. The fee tiers and the common launch signer the terminals attribute launches to
 curl -s https://snarks.fun/api/tiers | jq '{tiers: (.tiers|length), launchpadSigner, quoteMint}'
@@ -96,10 +97,12 @@ open https://mainnet.zcashexplorer.app/transactions/63a85230d6cef5a5465b3d9a3432
 
 # 5. The fast test lane (no chain, about three minutes)
 git clone https://github.com/Yonkoo11/snarks-pad && cd snarks-pad/engine && bun install && bun run test
-# → 824 pass, 0 fail, 71 files (2026-10-08)
+# → 823 pass, 3 skip, 4 fail, 3 errors, 77 files (2026-10-12)
+# the 7 non-passes read private review and probe records that are not in this repo
+# (config-create, near1click-api, ops-time-sync, s6-product-orphans, tiers); all 67 of those tests pass in the private tree
 ```
 
-What this proves: the mainnet engine is running on the code in this repository, the fee tiers and the signer are live, the shielded batch rail has paid real outputs on Zcash mainnet, and the money-path tests pass without a chain. What it does not prove: that an outside holder has been paid (none has yet, see the next section), or that the full chain lane passes on your machine (it needs the local validator and the Zcash regtest stack described under Tests).
+What this proves: the mainnet engine is running on the code in this repository, the fee tiers and the signer are live, the shielded batch rail has paid real outputs on Zcash mainnet, and the money-path tests pass without a chain. What it does not prove: that a shielded batch has reached an outside holder (none has yet; the 47 payouts of 2026-10-12 went out as Solana ZEC, see the next section), or that the full chain lane passes on your machine (it needs the local validator and the Zcash regtest stack described under Tests).
 
 ---
 
@@ -107,17 +110,17 @@ What this proves: the mainnet engine is running on the code in this repository, 
 
 | Capability | Status |
 |---|---|
-| **Engine tests** | Real. Full chain lane 1,450 pass, 0 fail, 131 files against a local validator with the real Meteora DBC, DAMM v2 and Squads programs and a Zcash regtest node (2026-10-07). Fast lane 824 pass, 0 fail, 71 files (2026-10-08). |
-| **A full mainnet round** | Real. 2026-10-07: two Squads claims approved by the owner, one 1Click swap (230,081 zats in, 205,081 out), one shielded batch to the two wallets that had opted in. Listed on the Payouts page. |
+| **Engine tests** | Real. Full chain lane 1,450 pass, 0 fail, 131 files against a local validator with the real Meteora DBC, DAMM v2 and Squads programs and a Zcash regtest node (2026-10-07). Fast lane from a clean clone of this repo: 823 pass, 3 skip, 4 fail, 3 errors, 77 files (2026-10-12). The 7 non-passes are five files that read private review and probe records kept out of this repo; all 67 of their tests pass in the private tree. |
+| **A full mainnet round** | Real. 2026-10-07: two Squads claims approved by the owner, one 1Click swap (230,081 zats in, 205,081 out), one shielded batch to the two wallets that had opted in. The second round, 2026-10-12: three coins claimed (29,383,804 zats), 47 holder payouts of 3,073,969 zats in total as Solana ZEC in six batches, shares under 5,000 zats carried (and shares up to 30,000 zats for wallets with no ZEC token account yet), no shielded batch. Both are listed on the Payouts page. |
 | **The shielded batch rail on Zcash mainnet** | Real. One batch of two outputs (tx 63a85230…, height 3,502,208) and the engine's own bridge swap (tx d826f2d9…, height 3,502,669). Batches of 20, 100 and 625 recipients measured on regtest; the engine caps a transaction at 350. |
-| **Graduation and the DAMM v2 position fee** | Tested, not yet exercised on mainnet. The migration and the position-fee claim run in the chain lane; no mainnet coin has filled its curve. |
+| **Graduation and the DAMM v2 position fee** | Migration real on mainnet: $SNARKS filled its curve on 2026-10-11 and moved to its DAMM v2 pool. The position-fee claim from that pool has not run on mainnet yet; it runs in the chain lane. |
 | **Load** | Measured on the test site, 2026-10-08: 400 reads at concurrency 25, all 200, p50 1.1 s, p95 2.6 s. Bursts of 30 launch builds or 80 trade builds from one address: the per-address cap refuses 20, the rest get 503 while the devnet RPC recovers. |
-| Public coins on mainnet | Not yet. The two coins on mainnet are the team's rehearsal coins and the public board lists none; the first public coin is still to launch. |
-| Outside holders paid | None yet. The two opted-in wallets paid in round 1 were the team's own. |
+| Public coins on mainnet | Yes, since 2026-10-11: $SNARKS, launched by the team, and four coins launched by other wallets. The two coins from round 1 are the team's rehearsal coins. |
+| Outside holders paid | Yes: 47 holder payouts in Solana ZEC went out on 2026-10-12. No outside wallet has received a shielded batch yet; the two shielded outputs of 2026-10-07 went to the team's own wallets. |
 | Trading-terminal listing | Not yet. The common launch signer is live; listings follow traction. |
 | Outside security audit | Not claimed. Five internal review rounds with static analysis and manual passes are summarised in [SECURITY.md](SECURITY.md). |
-| Continuous integration | Not set up. The badges above carry numbers from runs made on 2026-10-07 and 2026-10-08, with their dates. |
-| Demo video | Not yet made. The stills above are real captures of the test site. |
+| Continuous integration | Not set up. The badges above carry numbers from runs made on 2026-10-07 and 2026-10-12, with their dates. |
+| Demo video | In progress, not published. The stills above are real captures of the test site. |
 | "Anonymous" | Not claimed, anywhere. The site says what is hidden (receiving addresses, per-holder amounts) and what is not (Solana balances, the batch and its total). |
 
 ---
@@ -148,8 +151,8 @@ The boundary between the site and the chain is `engine/src/api.ts`; between the 
 | Where a 1% trade fee goes | Share of the trade |
 |---|---|
 | Meteora | 0.20% |
-| Holders (75% of the pad's claim) | 0.60% |
-| Team (25% of the pad's claim) | 0.20% |
+| Holders (12.5% of the pad's claim) | 0.10% |
+| Team (87.5% of the pad's claim) | 0.70% |
 
 Tiers above 1% (2%, 4% and up) carry a creator share from the pad's claim, and a launcher may hand that share to a named wallet in the launch transaction. The 1% tier has no creator share and the API refuses a creator wallet on it.
 
@@ -216,8 +219,8 @@ engine/                  # the keeper and the HTTP API (Bun)
     swap/                # NEAR 1Click: quote, deposit, resume, loss cap
     zcash/               # zcash-devtool wrapper: wallet, batch payment, expired-tx detection
     db.ts                # SQLite schema and the crash-safe writes
-  test/                  # 131 files; the fast lane runs without a chain
-  scripts/               # local:up, seed, epoch, api, keeper
+  test/                  # 138 files; the fast lane runs without a chain
+  scripts/               # local:up, seed, epoch, api, keeper, samples, pot-breakdown
 web/                     # the Svelte site: market, coin, launch, shielded, payouts, profile
   src/routes/
   src/components/
@@ -249,11 +252,11 @@ The site runs with `cd web && bun install && bun run dev` against that API.
 
 ```bash
 cd engine
-bun run test            # fast lane, no chain: 824 pass, 0 fail, 71 files (2026-10-08)
+bun run test            # fast lane, no chain: 823 pass, 3 skip, 4 fail, 3 errors, 77 files (2026-10-12)
 bun run test:fast       # the same lane
 ```
 
-The full chain lane (`bun run e2e` with `bun run local:up` running) adds every test that needs the validator or the regtest node: 1,450 pass, 0 fail, 131 files on 2026-10-07. It covers launch and co-sign, the launch window, claims through the vault, graduation and the DAMM v2 position fee, the holder samples, the swap state machine with refusals and refunds, batch payments and expired-transaction resend. Run one lane at a time; the lanes share a test database.
+The full chain lane (`bun run e2e` with `bun run local:up` running) adds every test that needs the validator or the regtest node: 1,450 pass, 0 fail, 131 files on 2026-10-07. In a clean clone the fast lane shows 4 fails and 3 errors in five files (config-create, near1click-api, ops-time-sync, s6-product-orphans, tiers): they read internal review notes, a probe fixture and a runbook that are not published. All 67 tests in those files pass in the tree they were written against; the other 72 files pass here. It covers launch and co-sign, the launch window, claims through the vault, graduation and the DAMM v2 position fee, the holder samples, the swap state machine with refusals and refunds, batch payments and expired-transaction resend. Run one lane at a time; the lanes share a test database.
 
 ---
 

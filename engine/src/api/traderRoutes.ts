@@ -3,11 +3,11 @@
 // nothing imports the keeper side (INV-17). Every parameter is checked before any database or chain read.
 import { config } from "../config";
 import * as db from "../db";
-import { isHidden } from "../dbc/visible";
+import { isHidden, visibleCoins } from "../dbc/visible";
 import { epochsCsv } from "../epochsCsv";
 import { holdersOf, MAX_HOLDER_OFFSET } from "../dbc/holdersView";
 import { fixedOf } from "../dbc/fixed";
-import { clearPotCaches, potOf } from "../dbc/pot";
+import { clearPotCaches, padPotOf, potOf } from "../dbc/pot";
 import { QuoteUnfillableError, clearQuoteCaches, quoteCoin } from "../dbc/quote";
 import { checkMemo, MEMO_MAX_BYTES, REWARDS_DEFAULT_LIMIT, REWARDS_MAX_LIMIT, rewardsOf, type MemoProof } from "../rewards";
 import {
@@ -138,6 +138,8 @@ export async function handleTraderRoute(req: Request, url: URL, ctx: RequestCont
     const mint = launchedMint(coinTrades[1]!);
     return json({ trades: recentTradesOfCoin(mint, tradeLimit(params)) });
   }
+  // The pad's pot: the pots of the coins the board lists (the featured ones, or every coin with all=1), added up; one chain read per coin at most every 30 s.
+  if (path === "/api/pot") return json(await chainRead("the pad's pot", () => padPotOf(visibleCoins(db.listCoins().filter((c) => c.status === "launched" && c.poolId), params.get("all") === "1"))));
   if (path === "/api/trades") return json({ trades: recentTrades(tradeLimit(params), boardMints(params.get("all") === "1")).filter((x) => !isHidden(x.mint)) });
   if (path === "/api/events/trades") return tradeEvents(req, params, ctx);
 

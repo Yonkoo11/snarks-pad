@@ -1,5 +1,6 @@
 // Business-model split of a claimed fee. Of the 80% partner share the
-// keeper claims, holders get 75% (0.60% of volume) and the team 25% (0.20% of volume). The team share first pays
+// keeper claims, holders get 12.5% (0.10% of volume) and the team 87.5% (0.70% of volume): the owner's published policy
+// since 2026-10-12 (75/25 before that). The team share first pays
 // the cost of delivering opted-in holders' rewards shielded (the 1Click withdraw fee, the swap's slippage and the
 // Zcash network fee), so those holders receive their full share. Pure integer arithmetic, no I/O.
 //
@@ -17,7 +18,7 @@
 //     spent and returns to the team's Solana ZEC.
 const BPS = 10_000n;
 
-export const MAX_TEAM_SHARE_BPS = 5_000; // a typo may not hand the team more than half of what holders earn
+export const MAX_TEAM_SHARE_BPS = 8_750; // the published policy is the ceiling: an env typo may lower the team's share, never raise it
 
 export interface ClaimSplit {
   holders: bigint;

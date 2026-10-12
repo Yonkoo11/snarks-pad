@@ -8,6 +8,8 @@ import { NO_TRADES, STATS_MAX_AGE_MS, priceChangeBps, windowStats, type WindowSt
 import { parseCoinsQuery, selectCoins } from "./dbc/listing";
 import { buildLaunchTx, confirmLaunch, LaunchConfirmError, LaunchTxError, type LaunchParams, type LaunchTxResult } from "./dbc/launch";
 import { startLaunchReconciler } from "./dbc/reconcile";
+import { startMigrationReconciler } from "./dbc/graduation";
+import { startTradeIndexer } from "./dbc/tradeIndex";
 import { CosignError, cosignLaunch } from "./dbc/cosign";
 import { buildTradeTx, confirmTrade, recordTradeFromTx, TradeError } from "./dbc/trade";
 import { MAX_PRICE_POINTS, pricePoints } from "./dbc/priceHistory";
@@ -213,7 +215,7 @@ async function handleCoins(req: Request, url: URL, ctx: RequestContext): Promise
   const priceMatch = PRICE_ROUTE.exec(url.pathname);
   if (req.method === "GET" && priceMatch) {
     const coin = db.getCoin(launchedMint(priceMatch[1]!))!;
-    return json({ points: pricePoints(coin, db.listTradesAscending(coin.mint, MAX_PRICE_POINTS)) });
+    return json({ points: pricePoints(coin, db.listTradesAscending(coin.mint, MAX_PRICE_POINTS), db.firstTradeSig(coin.mint)) });
   }
   if (req.method === "POST" && url.pathname === "/api/coins/launch-tx") {
     const wait = launchLimiter.take(ctx.ip ?? "unknown"); // before the body is read: a call that is refused costs nothing
@@ -507,7 +509,8 @@ export function statsView(all: boolean, featured: string[] = config.api.featured
   const volume = coins.reduce((sum, c) => sum + BigInt(market.get(c.mint)?.volume24hZats ?? "0"), 0n);
   return {
     coins: coins.length,
-    graduated: coins.filter((c) => !!c.dammPool).length,
+    // A coin counts as graduated once the chain says so (its last view), even before its DAMM pool is recorded (2026-10-12: the header said 0 with a GRADUATED badge on the board).
+    graduated: coins.filter((c) => !!c.dammPool || lastKnownView(c)?.stage === "graduated").length,
     volume24hZats: volume.toString(),
     ...paidTotals.get(),
     optIns: db.countActiveOptins(),
@@ -572,5 +575,7 @@ export function startApiServer(port: number = config.api.port) {
   warmHolderCounts();
   startPublicFilesSweep();
   startLaunchReconciler();
+  startMigrationReconciler();
+  startTradeIndexer();
   return server;
 }

@@ -1,10 +1,13 @@
 // The pad's launch signer (Meteora's ask, 2026-10-08): one key that signs every launch transaction so trading terminals (Jupiter, Axiom, GMGN and the others)
-// can tell a SNARKS pad launch from any other DBC pool and label it. It is a read-only signer that no instruction names, the shape of the launchpad
-// transactions those terminals already index (a reference launch on mainnet carries its pad's signer as the fourth account, signer, not writable, in no
-// instruction). The key holds nothing and can do nothing but sign: a leak costs the pad its label until the key is rotated. It is made on the server
+// can tell a SNARKS pad launch from any other DBC pool and label it. It rides as a read-only signer, named by one instruction: an SPL Memo ("snarks.fun")
+// whose only account is the signer. Until 2026-10-11 it was added to the compiled message with no instruction naming it (the shape of a reference launch
+// on mainnet); Phantom rebuilds a transaction from its instructions when it adds its Lighthouse checks, which drops any account no instruction names, and
+// three mainnet launches were refused by the co-sign check that night (engine log "launch-cosign refused ...: signers"). The memo keeps the signer through
+// any rebuild. The key holds nothing and can do nothing but sign: a leak costs the pad its label until the key is rotated. It is made on the server
 // (ops/keys-setup.sh <instance> signer) and read by the API, which co-signs launches; the keeper never needs it. Local mode makes one in engine/keys.
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { Keypair, MessageV0, type PublicKey } from "@solana/web3.js";
+import { Keypair, type PublicKey, TransactionInstruction } from "@solana/web3.js";
+import { MEMO_PROGRAM_ID } from "../memoProgram";
 import { config } from "../config";
 
 let loaded: { kp: Keypair | null } | null = null;
@@ -35,30 +38,19 @@ export function forgetLaunchpadSigner(): void {
   loaded = null;
 }
 
+/** The memo every launch carries; what an explorer shows next to the pad's signature. */
+export const LAUNCH_MEMO = "snarks.fun";
+
 /**
- * The same message with `signer` as one more required signature: read-only, named by no instruction, placed last among the signers (after the
- * writable ones, where the message layout puts read-only signers). Instruction account indexes at or past that slot move up by one; address table
- * lookups index their own tables and do not move. Everything else, the blockhash included, stays as compiled.
+ * The instruction that names `signer`: an SPL Memo whose one account is the signer, read-only. Compiled, the signer lands last among the required
+ * signatures (after the payer and the writable coin key), and a wallet that rebuilds the message from its instructions keeps it there.
  */
-export function withExtraReadonlySigner(message: MessageV0, signer: PublicKey): MessageV0 {
-  const at = message.header.numRequiredSignatures;
-  if (message.staticAccountKeys.some((k) => k.equals(signer))) throw new Error("the launch signer is already an account of the launch");
-  const shift = (i: number): number => (i >= at ? i + 1 : i);
-  return new MessageV0({
-    header: {
-      numRequiredSignatures: at + 1,
-      numReadonlySignedAccounts: message.header.numReadonlySignedAccounts + 1,
-      numReadonlyUnsignedAccounts: message.header.numReadonlyUnsignedAccounts,
-    },
-    staticAccountKeys: [...message.staticAccountKeys.slice(0, at), signer, ...message.staticAccountKeys.slice(at)],
-    recentBlockhash: message.recentBlockhash,
-    compiledInstructions: message.compiledInstructions.map((ix) => ({ programIdIndex: shift(ix.programIdIndex), accountKeyIndexes: ix.accountKeyIndexes.map(shift), data: ix.data })),
-    addressTableLookups: message.addressTableLookups,
-  });
+export function attributionIx(signer: PublicKey): TransactionInstruction {
+  return new TransactionInstruction({ programId: MEMO_PROGRAM_ID, keys: [{ pubkey: signer, isSigner: true, isWritable: false }], data: Buffer.from(LAUNCH_MEMO, "utf8") });
 }
 
-/** `message` with the pad's signer added when this instance has one; unchanged otherwise. */
-export function withLaunchpadSigner(message: MessageV0): MessageV0 {
+/** `instructions` followed by the pad's attribution memo when this instance has a signer; unchanged otherwise. */
+export function withLaunchpadSigner(instructions: TransactionInstruction[]): TransactionInstruction[] {
   const kp = launchpadSigner();
-  return kp ? withExtraReadonlySigner(message, kp.publicKey) : message;
+  return kp ? [...instructions, attributionIx(kp.publicKey)] : instructions;
 }

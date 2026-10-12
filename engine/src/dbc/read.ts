@@ -36,7 +36,7 @@ export interface CoinView {
   feeBps: number;
   // Of the whole trading fee, in bps (10000 = all of it), for THIS coin's tier. Meteora keeps 2000 at every tier; the creator's part
   // (0 on the 1% tier) is claimed by the creator's own wallet; the pad claims the rest (8000 minus the creator's) and splits it
-  // holders/team (owner policy 2026-10-02: 75/25 of what is claimed). 1% tier: claimed 8000, holders 6000, team 2000, creator 0.
+  // holders/team (owner policy 2026-10-12: 12.5/87.5 of what is claimed). 1% tier: claimed 8000, holders 1000, team 7000, creator 0.
   claimedShareBps: number;
   holderShareBps: number;
   teamShareBps: number;

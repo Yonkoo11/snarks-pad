@@ -4,17 +4,10 @@
 import { PublicKey } from "@solana/web3.js";
 import { config } from "../config";
 import { loadKeeperKeypair, loadKeypairFile } from "../keeper";
-import * as db from "../db";
-import type { CoinRow } from "../db";
 import { localKeypairFeeClaimer, type FeeClaimer } from "./claim";
 import { SquadsVaultFeeClaimer, vaultOf } from "./squads";
 
-/** The address a coin's config names as fee claimer. */
-export function feeClaimerAddressOf(coin: CoinRow): PublicKey {
-  const row = coin.configId ? db.getDbcConfig(coin.configId) : null;
-  if (!row) throw new Error(`coin ${coin.mint} has no recorded DBC config, so its fee claimer is unknown`);
-  return new PublicKey(row.feeClaimer);
-}
+export { feeClaimerAddressOf } from "./graduation";
 
 /**
  * The claimer able to sign for `address`: the keeper key itself (Option A) or

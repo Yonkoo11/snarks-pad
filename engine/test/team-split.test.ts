@@ -1,5 +1,5 @@
-// Owner policy 2026-10-02: of each claimed fee holders get 75% (0.60% of volume), the team 25%
-// (0.20% of volume). The team share first pays shielded-delivery costs. These are the pure rules; the money path
+// Owner policy 2026-10-12: of each claimed fee holders get 12.5% (0.10% of volume), the team 87.5%
+// (0.70% of volume). The team share first pays shielded-delivery costs. These are the pure rules; the money path
 // through runEpoch is in team-ledger.test.ts.
 import { describe, expect, test } from "bun:test";
 import { deliveryReserve, MAX_TEAM_SHARE_BPS, settleDelivery, settleWithoutSwap, splitClaim, zcashFeeEstimate } from "../src/epoch/split";
@@ -12,13 +12,13 @@ function lcg(seed: number): () => number {
 }
 
 describe("splitClaim: holders + team == claimed, exactly", () => {
-  test("the published policy: 1% fee on 100 ZEC of volume -> Meteora 0.20, holders 0.60, team 0.20", () => {
+  test("the published policy: 1% fee on 100 ZEC of volume -> Meteora 0.20, holders 0.10, team 0.70", () => {
     const volume = 100n * 100_000_000n;
     const fee = volume / 100n; // 1%
     const claimed = (fee * 80n) / 100n; // Meteora keeps 20%
-    const { holders, team } = splitClaim(claimed, 2500);
-    expect(holders).toBe((volume * 60n) / 10_000n); // 0.60% of volume
-    expect(team).toBe((volume * 20n) / 10_000n); // 0.20% of volume
+    const { holders, team } = splitClaim(claimed, 8750);
+    expect(holders).toBe((volume * 10n) / 10_000n); // 0.10% of volume
+    expect(team).toBe((volume * 70n) / 10_000n); // 0.70% of volume
     expect(fee - claimed).toBe((volume * 20n) / 10_000n); // Meteora's 0.20%
   });
 
@@ -32,14 +32,14 @@ describe("splitClaim: holders + team == claimed, exactly", () => {
       const { holders, team } = splitClaim(claimed, bps);
       expect(holders + team).toBe(claimed);
       expect(holders >= 0n && team >= 0n).toBe(true);
-      expect(team <= claimed / 2n + 1n).toBe(true); // the cap: never more than half
+      expect(team <= (claimed * BigInt(MAX_TEAM_SHARE_BPS)) / 10_000n).toBe(true); // the cap: never more than 87.5%
     }
   });
 
-  test("rounding goes to the holders: the team's cut is floored, so a 3-zat claim gives the team 0", () => {
-    expect(splitClaim(3n, 2500)).toEqual({ holders: 3n, team: 0n });
-    expect(splitClaim(4n, 2500)).toEqual({ holders: 3n, team: 1n });
-    expect(splitClaim(7n, 2500)).toEqual({ holders: 6n, team: 1n });
+  test("rounding goes to the holders: the team's cut is floored, so a 3-zat claim gives the team 2 and the holders 1", () => {
+    expect(splitClaim(3n, 8750)).toEqual({ holders: 1n, team: 2n });
+    expect(splitClaim(4n, 8750)).toEqual({ holders: 1n, team: 3n });
+    expect(splitClaim(7n, 8750)).toEqual({ holders: 1n, team: 6n });
   });
 
   test("a split followed by a pro-rata split pays out exactly the claim, to the last zat, through the real rounding", () => {
@@ -47,7 +47,7 @@ describe("splitClaim: holders + team == claimed, exactly", () => {
     for (let n = 0; n < 300; n++) {
       const claimed = BigInt(Math.floor(rnd() * 1e12)) + 1n;
       const holders = Array.from({ length: 1 + Math.floor(rnd() * 40) }, (_, i) => ({ wallet: `w${i}`, balance: BigInt(1 + Math.floor(rnd() * 1e9)) }));
-      const { holders: pool, team } = splitClaim(claimed, 2500);
+      const { holders: pool, team } = splitClaim(claimed, 8750);
       const shares = proRataSplit(pool, holders);
       expect(shares.reduce((a, s) => a + s.amount, 0n) + team).toBe(claimed);
     }
@@ -57,7 +57,7 @@ describe("splitClaim: holders + team == claimed, exactly", () => {
     expect(() => splitClaim(100n, MAX_TEAM_SHARE_BPS + 1)).toThrow(/teamBps/);
     expect(() => splitClaim(100n, -1)).toThrow(/teamBps/);
     expect(() => splitClaim(100n, 12.5)).toThrow(/teamBps/);
-    expect(() => splitClaim(-1n, 2500)).toThrow(/claimed/);
+    expect(() => splitClaim(-1n, 8750)).toThrow(/claimed/);
   });
 });
 

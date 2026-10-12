@@ -104,7 +104,7 @@ const zatsText = (z) => { const f = (z % 100_000_000n).toString().padStart(8, '0
   check('the live form asks for a picture from the device, not a link: a drop zone, no image address field, and the Links section', !empty.urlInput && /Drop an image here, or click to browse/.test(empty.drop) && /PNG, JPG, GIF or WEBP, square looks best, up to 5 MB/.test(empty.drop) && empty.links && !/link to an image/i.test(empty.text))
   const card = await page.evaluate(() => document.querySelector('.preview .card')?.innerText.replace(/\s+/g, ' ') || '')
   const bar = graduationText(tier100.migrationThresholdZats)
-  check('the preview card prints the fixed facts from the API', new RegExp(`PAIRED WITH Solana ZEC`, 'i').test(card) && new RegExp(`GRADUATION When the curve holds ${bar.replace('.', '\\.')} ZEC`, 'i').test(card) && /LIQUIDITY Locked for good/i.test(card) && /TO HOLDERS 60% of every fee, in ZEC/i.test(card), `graduation ${bar} ZEC from ${tier100.migrationThresholdZats} zats`)
+  check('the preview card prints the fixed facts from the API', new RegExp(`PAIRED WITH Solana ZEC`, 'i').test(card) && new RegExp(`GRADUATION When the curve holds ${bar.replace('.', '\\.')} ZEC`, 'i').test(card) && /LIQUIDITY Locked for good/i.test(card) && /TO HOLDERS 10% of every fee, in ZEC/i.test(card), `graduation ${bar} ZEC from ${tier100.migrationThresholdZats} zats`)
   check('a wallet connects through the injected provider', await H.connect(page, wallet.pk))
   const balanceShown = await H.waitForText(page, /Your wallet holds [\d.]+ ZEC on Solana\./, 30_000)
   check('the form reads the wallet\'s Solana ZEC from the chain', balanceShown, (await page.evaluate(() => document.body.innerText)).match(/Your wallet holds [\d.]+ ZEC on Solana\./)?.[0] || '')

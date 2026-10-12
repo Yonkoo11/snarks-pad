@@ -8,7 +8,7 @@ import type { Api } from '../api'
 import { ApiError, optinMessage, optoutMessage, receiptMessage, shieldedViewMessage } from '../api'
 import { filterCoins, sortCoins } from '../coins'
 import { MAX_UPLOAD_BYTES, problemWith } from '../upload'
-import type { Coin, CoinRewards, CreatorFees, Epoch, FeedTrade, Fixed, HolderRow, Holders, LaunchWindow, MemoCheck, OptinStatus, Pot, PricePoint, Quote, Rewards, Stats, Tier, TierWindow, Trade, UploadedImage, WalletCoin, WalletProfile } from '../types'
+import type { Coin, CoinRewards, CreatorFees, Epoch, FeedTrade, Fixed, HolderRow, Holders, LaunchWindow, MemoCheck, OptinStatus, PadPot, Pot, PricePoint, Quote, Rewards, Stats, Tier, TierWindow, Trade, UploadedImage, WalletCoin, WalletProfile } from '../types'
 
 const enc = new TextEncoder()
 const h = (s: string) => nacl.hash(enc.encode(s)) // 64 bytes, deterministic
@@ -38,7 +38,7 @@ const DBC_PROGRAM = 'dbcij3LWUppWqq96dh6gJWwBifmcGfLSB5D4DuSMaqN'
 const DAMM_V2_PROGRAM = 'cpamdpZCGKUy5JxQXB4dcpGPiikHawvSWAd6mEn1sGG'
 
 // The fee-tier menu, as the engine computes it (engine/src/dbc/tiers.ts): Meteora keeps 20% of every fee, the creator takes a share of
-// the rest, and the pad splits what it claims 75/25 between holders and the team. The mock builds the same numbers.
+// the rest, and the pad splits what it claims 12.5/87.5 between holders and the team. The mock builds the same numbers.
 const CREATOR_PCT: Record<number, number> = { 100: 0, 200: 50, 400: 75, 600: 83, 1000: 90 }
 const POST_FEE: Record<number, number> = { 100: 100, 200: 200, 400: 400, 600: 600, 1000: 600 }
 // What each reviewed tier locks for good in the graduated pool (engine/src/dbc/reviewed.ts): the pad's part and the creator's, in percent. Every tier locks all of it.
@@ -226,7 +226,7 @@ function epochs(): Epoch[] {
     const fallback = i === 3 // this batch's swap did not complete, so its shielded holders were paid Solana ZEC
     const harvested = 18_000_000 + ((i * 3_331_777) % 22_000_000)
     const shieldedCount = batchRound && !fallback ? 6 + ((i * 5) % 9) : 0
-    const team = Math.floor(harvested * 0.25) // owner policy: holders 75% of the claim, the team 25%
+    const team = Math.floor(harvested * 0.875) // owner policy 2026-10-12: holders 12.5% of the claim, the team 87.5%
     const holders = harvested - team
     const shieldedTotal = shieldedCount ? Math.round(holders * 0.21) : 0
     const fee = shieldedCount ? 5000 * (shieldedCount + 1) : 0
@@ -572,6 +572,13 @@ export const mock: Api = {
     return { ...h, holders: h.holders.slice(offset, offset + (q?.limit ?? 20)) }
   },
   async pot(mint): Promise<Pot> { await wait(120); if (v25()) gone(); return potOf(findCoin(mint)) },
+  async padPot(): Promise<PadPot> {
+    await wait(120)
+    if (v25()) gone()
+    const pots = allCoins().map(potOf)
+    const sum = (k: 'accruedZats' | 'holdersZats' | 'teamZats') => String(pots.reduce((a, p) => a + BigInt(p[k]), 0n))
+    return { accruedZats: sum('accruedZats'), holdersZats: sum('holdersZats'), teamZats: sum('teamZats'), coins: pots.length, unread: 0, nextPayoutAt: pots[0]?.nextPayoutAt ?? null, asOf: new Date(NOW - 5_000).toISOString() }
+  },
   async fixed(mint): Promise<Fixed> { await wait(); if (v25()) gone(); return fixedOf(findCoin(mint)) },
   async trades(q) { await wait(120); if (v25()) gone(); return { trades: tape(q.limit ?? 30, q.mint) } },
   tradeStreamUrl: () => null,
@@ -687,6 +694,10 @@ export const mock: Api = {
     return {
       treasuryZats: empty() ? '0' : ZEC(1.2044), owedZats: empty() ? '0' : ZEC(0.9418), covered: true,
       lastEpochAt: empty() ? null : new Date(last).toISOString(), nextEpochAt: empty() ? null : new Date(last + EPOCH_MS).toISOString(),
+      // Mock only: ?noop=1 shows a due round that ran and found nothing to claim (no epoch written, the cycle still ended).
+      lastRunAt: /[?&]noop=1/.test(location.href) ? new Date(Date.now() - 3 * 3_600_000).toISOString() : (empty() ? null : new Date(last).toISOString()),
+      lastRunFoundNothing: /[?&]noop=1/.test(location.href),
+      cadence: { roundEveryMs: 48 * 3_600_000, shieldedEveryMs: 7 * 86_400_000 },
       zcashNetwork: 'regtest',
       // Mock only: open the app with ?paused=1 to see what a paused keeper looks like.
       paused: /[?&]paused=1/.test(location.href), epochsNeedingAttention: 0,

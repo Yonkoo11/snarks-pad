@@ -22,19 +22,19 @@
 <section class="wrap pad">
   <div class="top">
     <h1 class="display">How the pad works.</h1>
-    <p class="lede muted">Every coin here trades against ZEC. Every trade pays a fee, and 60% of it goes to the coin's holders each round: as Solana ZEC, or as native ZEC in your own shielded Zcash wallet if you opt in.</p>
+    <p class="lede muted">Every coin here trades against ZEC. Every trade pays a fee, and 10% of it goes to the coin's holders each round: as Solana ZEC, or as native ZEC in your own shielded Zcash wallet if you opt in.</p>
   </div>
 
   <section class="part">
     <FeeSplit {split} onretry={load} />
-    {#if manyTiers}<p class="prose">On the higher fee levels the extra goes to the coin's creator; holders still get 0.60% of every trade (0.612% on the 6% level).</p>{/if}
+    {#if manyTiers}<p class="prose">On the higher fee levels the extra goes to the coin's creator; holders still get 0.10% of every trade (0.102% on the 6% level).</p>{/if}
   </section>
 
   <section class="part" aria-labelledby="why-h">
     <h2 class="h2" id="why-h">Why SNARKS pad</h2>
     <ul class="why prose">
       <li><strong>Rewards in ZEC, never in the coin.</strong> Holders are paid from the trading fee, so payouts never sell the coin's own supply. There is no transfer tax.</li>
-      <li><strong>Shielded if you want it.</strong> Opt in once and your share arrives as native ZEC in your own Zcash wallet, in one shielded transaction a week. Nothing to claim.</li>
+      <li><strong>Shielded if you want it.</strong> Rounds run every 48 hours and pay Solana ZEC. Opt in once and your share arrives instead as native ZEC in your own Zcash wallet, in one shielded transaction about once a week. Nothing to claim.</li>
       <li><strong>Fees go to a vault, not a person.</strong> The pad's share of the fees is claimed into a 2-of-3 Squads vault. No single key can move it.</li>
       <li><strong>Fixed at launch.</strong> A coin's fee on the curve, its name and its image can never change, no new coins can be minted, and its liquidity is locked for good after graduation. Every launch also carries the pad's own signature, so trading terminals can tell a SNARKS pad coin from any other.</li>
       <li><strong>Every payout is public.</strong> The <a href="#/treasury">Payouts page</a> lists each round with its transactions.</li>
@@ -48,7 +48,7 @@
       <ol>
         <li><span class="n" aria-hidden="true">1</span><p>Connect the Solana wallet that holds your coins.</p></li>
         <li><span class="n" aria-hidden="true">2</span><p>Paste your Zcash unified address. It starts with u1; your wallet's Receive screen shows it.</p></li>
-        <li><span class="n" aria-hidden="true">3</span><p>Sign one message. No transaction, no fee. From the next weekly payout your share arrives as native ZEC in that wallet.</p></li>
+        <li><span class="n" aria-hidden="true">3</span><p>Sign one message. No transaction, no fee. Rounds still run every 48 hours; your share is held and arrives as native ZEC in that wallet in the next weekly shielded batch.</p></li>
       </ol>
       <a class="btn primary" href="#/shielded">Get my rewards shielded</a>
     </div>

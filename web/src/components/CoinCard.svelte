@@ -13,7 +13,7 @@
   const shielded = $derived(BigInt(coin.rewards.paidShieldedZec || '0') > 0n)
   const graduated = $derived(coin.stage === 'graduated')
   const first = $derived(coin.symbol === 'SNARKS')
-  // What holders get of every trade: the fee times the holders' share of it (0.6% on every tier; 0.612% on the 6% tier), never the share of
+  // What holders get of every trade: the fee times the holders' share of it (0.1% on every tier; 0.102% on the 6% tier), never the share of
   // the fee alone, which would make a 10% coin look ten times worse for holders when it is only costlier to trade.
   const holderPct = $derived(String(Math.round(coin.feeBps * coin.holderShareBps / 10_000) / 100))
   // The fee is never printed bare: "on curve" while the coin is on its curve, the pool's range once graduated. The hover tells both halves.

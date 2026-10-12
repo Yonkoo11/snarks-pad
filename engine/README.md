@@ -3,7 +3,7 @@
 The keeper + HTTP API for the snarks-launchpad ZEC launchpad: coins on Meteora's
 Dynamic Bonding Curve (DBC) paired with Solana ZEC. The pool's trading fee is
 paid in ZEC on every buy and sell; each epoch the keeper claims it (Meteora keeps
-20%; the rest is split holders 75% / team 25%, see "Fee split and the team share") and pays holders either as Solana ZEC (default) or as
+20%; the rest is split holders 12.5% / team 87.5%, see "Fee split and the team share") and pays holders either as Solana ZEC (default) or as
 one batched shielded Zcash payout (opt-in). Implements API contract v2.1.
 Every assumption the Meteora port makes, with its source line or the test that
 proves it: **`PORT-ASSUMPTIONS.md`** (read it before changing a money path).
@@ -162,7 +162,7 @@ holds the lock"). If the holder pid in `locks` is dead and no engine process run
 
 1. A trade on the DBC curve pays a flat 1% fee in ZEC; after migration the DAMM v2 pool
    charges 1% rising to about 1.2% when trading is volatile (CONFIG-REVIEW S1-M1: the dynamic
-   fee of DAMM config `Hv8Lmzm...`). Meteora keeps 20%; 80% accrues for the config's `fee_claimer`. The keeper splits what it claims 75% / 25% between holders and the team (below).
+   fee of DAMM config `Hv8Lmzm...`). Meteora keeps 20%; 80% accrues for the config's `fee_claimer`. The keeper splits what it claims 12.5% / 87.5% between holders and the team (below; policy of 2026-10-12, 75/25 before).
 2. Each epoch, per coin: if the curve is full the keeper sends the permissionless
    migration (`src/dbc/migrate.ts`), then claims what accrued: the DBC partner
    trading fee, the DAMM v2 position fee, and the partner surplus (only when it
@@ -189,7 +189,7 @@ holds the lock"). If the holder pid in `locks` is dead and no engine process run
 ## Fee split and the team share
 
 Of each trade's 1% fee Meteora keeps 20%; the pad claims the other 80% and splits **what it claimed**
-(`src/epoch/split.ts`, one place, pure integer arithmetic): holders 75% (0.60% of volume), team 25% (0.20%).
+(`src/epoch/split.ts`, one place, pure integer arithmetic): holders 12.5% (0.10% of volume), team 87.5% (0.70%).
 `team = floor(claimed x 2500 / 10000)`, holders get the remainder, so holders + team == claimed to the zat
 (`test/team-split.test.ts` runs 20,000 random claims, u64 extremes and a split followed by the real pro-rata
 rounding). The split is applied per coin when its claim lands (`claimOneCoin`) and stored with the harvest, so a
@@ -457,7 +457,7 @@ reads it.
   (`FEE_CLAIMER_PUBKEY` or `SQUADS_MULTISIG`), so every tier shares one claim path.
 - Launch: `buildLaunchTx({ feeTier })` / `POST /coins/launch-tx { feeTier }`. A fee not on the menu, a tier with no recorded config, or a
   recorded config that fails the chain check or names another fee claimer is refused (API: 400 / 503 `tier_unavailable`).
-- Epoch: unchanged. The keeper claims only the partner part; holders 75% and team 25% of that, at every tier. The creator's part is
+- Epoch: unchanged. The keeper claims only the partner part; holders 12.5% and team 87.5% of that, at every tier. The creator's part is
   never in the pad's vault: `GET /coins/:mint/creator-fees` and `POST /coins/:mint/creator-claim-tx` (an unsigned transaction for the
   pool's creator on chain to sign; the web's "Claim creator fees"). The API never loads the keeper key.
 - Not tracked: coins that someone launches on a tier config outside this site (config creation and pool creation are permissionless).
@@ -613,14 +613,14 @@ This closes the original bug where nothing stopped two concurrent runs from
 claiming the same coin twice. `test/epoch-lock.test.ts`.
 
 **2. Claiming is a resumable per-coin draft.** A new epoch starts as a
-`status: "harvesting"` draft row (never shown on the public `GET /epochs`
-— `db.listEpochs()` filters it out). For each launched coin not yet recorded
+`status: "harvesting"` draft row (never shown on the public `GET /epochs`:
+`db.listEpochs()` filters it out). For each launched coin not yet recorded
 for this draft (`epoch_coin_harvests`), the engine migrates it if the curve is
 full, claims what accrued (`src/dbc/claim.ts`), measures each claim from **that
 specific claim transaction's own pre/post token balance** (`getTokenBalanceDelta`
-in `src/solana.ts`) — never a separate before/after poll on the keeper's shared
+in `src/solana.ts`), never a separate before/after poll on the keeper's shared
 quote-asset ATA, which the same ATA also receives every other coin's claims into
-and pays every Solana ZEC holder out of — snapshots holders, computes that
+and pays every Solana ZEC holder out of. It then snapshots holders, computes that
 coin's pro-rata shares, and persists the claimed amount + shares in one DB
 transaction (`recordEpochCoinHarvest`) immediately, before moving to the next
 coin. A crash mid-epoch resumes by skipping every coin already recorded and
@@ -635,7 +635,7 @@ of it lands or none of it does.
 
 **4. A shielded payout's destination is snapshotted at planning time.**
 `payouts.zcashAddress` is set once, from the opt-in registry, when the row is
-planned — never re-read from the registry when the shielded leg actually
+planned, never re-read from the registry when the shielded leg actually
 sends. An opt-out between planning and sending cannot break an in-flight
 payout; it only ever changes what the *next* epoch plans.
 
@@ -657,7 +657,7 @@ touches `db` and the injected adapter); `src/swap/simulated.ts`'s own
 `submit`/`status` split closes the "crashed process" case for real: the burn
 is signed and its bytes persisted (`swap_progress.rawTxBase64`) BEFORE it is
 broadcast, so a resumed process can re-broadcast the identical signed bytes
-(Solana dedups by signature — replaying it can never cause a second burn)
+(Solana dedups by signature, so replaying it can never cause a second burn)
 rather than building a new one; once the burn is confirmed, `status()`
 performs the treasury-side settlement exactly once, recording it so a later
 poll is a no-op.
@@ -667,7 +667,7 @@ The moment `status()` first reports `settled`, every payout row the swap
 covers is repriced in the SAME DB write that marks the epoch settled: pro-rata
 from the swap's real `amountOutZats` minus the Zcash network fee (`5000 *
 (recipient count + 1)` zats), never from the claimed-amount estimate used at
-planning time. This must happen exactly once — a later resume sees a smaller
+planning time. This must happen exactly once: a later resume sees a smaller
 `unsent` set (some rows already sent) and must not re-split the same settled
 total against it, which is why it's tied to the state transition, not to
 `sendShieldedLeg`'s call site. `test/swap-state-machine.test.ts` asserts both
@@ -676,12 +676,12 @@ the exact repriced amounts and that a second call never touches them again.
 **7. Both payout legs sign/record before they broadcast.** For Solana, a
 batch's transaction is signed locally (its signature is fixed with zero
 network calls beyond fetching a blockhash), the signature is persisted as
-pending — `db.markPayoutPending` — and only THEN is it broadcast; a crash in
+pending (`db.markPayoutPending`) and only THEN is it broadcast; a crash in
 between resumes by checking that signature's chain status
 (`isSignatureLanded`, `src/solana.ts`) instead of blindly resending, and
 clears it for a fresh attempt (fresh blockhash, fresh signature) if it never
 landed. For Zcash, the instant devtool's `pay` returns a txid it is persisted
-pending — never waiting for the whole chunked batch to finish — and resume
+pending, never waiting for the whole chunked batch to finish, and resume
 checks `zcashTxStatus` (`mined`/`mempool`/`unknown`): `mined` resolves it sent,
 `mempool` leaves it alone (resending would double-pay), `unknown` (never
 broadcast, or the regtest chain was reset) clears it for a fresh attempt.
@@ -740,8 +740,8 @@ A payout's `kind` (which holder-category it came from) and the RAIL that
 actually moved its money can differ: a shielded-opt-in holder whose swap
 failed before funds moved is paid over the Solana rail instead
 (`sig: "fallback_solana:<sig>"`). `src/api.ts`'s `payoutRail()` classifies by
-what actually happened — real Zcash txid, `fallback_solana:` prefix, or a
-non-money marker (`carried:...`, `zero_after_fee`) — so `GET /epochs` and a
+what actually happened: real Zcash txid, `fallback_solana:` prefix, or a
+non-money marker (`carried:...`, `zero_after_fee`). So `GET /epochs` and a
 coin's `rewards` report the real rail, not the holder-category label.
 
 ## Layout

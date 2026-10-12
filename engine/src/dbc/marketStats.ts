@@ -14,7 +14,7 @@ export interface WindowStats {
   /** Sum of the window's recorded ZEC amounts: what a buyer paid (pool fee included) or a seller received (pool fee already taken). */
   volume24hZats: string;
   trades24h: number;
-  /** The fee-adjusted price (zats per whole token, same unit as price-history) of the first trade of the window that has one. */
+  /** The fee-adjusted price (zats per whole token, same unit as price-history) of the first trade of the window that has one, at the fee it paid (priceHistory.ts tradeFeeBps). */
   firstPriceZec: string | null;
 }
 
@@ -33,7 +33,7 @@ export function windowStatsByMint(nowMs: number): Map<string, WindowStats> {
     a.volume += BigInt(t.amountZec);
     a.trades += 1;
     const coin = coins.get(t.mint);
-    if (a.firstPriceZec === null && coin) a.firstPriceZec = tradePriceZec(coin, t);
+    if (a.firstPriceZec === null && coin) a.firstPriceZec = tradePriceZec(coin, t, { firstTrade: t.sig === db.firstTradeSig(t.mint) });
   }
   return new Map([...acc].map(([mint, a]) => [mint, { volume24hZats: a.volume.toString(), trades24h: a.trades, firstPriceZec: a.firstPriceZec }]));
 }

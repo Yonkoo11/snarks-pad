@@ -452,6 +452,12 @@ export function listTradesForMint(mint: string, limit = 20): TradeRow[] {
     .all({ $mint: mint, $limit: limit }) as TradeRow[];
 }
 
+/** The signature of a coin's first recorded trade (by time, then signature): the launcher's own first buy once the tape is complete; null for a coin with none. */
+export function firstTradeSig(mint: string): string | null {
+  const row = getDb().query("SELECT sig FROM trades WHERE mint = $mint ORDER BY at ASC, sig ASC LIMIT 1").get({ $mint: mint }) as { sig: string } | null;
+  return row?.sig ?? null;
+}
+
 /** The newest `limit` trades of a coin, oldest first: what a price chart draws. */
 export function listTradesAscending(mint: string, limit: number): TradeRow[] {
   return getDb()
@@ -459,7 +465,7 @@ export function listTradesAscending(mint: string, limit: number): TradeRow[] {
     .all({ $mint: mint, $limit: limit }) as TradeRow[];
 }
 
-export type RecordedTrade = Pick<TradeRow, "mint" | "side" | "amountToken" | "amountZec" | "at">;
+export type RecordedTrade = Pick<TradeRow, "sig" | "mint" | "side" | "amountToken" | "amountZec" | "at">;
 
 /**
  * Every recorded trade, of every coin, at or after `sinceIso`, oldest first (same order as the price chart: time, then
@@ -467,7 +473,7 @@ export type RecordedTrade = Pick<TradeRow, "mint" | "side" | "amountToken" | "am
  */
 export function listTradesSince(sinceIso: string): RecordedTrade[] {
   return getDb()
-    .query("SELECT mint, side, amountToken, amountZec, at FROM trades WHERE at >= $since ORDER BY at ASC, sig ASC")
+    .query("SELECT sig, mint, side, amountToken, amountZec, at FROM trades WHERE at >= $since ORDER BY at ASC, sig ASC")
     .all({ $since: sinceIso }) as RecordedTrade[];
 }
 

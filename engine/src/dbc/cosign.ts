@@ -5,8 +5,10 @@
 // sign it and posts it to POST /coins/launch-cosign, which checks it against what was built and only then signs with the coin's key, once.
 //
 // What the check allows the wallet to change: nothing in the instructions that were built (program, accounts, signer flags and data, in order), the fee
-// payer, the signers and the blockhash stay as built; added instructions are allowed only from the Compute Budget program (a wallet's priority fee) and from
-// Lighthouse (Phantom's assertions), and none of them may name the coin's address. No address lookup tables. Account writability may differ, because added
+// payer, the signers and the blockhash stay as built; a wallet may add instructions from any program (a priority fee, Phantom's Lighthouse assertions, its
+// own guards or memos) as long as none of them names a key the pad signs with (the coin, the pad's launch signer). Built Compute Budget instructions are
+// optional: a wallet that sets its own fee may drop or replace them (owner decision 2026-10-11, see addedOk). No address lookup tables.
+// A refusal's detail says which instruction the wallet added or changed (program, account and byte counts only), for the api log. Account writability may differ, because added
 // instructions change how a compiled message marks shared accounts and it gives no instruction any new power.
 import { ComputeBudgetProgram, Keypair, PublicKey, TransactionMessage, VersionedMessage, VersionedTransaction, type TransactionInstruction } from "@solana/web3.js";
 import { verifyEd25519 } from "../crypto/ed25519";
@@ -56,17 +58,42 @@ const sameIx = (a: TransactionInstruction, b: TransactionInstruction): boolean =
   a.keys.length === b.keys.length &&
   a.keys.every((k, i) => k.pubkey.equals(b.keys[i]!.pubkey) && k.isSigner === b.keys[i]!.isSigner);
 
-const addedOk = (ix: TransactionInstruction, mint: PublicKey): boolean =>
-  (ix.programId.equals(ComputeBudgetProgram.programId) || ix.programId.equals(LIGHTHOUSE_PROGRAM_ID)) && !ix.keys.some((k) => k.pubkey.equals(mint));
+/**
+ * An added instruction may come from any program but may not name a key the pad signs with (the coin, the pad's launch signer): without one of those keys
+ * it cannot spend the coin's or the pad's signature, and a new signer is refused before the instructions are compared. Owner decision 2026-10-11 after
+ * mainnet launches were refused over instructions wallets add (the earlier allowlist was Compute Budget and Lighthouse only).
+ */
+const addedOk = (ix: TransactionInstruction, protect: PublicKey[]): boolean => !ix.keys.some((k) => protect.some((p) => p.equals(k.pubkey)));
 
-/** Every built instruction, in order, with only allowed instructions around them. */
-function instructionsMatch(built: TransactionInstruction[], got: TransactionInstruction[], mint: PublicKey): boolean {
+/** The built instructions a wallet must keep: everything but Compute Budget ones, which a wallet that sets its own fee may drop or replace. */
+const required = (built: TransactionInstruction[]): TransactionInstruction[] => built.filter((ix) => !ix.programId.equals(ComputeBudgetProgram.programId));
+
+/** One instruction for the log: program, account count, data bytes; "!" when it names a protected key. Addresses only, nothing secret. */
+const describe = (ix: TransactionInstruction, protect: PublicKey[], tag: string): string =>
+  `${tag}${ix.programId.toBase58().slice(0, 8)}:${ix.keys.length}k/${ix.data.length}b${ix.keys.some((k) => protect.some((p) => p.equals(k.pubkey))) ? "!" : ""}`;
+
+/**
+ * Every required built instruction, in order, with only allowed instructions around them. Returns null when they match; otherwise a line for the log that
+ * says what came back ("=" a built instruction, "+" one the wallet added, "?" one it may not add), what was required, and how many of those were found.
+ * Written 2026-10-11 after 40 mainnet refusals in 20 minutes said only "instructions".
+ */
+function instructionsMatch(builtAll: TransactionInstruction[], got: TransactionInstruction[], protect: PublicKey[]): string | null {
+  const built = required(builtAll);
+  const seen: string[] = [];
   let i = 0;
+  let refused = false;
   for (const ix of got) {
-    if (i < built.length && sameIx(ix, built[i]!)) i++;
-    else if (!addedOk(ix, mint)) return false;
+    if (i < built.length && sameIx(ix, built[i]!)) {
+      i++;
+      seen.push(describe(ix, protect, "="));
+    } else if (addedOk(ix, protect)) seen.push(describe(ix, protect, "+"));
+    else {
+      refused = true;
+      seen.push(describe(ix, protect, "?"));
+    }
   }
-  return i === built.length;
+  if (!refused && i === built.length) return null;
+  return `got ${seen.join(" ")}; built ${built.map((ix) => describe(ix, protect, "")).join(" ")}; found ${i} of ${built.length}`;
 }
 
 function decode(signedBase64: string): VersionedTransaction {
@@ -91,7 +118,9 @@ function check(tx: VersionedTransaction, h: Held): void {
   if (!verifyEd25519(msg.serialize(), tx.signatures[0]!, h.creator.toBytes())) throw new CosignError("tx_mismatch", "wallet signature");
   const got = TransactionMessage.decompile(msg).instructions;
   const built = TransactionMessage.decompile(h.built).instructions;
-  if (!instructionsMatch(built, got, mint)) throw new CosignError("tx_mismatch", "instructions");
+  // Protected keys: every signer this engine adds (the coin, and the pad's launch signer when there is one); never the creator, who signed for themselves.
+  const why = instructionsMatch(built, got, builtSigners.slice(1));
+  if (why) throw new CosignError("tx_mismatch", `instructions: ${why}`);
 }
 
 /**

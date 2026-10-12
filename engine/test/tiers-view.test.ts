@@ -60,7 +60,7 @@ describe("GET /api/tiers, v2.7 additions", () => {
       "10% on every trade, paid in ZEC, fixed at launch.",
     ]);
     expect(tiers.map((t) => factsOfTier(t).creatorShare)).toEqual([null, "40%", "60%", "66.4%", "72%"]);
-    expect(tiers.map((t) => factsOfTier(t).holdersShare)).toEqual(["60%", "30%", "15%", "10.2%", "6%"]);
+    expect(tiers.map((t) => factsOfTier(t).holdersShare)).toEqual(["10%", "5%", "2.5%", "1.7%", "1%"]);
     for (const t of tiers) {
       expect(liquidityText(t.liquidity)).toBe("Locked for good");
       expect(graduationText(t)).toBe("6.67 ZEC");

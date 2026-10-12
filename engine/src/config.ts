@@ -6,8 +6,12 @@ import {
 } from "@meteora-ag/dynamic-bonding-curve-sdk";
 import { mkdirSync } from "node:fs";
 import { join, resolve } from "node:path";
+import type { ClaimKind } from "./db";
 import { PERMANENT_VALUE_ENV_VARS, REVIEWED_CONFIG } from "./dbc/reviewed";
 import { installRedaction, loadSecretEnvFile } from "./util/redact";
+
+/** Every claim kind a round can make (db.ClaimKind), for PAD_HELD_CLAIM_KINDS. Declared before the config object that reads it. */
+const CLAIM_KINDS: readonly ClaimKind[] = ["trading", "damm_position", "surplus"];
 
 export type PadMode = "local" | "devnet" | "mainnet";
 export type ZcashNetwork = "regtest" | "test" | "main";
@@ -302,7 +306,12 @@ export const config = {
       count: safeInt("PAD_SNAPSHOT_COUNT", 6, 1, 1_000),
       minWindowSamples: safeInt("PAD_SNAPSHOT_MIN_SAMPLES", MODE === "mainnet" ? 3 : 0, 0),
     },
-    // Business model: of each claimed fee, holders get 75% and the team 25%; the team
+    // Claim kinds a round leaves in the pool (owner decision 2026-10-12: a round may pay out part of what has built up and let
+    // the rest keep earning in the pool). Comma-separated db.ClaimKind names; unset = every kind is claimed. A claim of a held
+    // kind that already started finishes, because its ZEC may be on its way.
+    heldClaimKinds: parseClaimKinds("PAD_HELD_CLAIM_KINDS"),
+    // Business model (owner policy 2026-10-12, published on the site, README and submission): of each claimed fee,
+    // holders get 12.5% (0.10% of volume on the 1% tier) and the team 87.5% (0.70%); 75/25 before that. The team
     // share first pays shielded-delivery costs (src/epoch/split.ts). TEAM_WALLET is a Solana pubkey; unset = the
     // team share stays in the keeper and the ledger says so. Never hard-coded.
     team: {
@@ -388,6 +397,14 @@ function safeBigInt(name: string, fallback: bigint, min = 0n): bigint {
   return n;
 }
 
+function parseClaimKinds(name: string): ReadonlySet<ClaimKind> {
+  const raw = process.env[name];
+  if (raw === undefined || raw.trim() === "") return new Set();
+  const kinds = raw.split(",").map((k) => k.trim().toLowerCase()).filter((k) => k !== "");
+  for (const k of kinds) if (!CLAIM_KINDS.includes(k as ClaimKind)) throw new Error(`${name} names an unknown claim kind ${JSON.stringify(k)}; known: ${CLAIM_KINDS.join(", ")}`);
+  return new Set(kinds as ClaimKind[]);
+}
+
 function safeInt(name: string, fallback: number, min: number, max = Number.MAX_SAFE_INTEGER): number {
   const raw = process.env[name];
   if (raw === undefined || raw.trim() === "") return fallback;
@@ -429,8 +446,8 @@ export function parsePublicBaseUrl(raw: string | undefined, port: number): strin
 }
 
 function parseTeamShareBps(raw: string | undefined): number {
-  const n = raw === undefined ? 2500 : Number(raw);
-  if (!Number.isInteger(n) || n < 0 || n > 5000) throw new Error(`PAD_TEAM_SHARE_BPS must be an integer 0..5000, got ${JSON.stringify(raw)}`);
+  const n = raw === undefined ? 8750 : Number(raw);
+  if (!Number.isInteger(n) || n < 0 || n > 8750) throw new Error(`PAD_TEAM_SHARE_BPS must be an integer 0..8750, got ${JSON.stringify(raw)}`);
   return n;
 }
 

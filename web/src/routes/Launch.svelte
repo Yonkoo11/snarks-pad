@@ -45,10 +45,10 @@
   $effect(() => { void lookalike; lookalikeOk = false })
   // The fee is one of the pad's tiers (contract v2.3, GET /tiers): each tier is a permanent Meteora config, so the creator picks it once at
   // launch and it never changes. Without the menu (an older engine, or it did not answer) only the SNARKS tier exists: 1% of every trade, paid in ZEC,
-  // of which holders get 60%, the team 20% and Meteora 20%. The one line under the picker (lib/launch.ts feeLineOfTier) says it in the same words for a tier of the menu and for this one.
+  // of which holders get 10%, the team 70% and Meteora 20% (owner policy 2026-10-12). The one line under the picker (lib/launch.ts feeLineOfTier) says it in the same words for a tier of the menu and for this one.
   const FEE_PCT = 1
-  const HOLDER_PCT = 60
-  const TEAM_PCT = 20
+  const HOLDER_PCT = 10
+  const TEAM_PCT = 70
   const SNARKS_TIER: FeeSplitOfTier = { feeBps: FEE_PCT * 100, creatorShareBps: 0, holderShareBps: HOLDER_PCT * 100, teamShareBps: TEAM_PCT * 100, meteoraShareBps: (100 - HOLDER_PCT - TEAM_PCT) * 100 }
   let tiers = $state<Tier[] | null | undefined>(undefined) // undefined while the menu loads, null when the engine has none
   let quoteMint = $state<string | null>(null) // the token every coin of this pad is paired with, from the same answer (v2.7)

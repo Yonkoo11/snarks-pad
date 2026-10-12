@@ -1,5 +1,5 @@
 // Owner policy 2026-10-02 through the real runEpoch, the real local validator and the real regtest treasury: holders
-// get 75% of each claim, the team 25%, and the team share first pays the cost of delivering opted-in holders'
+// get 12.5% of each claim (policy of 2026-10-12), the team 87.5%, and the team share first pays the cost of delivering opted-in holders'
 // rewards shielded. Money paths get fault injection: a swap that fails, one that is refunded, a crash while the swap
 // is out, a team transfer signed but never broadcast, one that already landed.
 import { afterAll, afterEach, beforeAll, describe, expect, test } from "bun:test";
@@ -142,7 +142,7 @@ describe.if(LIVE)("the team share and the delivery cost, through runEpoch", () =
     const c = Keypair.generate();
     db.upsertOptin(b.publicKey.toBase58(), UA_B);
     db.upsertOptin(c.publicKey.toBase58(), UA_C);
-    const CLAIMED = 4_500_000n; // team 1,125,000; holders 3,375,000; each of three equal holders 1,125,000
+    const CLAIMED = 36_000_000n; // team 31,500,000; holders 4,500,000; each of three equal holders 1,500,000
     await fundKeeper(CLAIMED);
     const swap = fakeSwap({ keep: 37_000n }); // the swap keeps 37,000 (withdraw fee and spread)
 
@@ -150,19 +150,19 @@ describe.if(LIVE)("the team share and the delivery cost, through runEpoch", () =
     const epoch = out.epoch!;
     const e = db.getEpoch(epoch.id)!;
 
-    expect(e.harvestedZats).toBe("4500000");
-    expect(e.teamGrossZats).toBe("1125000");
-    expect(e.deliveryReserveZats).toBe("69500"); // 32,000 withdraw + 5,000 x 3 Zcash + 1% of 2,250,000
-    expect(swap.submits).toEqual([2_250_000n + 69_500n]); // the holders' shielded total plus the reserve, in ONE swap
+    expect(e.harvestedZats).toBe("36000000");
+    expect(e.teamGrossZats).toBe("31500000");
+    expect(e.deliveryReserveZats).toBe("77000"); // 32,000 withdraw + 5,000 x 3 Zcash + 1% of 3,000,000
+    expect(swap.submits).toEqual([3_000_000n + 77_000n]); // the holders' shielded total plus the reserve, in ONE swap
     // Full share for the opted-in holders: the cost came out of the team's reserve, not out of them.
-    expect(shieldedAmount(epoch.id, b.publicKey.toBase58())).toBe(1_125_000n);
-    expect(shieldedAmount(epoch.id, c.publicKey.toBase58())).toBe(1_125_000n);
-    expect(await zecOf(a.publicKey)).toBe(1_125_000n);
+    expect(shieldedAmount(epoch.id, b.publicKey.toBase58())).toBe(1_500_000n);
+    expect(shieldedAmount(epoch.id, c.publicKey.toBase58())).toBe(1_500_000n);
+    expect(await zecOf(a.publicKey)).toBe(1_500_000n);
     // The ledger: cost 37,000 swap + 15,000 Zcash fee estimate = 52,000 of the 69,500 reserved; 17,500 is native ZEC left for the team.
-    expect(e).toMatchObject({ deliveryCostZats: "52000", teamNativeZats: "17500", teamSolanaZats: "1055500", holderShortfallZats: "0", status: "ok" });
-    expect(epochSplit(e)).toMatchObject({ holdersZats: "3375000", teamZats: "1125000", deliveryCostZats: "52000", teamNetZats: "1073000" });
+    expect(e).toMatchObject({ deliveryCostZats: "52000", teamNativeZats: "25000", teamSolanaZats: "31423000", holderShortfallZats: "0", status: "ok" });
+    expect(epochSplit(e)).toMatchObject({ holdersZats: "4500000", teamZats: "31500000", deliveryCostZats: "52000", teamNetZats: "31448000" });
     // Every zat of the claim is accounted for: holders + team net + delivery cost.
-    expect(3_375_000n + 1_073_000n + 52_000n).toBe(CLAIMED);
+    expect(4_500_000n + 31_448_000n + 52_000n).toBe(CLAIMED);
   }, 300_000);
 
   test("CAP: when the team share is smaller than the delivery cost, the team pays all it has and the shielded holders bear the rest, pro rata", async () => {
@@ -199,7 +199,7 @@ describe.if(LIVE)("the team share and the delivery cost, through runEpoch", () =
     const b = Keypair.generate();
     const a = Keypair.generate();
     db.upsertOptin(b.publicKey.toBase58(), UA_B);
-    const CLAIMED = 4_000_000n; // team 1,000,000; holders 3,000,000; A 1,500,000, B 1,500,000
+    const CLAIMED = 32_000_000n; // team 28,000,000; holders 4,000,000; A 2,000,000, B 2,000,000
     await fundKeeper(CLAIMED);
     const swap = fakeSwap({ reject: true });
 
@@ -209,13 +209,13 @@ describe.if(LIVE)("the team share and the delivery cost, through runEpoch", () =
     expect(e.swapState).toBe("failed_before_funds_moved");
     expect(e.status).toBe("ok");
     expect(await zecOf(b.publicKey)).toBe(0n); // never paid on Solana (audit S6, product decision 2)
-    expect(db.getCarry(b.publicKey.toBase58(), "shielded")).toBe(1_500_000n); // carried in full
-    expect(e).toMatchObject({ deliveryCostZats: "0", teamNativeZats: "0", teamSolanaZats: "1000000", holderShortfallZats: "0" });
+    expect(db.getCarry(b.publicKey.toBase58(), "shielded")).toBe(2_000_000n); // carried in full
+    expect(e).toMatchObject({ deliveryCostZats: "0", teamNativeZats: "0", teamSolanaZats: "28000000", holderShortfallZats: "0" });
     // A second run changes nothing: the delivery was resolved once.
     await runEpoch(swap, async () => {});
-    expect(db.getEpoch(epoch.id)).toMatchObject({ teamSolanaZats: "1000000", deliveryCostZats: "0" });
+    expect(db.getEpoch(epoch.id)).toMatchObject({ teamSolanaZats: "28000000", deliveryCostZats: "0" });
     expect(await zecOf(b.publicKey)).toBe(0n); // still nothing on the public rail; the carry is planned by the next shielded round
-    expect(db.getCarry(b.publicKey.toBase58(), "shielded")).toBe(1_500_000n);
+    expect(db.getCarry(b.publicKey.toBase58(), "shielded")).toBe(2_000_000n);
   }, 300_000);
 
   test("a refund after the deposit ('returned') leaves the reserve unspent too, and carries the share once", async () => {
@@ -223,17 +223,17 @@ describe.if(LIVE)("the team share and the delivery cost, through runEpoch", () =
     const a = Keypair.generate();
     const b = Keypair.generate();
     db.upsertOptin(b.publicKey.toBase58(), UA_B);
-    const CLAIMED = 4_000_000n;
+    const CLAIMED = 32_000_000n;
     await fundKeeper(CLAIMED);
     const swap = fakeSwap({ status: { status: "returned" } });
 
     const epoch = (await runEpoch(swap, claimOf(CLAIMED, [holder(a, 50n), holder(b, 50n)]))).epoch!;
-    expect(db.getEpoch(epoch.id)).toMatchObject({ swapState: "returned_to_keeper", teamSolanaZats: "1000000", deliveryCostZats: "0" });
+    expect(db.getEpoch(epoch.id)).toMatchObject({ swapState: "returned_to_keeper", teamSolanaZats: "28000000", deliveryCostZats: "0" });
     expect(await zecOf(b.publicKey)).toBe(0n); // carried, not paid on Solana (audit S6, product decision 2)
-    expect(db.getCarry(b.publicKey.toBase58(), "shielded")).toBe(1_500_000n);
+    expect(db.getCarry(b.publicKey.toBase58(), "shielded")).toBe(2_000_000n);
     await runEpoch(swap, async () => {});
     expect(await zecOf(b.publicKey)).toBe(0n);
-    expect(db.getCarry(b.publicKey.toBase58(), "shielded")).toBe(1_500_000n);
+    expect(db.getCarry(b.publicKey.toBase58(), "shielded")).toBe(2_000_000n);
     expect(swap.submits.length).toBe(1);
   }, 300_000);
 
@@ -242,7 +242,7 @@ describe.if(LIVE)("the team share and the delivery cost, through runEpoch", () =
     const a = Keypair.generate();
     const b = Keypair.generate();
     db.upsertOptin(b.publicKey.toBase58(), UA_B);
-    const CLAIMED = 4_000_000n; // team 1,000,000; holders 3,000,000
+    const CLAIMED = 32_000_000n; // team 28,000,000; holders 4,000,000
     await fundKeeper(CLAIMED);
     const swap = fakeSwap({ keep: 40_000n, failStatusOnce: true }); // the status call after submit throws (a crash/timeout)
 
@@ -271,7 +271,7 @@ describe.if(LIVE)("the team share and the delivery cost, through runEpoch", () =
     const a = Keypair.generate();
     const b = Keypair.generate();
     db.upsertOptin(b.publicKey.toBase58(), UA_B);
-    const CLAIMED = 4_000_000n; // team 1,000,000; holders 3,000,000 (A 1,500,000, B 1,500,000)
+    const CLAIMED = 32_000_000n; // team 28,000,000; holders 4,000,000 (A 2,000,000, B 2,000,000)
     await fundKeeper(CLAIMED);
     const pending = fakeSwap({ status: { status: "pending", note: "waiting" } });
 
@@ -281,10 +281,10 @@ describe.if(LIVE)("the team share and the delivery cost, through runEpoch", () =
     expect(await zecOf(teamWallet)).toBe(0n);
 
     const reserve = BigInt(db.getEpoch(id)!.deliveryReserveZats!);
-    const settled = { ...fakeSwap({}), status: async (): Promise<SwapSettlement> => ({ status: "settled", amountOutZats: 1_500_000n + reserve - 40_000n }) };
+    const settled = { ...fakeSwap({}), status: async (): Promise<SwapSettlement> => ({ status: "settled", amountOutZats: 2_000_000n + reserve - 40_000n }) };
     await runEpoch(settled, async () => {}); // the deposit was made by the first run; this one only polls
     const e = db.getEpoch(id)!;
-    expect(e.teamSolanaZats).toBe((1_000_000n - reserve).toString());
+    expect(e.teamSolanaZats).toBe((28_000_000n - reserve).toString());
     const row = db.getPayouts(id).find((p) => p.kind === "team")!;
     expect(row.amountZats).toBe(e.teamSolanaZats!); // swept: only the Solana part, never the reserve that was in the swap
     expect(await zecOf(teamWallet)).toBe(BigInt(e.teamSolanaZats!));
@@ -300,10 +300,10 @@ describe.if(LIVE)("the team's Solana ZEC: held by default, swept to TEAM_WALLET 
     const before = db.teamTotals();
     const id = (await runEpoch(fakeSwap({}), claimOf(1_000_000n, [holder(a, 1n)]))).epoch!.id;
     expect(db.getPayouts(id).map((p) => p.kind)).toEqual(["solana"]); // only the holder
-    expect(await zecOf(a.publicKey)).toBe(750_000n);
+    expect(await zecOf(a.publicKey)).toBe(125_000n);
     const after = db.teamTotals();
-    expect(after.grossZats - before.grossZats).toBe(250_000n);
-    expect(after.heldInKeeperZats - before.heldInKeeperZats).toBe(250_000n);
+    expect(after.grossZats - before.grossZats).toBe(875_000n);
+    expect(after.heldInKeeperZats - before.heldInKeeperZats).toBe(875_000n);
     expect(after.sweptZats).toBe(before.sweptZats);
     expect((await getTreasuryView()).team).toMatchObject({ wallet: null, heldInKeeperZats: after.heldInKeeperZats.toString() });
   }, 120_000);
@@ -313,19 +313,19 @@ describe.if(LIVE)("the team's Solana ZEC: held by default, swept to TEAM_WALLET 
     team.wallet = null;
     const a = Keypair.generate();
     await fundKeeper(2_000_000n);
-    await runEpoch(fakeSwap({}), claimOf(1_000_000n, [holder(a, 1n)])); // 250,000 held
+    await runEpoch(fakeSwap({}), claimOf(1_000_000n, [holder(a, 1n)])); // 875,000 held
     const held = db.teamUnplannedZats();
-    expect(held).toBeGreaterThanOrEqual(250_000n);
+    expect(held).toBeGreaterThanOrEqual(875_000n);
 
     const teamWallet = Keypair.generate().publicKey;
     team.wallet = teamWallet.toBase58();
     const id = (await runEpoch(fakeSwap({}), claimOf(1_000_000n, [holder(a, 1n)]))).epoch!.id;
     const row = db.getPayouts(id).find((p) => p.kind === "team")!;
-    expect(BigInt(row.amountZats)).toBe(held + 250_000n); // the backlog and this epoch's share
-    expect(await zecOf(teamWallet)).toBe(held + 250_000n);
+    expect(BigInt(row.amountZats)).toBe(held + 875_000n); // the backlog and this epoch's share
+    expect(await zecOf(teamWallet)).toBe(held + 875_000n);
     expect(db.teamUnplannedZats()).toBe(0n);
     await runEpoch(fakeSwap({}), async () => {}); // nothing left to send
-    expect(await zecOf(teamWallet)).toBe(held + 250_000n);
+    expect(await zecOf(teamWallet)).toBe(held + 875_000n);
   }, 300_000);
 
   async function signedTeamTransfer(teamWallet: PublicKey, amount: bigint) {
@@ -404,7 +404,7 @@ describe.if(LIVE)("the API shows the split and never a per-recipient number", ()
     expect(withTeam.split).toHaveProperty("deliveryCostZats");
     expect(withTeam.split).toHaveProperty("teamNetZats");
     const t = (await (await handleRequest(new Request("http://x/api/treasury"))).json()) as { policy: Record<string, number>; team: Record<string, string | null> };
-    expect(t.policy).toEqual({ holdersShareOfClaimedBps: 7500, teamShareOfClaimedBps: 2500, meteoraShareOfFeeBps: 2000 });
+    expect(t.policy).toEqual({ holdersShareOfClaimedBps: 1250, teamShareOfClaimedBps: 8750, meteoraShareOfFeeBps: 2000 });
     expect(Object.keys(t.team).sort()).toEqual(["deliveryCostZats", "grossZats", "heldInKeeperZats", "nativeZats", "sweptZats", "wallet"]);
   });
 });

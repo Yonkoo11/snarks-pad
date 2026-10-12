@@ -27,7 +27,7 @@ import { config } from "./config";
 import * as db from "./db";
 import type { EpochOutcome } from "./epoch/engine";
 import { FAUCET_LOW_FILLS, type FaucetReading } from "./faucet";
-import { NEXT_EPOCH_AT_META } from "./ledger";
+import { NEXT_EPOCH_AT_META, SCHEDULER_NOOP_META } from "./ledger";
 import { haltReason, payoutsPaused } from "./pause";
 import { ensurePlan, type SnapshotPlan } from "./epoch/snapshots";
 import { checkRpcBudget } from "./rpcBudget";
@@ -35,8 +35,8 @@ import { isChainUnavailable } from "./rpcGuard";
 import { redactSecrets } from "./util/redact";
 
 export const SCHEDULER_STARTED_META = "scheduler_started_at";
-/** When a due epoch last found nothing to claim: it still counts as this cycle's run, or it would be retried every tick. */
-export const SCHEDULER_NOOP_META = "scheduler_noop_at";
+/** When a due epoch last found nothing to claim: it still counts as this cycle's run, or it would be retried every tick. Defined in ledger.ts, which reads it for the Payouts page. */
+export { SCHEDULER_NOOP_META };
 /** The stored alert kind that stays open while the devnet faucet key can pay fewer than FAUCET_LOW_FILLS more fills. */
 export const FAUCET_ALERT_KIND = "faucet_low";
 /** The stored alert kind that stays open while the keeper's own wallet holds less SOL than config.keeperWallet.lowLamports. */

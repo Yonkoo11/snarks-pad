@@ -1,7 +1,7 @@
 // One client for the engine API docs/API.md v2.9. VITE_API=real talks to the engine;
 // anything else uses the in-browser mock, which implements the same contract.
 import type {
-  Coin, CoinDetail, CreatorFees, Epoch, FeedTrade, Fixed, Holders, LaunchInput, MemoCheck, OptinError, OptinStatus, PadMode, Pot, PricePoint, Quote, Rewards, Stats,
+  Coin, CoinDetail, CreatorFees, Epoch, FeedTrade, Fixed, Holders, LaunchInput, MemoCheck, OptinError, OptinStatus, PadMode, PadPot, Pot, PricePoint, Quote, Rewards, Stats,
   Tier, Treasury, TradeQuote, UploadedImage, WalletProfile,
   IndexCoin,
 } from './types'
@@ -86,6 +86,7 @@ export interface Api {
   coinIndex(): Promise<{ coins: IndexCoin[] }>
   // v2.5, pad-wide numbers; a v2.4 engine answers 404 not_found and the page computes what it can from /coins and /epochs.
   stats(): Promise<Stats>
+  padPot(): Promise<PadPot>
   coin(mint: string): Promise<CoinDetail>
   priceHistory(mint: string): Promise<{ points: PricePoint[] }>
   // v2.7 adds `quoteMint` (the token the pad's coins are paired with on this network, so the launch page can read the wallet's balance of it) and, on every tier, the graduation threshold and the locked-liquidity shares
@@ -155,6 +156,7 @@ const real: Api = {
   coins: (q) => http('GET', coinsPath(q)),
   coinIndex: () => http('GET', '/coins/index'),
   stats: () => http('GET', '/stats'),
+  padPot: () => http('GET', '/pot'),
   coin: (mint) => http('GET', `/coins/${encodeURIComponent(mint)}`),
   priceHistory: (mint) => http('GET', `/coins/${encodeURIComponent(mint)}/price-history`),
   tiers: () => http('GET', '/tiers'),

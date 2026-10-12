@@ -252,7 +252,7 @@ async function waitForVite() {
   // ---- launch via launch-tx, with a picture picked from a file and the three links (contract v2.7)
   await go('#/launch')
   await waitFor(has('Trading fee'), 5000)
-  check('launch page states the fixed fee, the 60/20/20 split and that Meteora can pause the graduated pool', (await text()).includes('60% of every fee, in ZEC') && (await text()).includes('on every trade, paid in ZEC, fixed at launch') && /holders \$0\.60/.test(await text()) && /the team \$0\.20/.test(await text()) && /Meteora \$0\.20/.test(await text()) && (await text()).includes('Meteora can pause the pool') && !/raydium/i.test(await text()))
+  check('launch page states the fixed fee, the 10/70/20 split and that Meteora can pause the graduated pool', (await text()).includes('10% of every fee, in ZEC') && (await text()).includes('on every trade, paid in ZEC, fixed at launch') && /holders \$0.10/.test(await text()) && /the team \$0.70/.test(await text()) && /Meteora \$0\.20/.test(await text()) && (await text()).includes('Meteora can pause the pool') && !/raydium/i.test(await text()))
   const sym = 'QA' + String(Date.now()).slice(-6)
   const inputs = await page.$$('form input.input')
   await inputs[0].type('QA Flow Coin')
