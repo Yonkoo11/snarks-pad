@@ -71,19 +71,41 @@ describe("the API's trade sweep", () => {
     expect(look.recorded).toEqual(["a", "d"]);
   });
 
-  test("a round's cap leaves the cursor on the last transaction read; the next round continues from there and the DAMM pool is swept too", async () => {
+  test("a round's cap leaves each cursor on the last transaction read; the next round continues from there and the DAMM pool is swept too", async () => {
     const damm = fresh();
     const c = coin("IDX2", { dammPool: damm });
     const look = fakeLook({ [c.poolId!]: [sig("p1"), sig("p2"), sig("p3")], [damm]: [sig("d1"), sig("d2")] });
+    // A budget of 2 over two pools: one each (the fair share; until 2026-10-12 the curve pool took both and the DAMM pool waited).
     const r1 = await indexTrades(look, { now: 1, budget: 2 });
     expect(r1.recorded).toBe(2);
-    expect(look.recorded).toEqual(["p1", "p2"]);
-    expect(db.getMeta(tradeCursorKey(c.poolId!))).toBe("p2");
-    expect(db.getMeta(tradeCursorKey(damm))).toBeNull();
+    expect(look.recorded).toEqual(["p1", "d1"]);
+    expect(db.getMeta(tradeCursorKey(c.poolId!))).toBe("p1");
+    expect(db.getMeta(tradeCursorKey(damm))).toBe("d1");
     const r2 = await indexTrades(look, { now: 2, budget: 10 });
     expect(r2.recorded).toBe(3);
-    expect(look.recorded).toEqual(["p1", "p2", "p3", "d1", "d2"]);
+    expect(look.recorded).toEqual(["p1", "d1", "p2", "p3", "d2"]);
     expect(db.getMeta(tradeCursorKey(damm))).toBe("d2");
+  });
+
+  test("a pool with a long backlog cannot use the whole round: every pool gets a fair share first, and the leftover goes back to the capped pool", async () => {
+    // Before 2026-10-12 the first pool took the whole budget every round and the pools after it were never looked at while its backlog lasted.
+    // The test database holds other launched coins; a round with nothing new makes their pools sit out the next two minutes, so this round is HOT and COLD only.
+    await indexTrades(fakeLook({}), { now: 0 });
+    const cold = coin("COLD");
+    await Bun.sleep(2);
+    const hot = coin("HOT"); // newer, so the sweep looks at it first (listCoins is newest first)
+    const chain = { [hot.poolId!]: Array.from({ length: 10 }, (_, i) => sig(`h${i + 1}`)), [cold.poolId!]: [sig("c1"), sig("c2")] };
+    const look = fakeLook(chain);
+    const r1 = await indexTrades(look, { now: 1, budget: 6 });
+    // Pass 1: HOT gets ceil(6/2) = 3, COLD gets ceil(3/1) = 3 but has 2; pass 2: the 1 left goes back to HOT.
+    expect(look.recorded).toEqual(["h1", "h2", "h3", "c1", "c2", "h4"]);
+    expect(r1.looked).toBe(6);
+    expect(db.getMeta(tradeCursorKey(hot.poolId!))).toBe("h4");
+    expect(db.getMeta(tradeCursorKey(cold.poolId!))).toBe("c2");
+    // Next round: COLD has nothing new and costs one listing; HOT continues from h4 with the rest of the budget.
+    const r2 = await indexTrades(look, { now: 2, budget: 6 });
+    expect(r2.looked).toBe(6);
+    expect(look.recorded.slice(6)).toEqual(["h5", "h6", "h7", "h8", "h9", "h10"]);
   });
 
   test("a chain outage ends the round with the progress made kept; a pool with nothing new is looked at less often", async () => {

@@ -67,6 +67,31 @@ describe("tradeFromTx reads the pool's vaults", () => {
     expect(() => tradeFromTx(coin, "s7", t, vaults)).toThrow("not_a_trade");
   });
 
+  test("a transaction that names the pool but not its vaults is not a trade, even when the payer's own coin and ZEC balances moved (the forged-trade shape)", () => {
+    // Before 2026-10-12 this fell through to the launch fallback and became a buy of 100,000 for 1,000 zats: any wallet could fill the tape and the chart.
+    const other = key();
+    const t = tx(
+      [bal(2, coin.mint, other, 100_000n), bal(3, QUOTE, payer, 10_000n), bal(4, coin.mint, payer, 0n)],
+      [bal(2, coin.mint, other, 0n), bal(3, QUOTE, payer, 9_000n), bal(4, coin.mint, payer, 100_000n)],
+      [payer, coin.poolId, key(), key(), other],
+    );
+    expect(() => tradeFromTx(coin, "s11", t, vaults)).toThrow("not_a_trade");
+    const oneVault = tx([bal(4, coin.mint, payer, 0n)], [bal(4, coin.mint, payer, 100_000n)], [payer, coin.poolId, vaults.base, key(), other]);
+    expect(() => tradeFromTx(coin, "s12", oneVault, vaults)).toThrow("not_a_trade");
+  });
+
+  test("a transaction that names an existing base vault without moving it is not a trade, even when the payer's coin balance moved", () => {
+    // The vault exists, so it has a balance before the transaction; the launch fallback is only for the transaction that creates it.
+    const t = tx(
+      [bal(2, coin.mint, coin.poolId, 900_000n), bal(3, QUOTE, coin.poolId, 700n), bal(4, coin.mint, payer, 0n)],
+      [bal(2, coin.mint, coin.poolId, 900_000n), bal(3, QUOTE, coin.poolId, 700n), bal(4, coin.mint, payer, 100_000n)],
+    );
+    expect(() => tradeFromTx(coin, "s13", t, vaults)).toThrow("not_a_trade");
+    // Vaults named but with no balance entry before or after (never created in this transaction): not the launch either.
+    const bare = tx([bal(4, coin.mint, payer, 0n)], [bal(4, coin.mint, payer, 100_000n)]);
+    expect(() => tradeFromTx(coin, "s14", bare, vaults)).toThrow("not_a_trade");
+  });
+
   test("a transaction that does not name the coin's pool (or its DAMM pool) is not a trade", () => {
     const t = tx([bal(2, coin.mint, coin.poolId, 1n)], [bal(2, coin.mint, coin.poolId, 0n)], [payer, key(), vaults.base, vaults.quote]);
     expect(() => tradeFromTx(coin, "s8", t, vaults)).toThrow("not_a_trade");

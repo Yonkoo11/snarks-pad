@@ -5,8 +5,8 @@
 // that names the pool and moves ZEC into its vault and the coin out (or the reverse) counts as a trade; one that moves both the same way (liquidity added or removed) does not.
 //
 // Bookkeeping per pool, in the meta table: `trade_cursor:<pool>` is the newest signature such that it and everything older has been looked at. A round
-// lists what is newer than the cursor (newest first, as the RPC gives it), records oldest first within a cap of transactions shared by the round, and moves
-// the cursor to the last one looked at, so a backlog continues where it stopped on the next round and no trade is skipped. A pool with nothing new is
+// lists what is newer than the cursor (newest first, as the RPC gives it), records oldest first within a cap of transactions shared fairly by the round's
+// pools, and moves the cursor to the last one looked at, so a backlog continues where it stopped on the next round and no trade is skipped. A pool with nothing new is
 // looked at less often (the wait doubles, up to ten minutes) so an idle pad costs a few RPC calls an hour; a pool with trades is looked at every round.
 import { PublicKey } from "@solana/web3.js";
 import * as db from "../db";
@@ -126,31 +126,49 @@ export interface IndexRoundResult {
   lines: string[];
 }
 
+/** The pools a round looks at, in board order: each launched, visible coin's curve pool and, once migrated, its DAMM v2 pool. */
+function poolsToIndex(now: number): { coin: CoinRow; pool: string }[] {
+  const out: { coin: CoinRow; pool: string }[] = [];
+  for (const coin of db.listCoins()) {
+    if (coin.status !== "launched" || !coin.poolId || isHidden(coin.mint)) continue;
+    for (const pool of coin.dammPool ? [coin.poolId, coin.dammPool] : [coin.poolId]) {
+      if ((idle.get(pool)?.until ?? 0) <= now) out.push({ coin, pool });
+    }
+  }
+  return out;
+}
+
 /**
- * One round over every launched coin on the board (hidden coins are left out): its curve pool and, once migrated, its DAMM v2 pool. A chain outage ends the
- * round (the cursors already moved stay); any other failure on one pool is logged and the next pool is looked at.
+ * One round over every launched coin on the board (hidden coins are left out): its curve pool and, once migrated, its DAMM v2 pool. The round's
+ * transaction budget is shared fairly: a first pass gives each pool an equal share of what is left (so one pool with a long backlog cannot use the
+ * whole round and leave the pools after it unread, which it did before 2026-10-12), then a second pass hands what the first left over to the pools
+ * the first pass capped, in order. A chain outage ends the round (the cursors already moved stay); any other failure on one pool is logged and the
+ * next pool is looked at.
  */
 export async function indexTrades(look: TradeIndexLook = chainLook, opts: { now?: number; budget?: number } = {}): Promise<IndexRoundResult> {
   const now = opts.now ?? Date.now();
   let budget = opts.budget ?? TRADE_INDEX_MAX_TX_PER_ROUND;
   const out: IndexRoundResult = { looked: 0, recorded: 0, lines: [] };
-  for (const coin of db.listCoins()) {
-    if (coin.status !== "launched" || !coin.poolId || isHidden(coin.mint)) continue;
-    for (const pool of coin.dammPool ? [coin.poolId, coin.dammPool] : [coin.poolId]) {
-      if (budget <= 0) return out;
-      if ((idle.get(pool)?.until ?? 0) > now) continue;
-      try {
-        const r = await indexPool(look, coin, pool, budget);
-        budget -= r.looked;
-        out.looked += r.looked;
-        out.recorded += r.recorded;
-        if (r.recorded) out.lines.push(`${coin.symbol} ${r.recorded}`);
-        noteIdle(pool, r.listed, now);
-      } catch (err) {
-        if (isChainUnavailable(err)) throw err;
-        console.error(`[trades] ${coin.symbol} pool ${pool} not indexed: ${(err as Error)?.message ?? err}`);
-      }
+  const pools = poolsToIndex(now);
+  const capped: { coin: CoinRow; pool: string }[] = [];
+  const sweep = async (coin: CoinRow, pool: string, quota: number, pass: 1 | 2): Promise<void> => {
+    try {
+      const r = await indexPool(look, coin, pool, quota);
+      budget -= r.looked;
+      out.looked += r.looked;
+      out.recorded += r.recorded;
+      if (r.recorded) out.lines.push(`${coin.symbol} ${r.recorded}`);
+      if (pass === 1) noteIdle(pool, r.listed, now);
+      if (!r.caughtUp && pass === 1) capped.push({ coin, pool });
+    } catch (err) {
+      if (isChainUnavailable(err)) throw err;
+      console.error(`[trades] ${coin.symbol} pool ${pool} not indexed: ${(err as Error)?.message ?? err}`);
     }
+  };
+  for (let i = 0; i < pools.length && budget > 0; i++) await sweep(pools[i]!.coin, pools[i]!.pool, Math.ceil(budget / (pools.length - i)), 1);
+  for (const { coin, pool } of capped) {
+    if (budget <= 0) break;
+    await sweep(coin, pool, budget, 2);
   }
   return out;
 }

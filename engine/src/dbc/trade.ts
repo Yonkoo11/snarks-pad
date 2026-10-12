@@ -197,8 +197,8 @@ const balanceAt = (list: TokenBalance[], index: number): bigint | null => {
  * transaction that moved both vaults the same way (adding or removing liquidity by hand), which the payer's balances cannot tell from a sell.
  * `amountZec` is what the pool received (a buy, fee included) or paid out (a sell, fee already taken), the same meaning as before.
  * The launch transaction creates the curve's vaults, so they have no balance before it: that one transaction (and only one with no vault
- * entry before) falls back to the fee payer's own balance change, which is the launcher's first buy. The pool's address must appear in the
- * transaction's accounts, else not_a_trade; `wallet` is the fee payer, who is the trader for every wallet and terminal seen so far.
+ * entry before, and one after) falls back to the fee payer's own balance change, which is the launcher's first buy. The pool's address and both
+ * vaults must appear in the transaction's accounts, else not_a_trade; `wallet` is the fee payer, who is the trader for every wallet and terminal seen so far.
  */
 export function tradeFromTx(coin: Pick<db.CoinRow, "mint" | "poolId" | "dammPool">, sig: string, tx: TradeTx, vaults: PoolVaults): db.TradeRow {
   const { keys } = tx;
@@ -209,26 +209,33 @@ export function tradeFromTx(coin: Pick<db.CoinRow, "mint" | "poolId" | "dammPool
     sig, mint: coin.mint, side, wallet: payer, amountToken: (dToken < 0n ? -dToken : dToken).toString(), amountZec: (dZec < 0n ? -dZec : dZec).toString(), at,
   });
 
+  // A swap writes both vaults, so a transaction that names the pool but not its vaults is not a trade. Before 2026-10-12 it fell through to the
+  // payer-balance fallback below, so any wallet could put trades on the tape (and on the chart and the 24h volume) by naming the pool as an
+  // unused account and moving the coin between its own wallets.
   const baseIdx = keys.indexOf(vaults.base);
   const quoteIdx = keys.indexOf(vaults.quote);
-  const basePre = baseIdx === -1 ? null : balanceAt(tx.preTokenBalances, baseIdx);
-  if (baseIdx !== -1 && quoteIdx !== -1 && basePre !== null) {
-    const dBase = (balanceAt(tx.postTokenBalances, baseIdx) ?? 0n) - basePre;
+  if (baseIdx === -1 || quoteIdx === -1) throw new TradeError("not_a_trade");
+  const basePre = balanceAt(tx.preTokenBalances, baseIdx);
+  const basePost = balanceAt(tx.postTokenBalances, baseIdx);
+  if (basePre !== null) {
+    const dBase = (basePost ?? 0n) - basePre;
     const dQuote = (balanceAt(tx.postTokenBalances, quoteIdx) ?? 0n) - (balanceAt(tx.preTokenBalances, quoteIdx) ?? 0n);
     if (dBase < 0n && dQuote > 0n) return row("buy", dBase, dQuote);
     if (dBase > 0n && dQuote < 0n) return row("sell", dBase, dQuote);
     throw new TradeError("not_a_trade");
   }
 
-  // The launch transaction: the vaults did not exist before it, so the launcher's own balances say what the first buy was.
+  // The launch transaction: the base vault did not exist before it and does after, so the launcher's own balances say what the first buy was.
+  // An existing vault named in a transaction always has a balance before it, so this path is open to the one transaction that creates the vault.
+  if (basePost === null) throw new TradeError("not_a_trade");
   const quoteMint = config.solana.dbc.quoteMint.toBase58();
   const delta = (m: string): bigint => {
     const sum = (list: TokenBalance[]) => list.filter((b) => b.mint === m && b.owner === payer).reduce((a, b) => a + BigInt(b.uiTokenAmount.amount), 0n);
     return sum(tx.postTokenBalances) - sum(tx.preTokenBalances);
   };
   const dToken = delta(coin.mint);
-  if (dToken === 0n) throw new TradeError("not_a_trade");
-  return row(dToken > 0n ? "buy" : "sell", dToken, delta(quoteMint));
+  if (dToken <= 0n) throw new TradeError("not_a_trade");
+  return row("buy", dToken, delta(quoteMint));
 }
 
 /**
