@@ -5,9 +5,11 @@
 // sign it and posts it to POST /coins/launch-cosign, which checks it against what was built and only then signs with the coin's key, once.
 //
 // What the check allows the wallet to change: nothing in the instructions that were built (program, accounts, signer flags and data, in order), the fee
-// payer, the signers and the blockhash stay as built; a wallet may add instructions from any program (a priority fee, Phantom's Lighthouse assertions, its
-// own guards or memos) as long as none of them names a key the pad signs with (the coin, the pad's launch signer). Built Compute Budget instructions are
-// optional: a wallet that sets its own fee may drop or replace them (owner decision 2026-10-11, see addedOk). No address lookup tables.
+// payer, the signers and the blockhash stay as built; a wallet may add instructions from any program (a priority fee, its own guards or memos) as long as
+// none of them names a key the pad signs with (the coin, the pad's launch signer). The one exception is a Lighthouse assertion, which may name those keys:
+// it only reads the accounts it is given (Phantom asserts the new mint's state before and after a launch; refusing that refused every Phantom launch on
+// 2026-10-12, see addedOk). Built Compute Budget instructions are optional: a wallet that sets its own fee may drop or replace them (owner decision
+// 2026-10-11). No address lookup tables.
 // A refusal's detail says which instruction the wallet added or changed (program, account and byte counts only), for the api log. Account writability may differ, because added
 // instructions change how a compiled message marks shared accounts and it gives no instruction any new power.
 import { ComputeBudgetProgram, Keypair, PublicKey, TransactionMessage, VersionedMessage, VersionedTransaction, type TransactionInstruction } from "@solana/web3.js";
@@ -59,11 +61,24 @@ const sameIx = (a: TransactionInstruction, b: TransactionInstruction): boolean =
   a.keys.every((k, i) => k.pubkey.equals(b.keys[i]!.pubkey) && k.isSigner === b.keys[i]!.isSigner);
 
 /**
+ * Lighthouse instructions by their first data byte (Borsh enum index; github.com/Jac0xb/lighthouse programs/lighthouse/src/instruction.rs, read
+ * 2026-10-12): 0 MemoryWrite and 1 MemoryClose take a writable payer that signs and are never allowed to name a protected key; 2 to 17 are the assertions
+ * (AssertAccountData ... AssertBubblegumTreeConfigAccount), which read the accounts they name and can move nothing. A later Lighthouse version adding a
+ * variant past 17 is refused until this range is checked again.
+ */
+const LIGHTHOUSE_ASSERT_FIRST = 2;
+const LIGHTHOUSE_ASSERT_LAST = 17;
+const isLighthouseAssert = (ix: TransactionInstruction): boolean =>
+  ix.programId.equals(LIGHTHOUSE_PROGRAM_ID) && ix.data.length > 0 && ix.data[0]! >= LIGHTHOUSE_ASSERT_FIRST && ix.data[0]! <= LIGHTHOUSE_ASSERT_LAST;
+
+/**
  * An added instruction may come from any program but may not name a key the pad signs with (the coin, the pad's launch signer): without one of those keys
  * it cannot spend the coin's or the pad's signature, and a new signer is refused before the instructions are compared. Owner decision 2026-10-11 after
- * mainnet launches were refused over instructions wallets add (the earlier allowlist was Compute Budget and Lighthouse only).
+ * mainnet launches were refused over instructions wallets add (the earlier allowlist was Compute Budget and Lighthouse only). A Lighthouse assertion may
+ * name a protected key: Phantom adds one on the new mint for every launch, and five of five Phantom launches on 2026-10-12 were refused for it
+ * (api log: one `?L2TExMFK:1k/13b!` among the wallet's additions). An assertion reads the account and cannot use its signature.
  */
-const addedOk = (ix: TransactionInstruction, protect: PublicKey[]): boolean => !ix.keys.some((k) => protect.some((p) => p.equals(k.pubkey)));
+const addedOk = (ix: TransactionInstruction, protect: PublicKey[]): boolean => isLighthouseAssert(ix) || !ix.keys.some((k) => protect.some((p) => p.equals(k.pubkey)));
 
 /** The built instructions a wallet must keep: everything but Compute Budget ones, which a wallet that sets its own fee may drop or replace. */
 const required = (built: TransactionInstruction[]): TransactionInstruction[] => built.filter((ix) => !ix.programId.equals(ComputeBudgetProgram.programId));

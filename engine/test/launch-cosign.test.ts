@@ -1,6 +1,6 @@
 // dbc/cosign.ts (audit S5-01): the engine adds the coin's signature only to the launch it built, after the creator's wallet signed it. A wallet may add
-// instructions that name no key the pad signs with (a priority fee, Phantom's Lighthouse checks, its own guards) and may replace a built Compute Budget
-// instruction; nothing else may change.
+// instructions that name no key the pad signs with (a priority fee, its own guards), a Lighthouse assertion naming any key (Phantom asserts the new mint;
+// changed 2026-10-12 after every Phantom launch was refused for it), and may replace a built Compute Budget instruction; nothing else may change.
 import { describe, expect, test } from "bun:test";
 import bs58 from "bs58";
 import nacl from "tweetnacl";
@@ -38,7 +38,8 @@ const allSigned = (b64: string): boolean => {
   const m = tx.message.serialize();
   return tx.message.staticAccountKeys.slice(0, tx.message.header.numRequiredSignatures).every((k, i) => nacl.sign.detached.verify(m, tx.signatures[i]!, k.toBytes()));
 };
-const lighthouse = (keys: PublicKey[]) => new TransactionInstruction({ programId: LIGHTHOUSE_PROGRAM_ID, keys: keys.map((pubkey) => ({ pubkey, isSigner: false, isWritable: false })), data: Buffer.from([1, 2, 3]) });
+/** A Lighthouse instruction: `kind` is the first data byte (5 = AssertAccountInfo, what Phantom sends; 0 = MemoryWrite, 1 = MemoryClose, the two that write). */
+const lighthouse = (keys: PublicKey[], kind = 5) => new TransactionInstruction({ programId: LIGHTHOUSE_PROGRAM_ID, keys: keys.map((pubkey) => ({ pubkey, isSigner: false, isWritable: false })), data: Buffer.from([kind, 2, 3]) });
 
 describe("the engine signs only the launch it built, after the wallet", () => {
   test("the wallet's signed copy comes back with the coin's signature, both valid", () => {
@@ -46,22 +47,30 @@ describe("the engine signs only the launch it built, after the wallet", () => {
     expect(allSigned(cosignLaunch(s.mint, s.walletSigned()))).toBe(true);
   });
 
-  test("a wallet's priority fee and Phantom's Lighthouse checks are allowed", () => {
+  test("a wallet's priority fee and Phantom's Lighthouse checks are allowed, including an assertion on the coin itself (every Phantom launch carries one)", () => {
     const s = setup();
     const fee = ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 10_000 });
     const out = cosignLaunch(s.mint, s.walletSigned([fee, ...s.ixs, lighthouse([s.creator.publicKey, s.pool])]));
     expect(allSigned(out)).toBe(true);
+    // Phantom's shape on 2026-10-12: assertions around the built instructions, one of them naming the new mint. Every assertion kind, 2 to 17, is allowed.
+    for (const kind of [2, 5, 7, 17]) {
+      const t = setup();
+      expect(allSigned(cosignLaunch(t.mint, t.walletSigned([fee, lighthouse([t.creator.publicKey]), lighthouse([t.coin.publicKey], kind), ...t.ixs, lighthouse([t.coin.publicKey], kind)])))).toBe(true);
+    }
   });
 
-  test("an added transfer (a new signer), a changed or dropped instruction, or any added instruction naming the coin is refused", () => {
+  test("an added transfer (a new signer), a changed or dropped instruction, a Lighthouse memory write naming the coin, or any other program's instruction naming the coin is refused", () => {
     const steal = SystemProgram.transfer({ fromPubkey: Keypair.generate().publicKey, toPubkey: Keypair.generate().publicKey, lamports: 1 });
     const other = Keypair.generate().publicKey;
     for (const change of [
       (s: ReturnType<typeof setup>) => [...s.ixs, steal],
       (s: ReturnType<typeof setup>) => [s.ixs[0]!, new TransactionInstruction({ ...s.ixs[1]!, data: Buffer.from("sell") })],
       (s: ReturnType<typeof setup>) => [s.ixs[0]!],
-      (s: ReturnType<typeof setup>) => [...s.ixs, lighthouse([s.coin.publicKey])],
-      (s: ReturnType<typeof setup>) => [...s.ixs, new TransactionInstruction({ programId: other, keys: [{ pubkey: s.coin.publicKey, isSigner: false, isWritable: true }], data: Buffer.from([9]) })],
+      (s: ReturnType<typeof setup>) => [...s.ixs, lighthouse([s.coin.publicKey], 0)], // MemoryWrite
+      (s: ReturnType<typeof setup>) => [...s.ixs, lighthouse([s.coin.publicKey], 1)], // MemoryClose
+      (s: ReturnType<typeof setup>) => [...s.ixs, lighthouse([s.coin.publicKey], 18)], // past the known assertions
+      (s: ReturnType<typeof setup>) => [...s.ixs, new TransactionInstruction({ programId: LIGHTHOUSE_PROGRAM_ID, keys: [{ pubkey: s.coin.publicKey, isSigner: false, isWritable: true }], data: Buffer.alloc(0) })],
+      (s: ReturnType<typeof setup>) => [...s.ixs, new TransactionInstruction({ programId: other, keys: [{ pubkey: s.coin.publicKey, isSigner: false, isWritable: true }], data: Buffer.from([5, 2, 3]) })], // an assertion's bytes from another program
     ]) {
       const s = setup();
       expect(() => cosignLaunch(s.mint, s.walletSigned(change(s)))).toThrow("tx_mismatch");
@@ -110,7 +119,7 @@ describe("the engine signs only the launch it built, after the wallet", () => {
     expect(detail).toBe(`instructions: got =${prog}:3k/6b! =${prog}:1k/3b ?${other.toBase58().slice(0, 8)}:1k/4b!; built ${prog}:3k/6b! ${prog}:1k/3b; found 2 of 2`);
   });
 
-  test("an added instruction naming the pad's launch signer (a read-only signer after the coin) is refused; one naming only the creator is not", () => {
+  test("an added instruction naming the pad's launch signer (a read-only signer after the coin) is refused unless it is a Lighthouse assertion; one naming only the creator is not", () => {
     const creator = Keypair.generate();
     const coin = Keypair.generate();
     const pad = Keypair.generate();
@@ -127,7 +136,13 @@ describe("the engine signs only the launch it built, after the wallet", () => {
     };
     const hold = () => holdLaunchKey(coin, new TransactionMessage({ payerKey: creator.publicKey, recentBlockhash: hash, instructions: ixs }).compileToV0Message(), creator.publicKey);
     hold();
-    expect(() => cosignLaunch(coin.publicKey.toBase58(), signed([...ixs, lighthouse([pad.publicKey])]))).toThrow("tx_mismatch");
+    expect(() => cosignLaunch(coin.publicKey.toBase58(), signed([...ixs, lighthouse([pad.publicKey], 0)]))).toThrow("tx_mismatch"); // MemoryWrite, pad as payer
+    hold();
+    const guard = new TransactionInstruction({ programId: Keypair.generate().publicKey, keys: [{ pubkey: pad.publicKey, isSigner: false, isWritable: false }], data: Buffer.from([5, 2, 3]) });
+    expect(() => cosignLaunch(coin.publicKey.toBase58(), signed([...ixs, guard]))).toThrow("tx_mismatch");
+    hold();
+    // An assertion on the pad signer is allowed (changed 2026-10-12). The test's pad key is not this instance's signer, so the pad signature is not checked here.
+    expect(() => cosignLaunch(coin.publicKey.toBase58(), signed([...ixs, lighthouse([pad.publicKey])]))).not.toThrow();
     hold();
     expect(() => cosignLaunch(coin.publicKey.toBase58(), signed([lighthouse([creator.publicKey]), ...ixs]))).not.toThrow();
   });
