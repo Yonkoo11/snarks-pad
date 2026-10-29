@@ -125,6 +125,19 @@
   const sideLoading = $derived(nCoins === null && paidAll === null && !failed && coins === null)
   // the last round that paid anyone, as the Payouts page orders them (newest first); its wallet count is already public there
   const lastPaid = $derived(epochs?.find((e) => e.shielded.count + e.solanaPayouts.count > 0) ?? null)
+  // the proof strip's two counts, from the rounds the page already holds; a wallet paid in several rounds counts once per payment, as the Payouts page counts
+  const nPayments = $derived(epochs ? epochs.reduce((a, e) => a + e.solanaPayouts.count + e.shielded.count, 0) : null)
+  const nRounds = $derived(epochs ? epochs.length : null)
+  // the one note a returning visitor gets: this browser's last visit, read once per mount, before the stamp below overwrites it
+  const prevVisit: number | null = (() => {
+    try {
+      const v = localStorage.getItem('snarks-last-visit')
+      localStorage.setItem('snarks-last-visit', String(Date.now()))
+      return v ? Number(v) : null
+    } catch { return null }
+  })()
+  const newSince = $derived(!!lastPaid && prevVisit !== null && Date.parse(lastPaid.at) > prevVisit)
+  function toMarket() { document.getElementById('market-h')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }
   // the tape tags a row "dev" when its wallet created that coin; the creators are read off the coins the page already holds
   const creators = $derived(Object.fromEntries([...(coins ?? []), ...(near ?? []), ...(fullList ?? [])].map((c) => [c.mint, c.creator])))
   // a board with fewer coins than a row holds offers the next slot to the visitor instead of an empty cell
@@ -136,13 +149,38 @@
   <div class="copy">
     <h1 class="display">Coins on Meteora that pay holders in ZEC, <em>shielded</em> if you opt in.</h1>
     <p class="lede">Every trade pays its fee in ZEC, and holders are paid from it each round. Opt in and your share arrives as native ZEC in your own Zcash wallet.</p>
+    <!-- the proof, biggest thing after the headline: what this pad has already paid, linked to the rounds that prove it -->
+    {#if paidAll !== null && paidAll > 0n}
+      <a class="proof" href="#/treasury" aria-label="Every payout round, with its transactions">
+        <span class="p-item"><span class="label">Paid to holders</span><span class="mono p-big">{zec(paidAll)} ZEC</span>{#if usdOfZats(paidAll, zecUsd.rate)}<span class="p-usd">{usdOfZats(paidAll, zecUsd.rate)}</span>{/if}</span>
+        {#if nPayments !== null}<span class="p-item"><span class="label">Payments</span><span class="mono p-big">{nPayments.toLocaleString('en-US')}</span></span>{/if}
+        {#if nRounds !== null}<span class="p-item"><span class="label">Rounds</span><span class="mono p-big">{nRounds}</span></span>{/if}
+        <span class="p-item"><span class="label"><span class="key hatch" aria-hidden="true"></span>Of it shielded</span><span class="mono p-big">{zec(paidShd ?? 0n)} ZEC</span></span>
+      </a>
+    {:else if paidAll === 0n}
+      <p class="muted">No round has paid yet. The first payout lands after the first round closes.</p>
+    {/if}
     <div class="actions">
+      <button class="btn primary" type="button" onclick={toMarket}>See the coins</button>
       <a class="btn shd" href="#/shielded"><span class="key hatch" aria-hidden="true"></span>Get my rewards shielded</a>
-      <a class="btn ghost" href="#/how">How it works</a>
     </div>
   </div>
   <div class="art"><Taped settle /></div>
 </section>
+
+<!-- the latest paid round, a receipt pinned under the hero; the Payouts page holds every one -->
+{#if lastPaid}
+  {@const n = lastPaid.shielded.count + lastPaid.solanaPayouts.count}
+  <section class="wrap" aria-label="Latest payout round">
+    <a class="receipt panel" href="#/treasury">
+      <span class="r-head"><span class="mono r-id" title={lastPaid.id}>Round #{epochs ? epochs.length - epochs.findIndex((e) => e.id === lastPaid.id) : ''}</span><span class="muted">{ago(lastPaid.at, now)}</span>{#if newSince}<span class="chip">New since your last visit</span>{/if}</span>
+      <span class="r-line"><span class="label">Claimed</span><span class="mono">{zec(lastPaid.harvestedZats)} ZEC</span></span>
+      <span class="r-line"><span class="label">Paid</span><span class="mono">{n.toLocaleString('en-US')} {n === 1 ? 'wallet' : 'wallets'}</span></span>
+      {#if lastPaid.shielded.count > 0}<span class="r-line"><span class="label"><span class="key hatch" aria-hidden="true"></span>Shielded leg</span><span class="mono">{zec(lastPaid.shielded.totalZats)} ZEC to {lastPaid.shielded.count}</span></span>{/if}
+      <span class="r-go">Every round, with its transactions</span>
+    </a>
+  </section>
+{/if}
 
 <div class="wrap band" class:with-tape={tapeState !== 'absent'}>
   <section class="strip" aria-labelledby="near-h">
@@ -200,16 +238,8 @@
       <div><dt class="label">Graduated</dt><dd class="mono">{nGrad ?? '–'}</dd></div>
       <div><dt class="label">24h volume on this pad</dt><dd class="mono">{vol === null ? '–' : `${vol} ZEC`}</dd></div>
       <div><dt class="label">In the pot now</dt><dd class="mono">{padPot ? `${zec(padPot.accruedZats)} ZEC` : '–'}{#if padPot && usdOfZats(padPot.accruedZats, zecUsd.rate)} <span class="usd">{usdOfZats(padPot.accruedZats, zecUsd.rate)}</span>{/if}</dd></div>
-      <div><dt class="label">Paid to holders so far</dt><dd class="mono">{paidAll === null ? '–' : paidAll === 0n ? 'None yet' : `${zec(paidAll)} ZEC`}</dd></div>
-      {#if paidAll === 0n}
-        <div><dt class="label">Next payout</dt><dd class="next">{#if treasury}<NextPayout at={treasury.nextEpochAt} {now} />{:else}<span class="mono">–</span>{/if}</dd></div>
-      {:else}
-        <div><dt class="label"><span class="key hatch" aria-hidden="true"></span>Of it shielded</dt><dd class="mono">{paidAll === null ? '–' : `${zec(paidShd ?? 0n)} ZEC`}</dd></div>
-        {#if lastPaid}
-          {@const n = lastPaid.shielded.count + lastPaid.solanaPayouts.count}
-          <div><dt class="label">Last payout</dt><dd class="next"><a href="#/treasury">{ago(lastPaid.at, now)}, {n} {n === 1 ? 'wallet' : 'wallets'}{lastPaid.shielded.count > 0 ? ', shielded' : ''}</a></dd></div>
-        {/if}
-      {/if}
+      <!-- paid-to-holders and the shielded share lead the page now (the hero's proof strip); here the market keeps its own clock -->
+      <div><dt class="label">Next payout</dt><dd class="next">{#if treasury}<NextPayout at={treasury.nextEpochAt} {now} everyMs={treasury.cadence?.roundEveryMs ?? null} />{:else}<span class="mono">–</span>{/if}</dd></div>
     </dl>
   {/if}
 
@@ -266,6 +296,36 @@
   .shd { white-space: nowrap; }
   .art { display: grid; place-items: center; }
   .key { display: inline-block; width: 12px; height: 12px; border-radius: var(--r-xs); flex: none; }
+
+  /* the proof strip: a paper slip, barely tilted, with the paid total as the biggest number on the page */
+  .proof {
+    display: flex; flex-wrap: wrap; gap: var(--s-3) var(--s-6); align-items: end;
+    background: var(--paper-2); border-radius: var(--r-xs); box-shadow: var(--sh-2);
+    padding: var(--s-4) var(--s-5); transform: rotate(-.4deg);
+    text-decoration: none; color: inherit; max-width: max-content;
+    transition: transform var(--d-fn) var(--ease), box-shadow var(--d-fn) var(--ease);
+  }
+  @media (hover: hover) { .proof:hover { transform: rotate(-.4deg) translateY(-2px); box-shadow: var(--sh-3); } }
+  .p-item { display: grid; gap: 2px; }
+  .p-item .label { display: flex; align-items: center; gap: var(--s-1); }
+  .p-big { font-size: var(--t-20); }
+  .p-item:first-child .p-big { font-size: clamp(26px, 2.2vw, 32px); line-height: 1.1; }
+  .p-usd { font-size: var(--t-14); color: var(--ink-3); }
+
+  /* the latest round: one receipt row under the hero, every number mono, the shielded leg hatched */
+  .receipt {
+    display: flex; flex-wrap: wrap; gap: var(--s-3) var(--s-6); align-items: baseline;
+    text-decoration: none; color: inherit; padding: var(--s-4) var(--s-5);
+    transition: transform var(--d-fn) var(--ease), box-shadow var(--d-fn) var(--ease);
+  }
+  @media (hover: hover) { .receipt:hover { transform: translateY(-2px); box-shadow: var(--sh-3); } }
+  .receipt:active { transform: translateY(1px); box-shadow: var(--sh-1); transition-duration: var(--d-press); }
+  .r-head { display: flex; align-items: center; gap: var(--s-3); }
+  .r-id { font-weight: 500; font-size: var(--t-20); }
+  .r-line { display: grid; gap: 2px; }
+  .r-line .label { display: flex; align-items: center; gap: var(--s-1); }
+  .r-go { margin-left: auto; font-weight: 700; font-size: var(--t-14); }
+  .r-go::after { content: ' \2192'; }
 
   /* one band: the strip, and beside it at 1100px and above the live tape (320px); the tape drops under the strip below that */
   .band { padding-top: var(--s-7); display: grid; gap: var(--s-5); align-items: start; }
@@ -325,10 +385,11 @@
 
   @media (max-width: 900px) {
     /* the drawing sits small beside the headline, as on the Fridge door phone layout */
-    .hero { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'title art' 'lede lede' 'actions actions'; gap: var(--s-4); padding-top: var(--s-4); padding-bottom: var(--s-3); }
+    .hero { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'title art' 'lede lede' 'proof proof' 'actions actions'; gap: var(--s-4); padding-top: var(--s-4); padding-bottom: var(--s-3); }
     .copy { display: contents; }
     .copy > h1 { grid-area: title; align-self: center; }
     .lede { grid-area: lede; }
+    .proof, .copy > .muted { grid-area: proof; }
     .actions { grid-area: actions; }
     .art { grid-area: art; }
     .art :global(.taped) { width: 124px; padding: 6px; }
@@ -350,6 +411,11 @@
     .hero .display { font-size: 34px; }
     .lede { font-size: var(--t-16); line-height: 1.4; }
     .actions .btn { flex: 1 1 auto; }
+    /* the slip sits flat on a phone: the paid total takes the first row whole, the counts share the second */
+    .proof { transform: none; max-width: none; display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-3) var(--s-4); }
+    .proof .p-item:first-child, .proof .p-item:last-child { grid-column: 1 / -1; }
+    .receipt { gap: var(--s-3) var(--s-4); }
+    .r-go { margin-left: 0; flex: 1 1 100%; }
     /* three rows: the tabs; sort beside Grid or List; the search box */
     .tabs { width: 100%; display: grid; grid-template-columns: repeat(4, 1fr); }
     .tabs button { padding: 0 var(--s-2); }
