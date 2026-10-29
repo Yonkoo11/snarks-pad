@@ -3,8 +3,6 @@
 import nacl from 'tweetnacl'
 import bs58 from 'bs58'
 import { Connection, VersionedTransaction } from '@solana/web3.js'
-import { USE_REAL } from './api'
-import { mockSend } from './mock'
 import { sendAndWatch, type Landing } from './send'
 
 interface Injected {
@@ -122,7 +120,7 @@ class Wallet {
   }
 
   async #send(signed: VersionedTransaction): Promise<Landing> {
-    if (!USE_REAL) return { status: 'confirmed', sig: mockSend(signed) }
+    if (import.meta.env.VITE_API !== 'real') return { status: 'confirmed', sig: (await import('./mock')).mockSend(signed) }
     const rpc: string = import.meta.env.VITE_RPC || 'http://127.0.0.1:8899'
     return sendAndWatch(signed, new Connection(rpc, 'confirmed'))
   }

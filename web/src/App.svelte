@@ -7,13 +7,15 @@
   import { router } from './lib/router.svelte'
   import Home from './routes/Home.svelte'
   import CoinPage from './routes/Coin.svelte'
-  import Launch from './routes/Launch.svelte'
-  import Shielded from './routes/Shielded.svelte'
-  import Profile from './routes/Profile.svelte'
-  import Me from './routes/Me.svelte'
-  import Treasury from './routes/Treasury.svelte'
-  import How from './routes/How.svelte'
-  import Legal from './routes/Legal.svelte'
+  // Home and the coin page paint eagerly (the first screen and the first click); every other page is its own chunk,
+  // fetched on first visit. import() caches, so a return to a page mounts it at once.
+  const Launch = () => import('./routes/Launch.svelte')
+  const Shielded = () => import('./routes/Shielded.svelte')
+  const Profile = () => import('./routes/Profile.svelte')
+  const Me = () => import('./routes/Me.svelte')
+  const Treasury = () => import('./routes/Treasury.svelte')
+  const How = () => import('./routes/How.svelte')
+  const Legal = () => import('./routes/Legal.svelte')
   const r = $derived(router.route)
   // One title per page; the coin page writes its own once the coin is known, and the profile page always writes its own (a tab click must not put the generic one back).
   const titles = {
@@ -29,13 +31,13 @@
 <main>
   {#if r.name === 'home'}<Home />
   {:else if r.name === 'coin'}{#key r.mint}<CoinPage mint={r.mint} />{/key}
-  {:else if r.name === 'profile'}{#key r.wallet}<Profile address={r.wallet} tab={r.tab} />{/key}
-  {:else if r.name === 'me'}<Me tab={r.tab} />
-  {:else if r.name === 'launch'}<Launch />
-  {:else if r.name === 'shielded'}<Shielded />
-  {:else if r.name === 'treasury'}<Treasury />
-  {:else if r.name === 'how'}<How />
-  {:else if r.name === 'terms' || r.name === 'privacy' || r.name === 'risk'}{#key r.name}<Legal kind={r.name} />{/key}
+  {:else if r.name === 'profile'}{#key r.wallet}{#await Profile() then M}<M.default address={r.wallet} tab={r.tab} />{/await}{/key}
+  {:else if r.name === 'me'}{#await Me() then M}<M.default tab={r.tab} />{/await}
+  {:else if r.name === 'launch'}{#await Launch() then M}<M.default />{/await}
+  {:else if r.name === 'shielded'}{#await Shielded() then M}<M.default />{/await}
+  {:else if r.name === 'treasury'}{#await Treasury() then M}<M.default />{/await}
+  {:else if r.name === 'how'}{#await How() then M}<M.default />{/await}
+  {:else if r.name === 'terms' || r.name === 'privacy' || r.name === 'risk'}{#key r.name}{#await Legal() then M}<M.default kind={r.name} />{/await}{/key}
   {:else}
     <section class="wrap missing">
       <h1 class="display">No page here.</h1>

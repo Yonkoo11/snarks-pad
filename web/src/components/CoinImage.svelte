@@ -15,15 +15,13 @@
 {/if}
 
 <style>
-  .ci { border-radius: var(--r-md); object-fit: cover; flex: none; background: #f5efe2; }
+  .ci { border-radius: var(--r-md); object-fit: cover; flex: none; background: var(--paper); }
   .tile {
-    display: grid; place-items: center; font-family: var(--f-display); color: #2b2420;
-    background: hsl(var(--h) 45% 80%);
+    display: grid; place-items: center; font-family: var(--f-display); color: light-dark(#2b2420, #efe7da);
+    /* on night paper the tile is a dark tint of the same hue, so a grid of letter tiles does not glare */
+    background: light-dark(hsl(var(--h) 45% 80%), hsl(var(--h) 22% 30%));
   }
   /* inside a card: a square as wide as its box */
   .fill { width: 100%; height: 100%; aspect-ratio: 1; border-radius: 0; }
   .tile.fill { font-size: 64px; }
-  /* on night paper the tile is a dark tint of the same hue, so a grid of letter tiles does not glare */
-  :global(:root[data-theme='dark']) .tile { background: hsl(var(--h) 22% 30%); color: #efe7da; }
-  @media (prefers-color-scheme: dark) { :global(:root:not([data-theme='light'])) .tile { background: hsl(var(--h) 22% 30%); color: #efe7da; } }
 </style>

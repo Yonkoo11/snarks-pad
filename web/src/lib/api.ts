@@ -6,7 +6,6 @@ import type {
   IndexCoin,
 } from './types'
 import type { CoinQuery } from './coins'
-import { mock } from './mock'
 
 export const USE_REAL = import.meta.env.VITE_API === 'real'
 const BASE: string = import.meta.env.VITE_API_BASE || 'http://localhost:8787/api'
@@ -18,12 +17,9 @@ export function apiUrl(path: string): string {
 
 import { EXPIRED_TEXT, refusedBeforeSend } from './send'
 
-export class ApiError extends Error {
-  // `field` names what the engine refused (a request field, or `socials.x` for one link), when it says
-  constructor(public status: number, public code: string, public field?: string) { super(code) }
-}
-/** An engine before this route existed answers 404 not_found: the UI hides that block instead of showing an error. */
-export const routeAbsent = (e: unknown): boolean => e instanceof ApiError && e.status === 404 && e.code === 'not_found'
+import { ApiError } from './contract'
+// Everything that was declared here keeps its import path: the contract pieces moved to contract.ts whole.
+export { ApiError, routeAbsent, optinMessage, optoutMessage, shieldedViewMessage, receiptMessage } from './contract'
 
 type ModeListener = (m: PadMode) => void
 const listeners = new Set<ModeListener>()
@@ -198,26 +194,8 @@ const real: Api = {
   },
 }
 
-export const api: Api = USE_REAL ? real : mock
-
-// Exact message text from the contract. The client builds it so the user can read what they sign.
-export function optinMessage(wallet: string, zcash: string, nonce: string): string {
-  return `SNARKS pad: deliver my rewards shielded\nwallet: ${wallet}\nzcash: ${zcash}\nnonce: ${nonce}`
-}
-// Contract: "same signed-message scheme, first line `SNARKS pad: stop shielded delivery`".
-// The API never returns the full address, so the stop message carries no zcash line.
-export function optoutMessage(wallet: string, nonce: string): string {
-  return `SNARKS pad: stop shielded delivery\nwallet: ${wallet}\nnonce: ${nonce}`
-}
-// Contract v2.9: POST /optin/status shows a wallet's shielded delivery (on or off, the masked address, what is pending, the shielded rounds) only against a signature over this text.
-// It is the signature's purpose: it is not the opt-in or opt-out text, so it can never opt anyone in or out, and the nonce works once.
-export function shieldedViewMessage(wallet: string, nonce: string): string {
-  return `SNARKS pad: show my shielded delivery settings and rewards\nwallet: ${wallet}\nnonce: ${nonce}`
-}
-// Contract (v2.2 receipt, v2.6 verify-memo): the signed proof that opens the caller's own rows of one round.
-export function receiptMessage(wallet: string, epochId: string, nonce: string): string {
-  return `SNARKS pad: open my epoch receipt\nwallet: ${wallet}\nepoch: ${epochId}\nnonce: ${nonce}`
-}
+// The literal env check lets the real build drop the mock module entirely; mock builds load it once here.
+export const api: Api = import.meta.env.VITE_API === 'real' ? real : (await import('./mock')).mock
 
 /** Plain words for what a trade can hit: the engine's codes, and what a wallet or the chain says when a send fails. */
 export function tradeErrorText(e: unknown): string {

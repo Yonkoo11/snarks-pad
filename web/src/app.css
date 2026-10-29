@@ -4,19 +4,22 @@
 @import '@fontsource/jetbrains-mono/latin-400.css';
 @import '@fontsource/jetbrains-mono/latin-500.css';
 
-/* Direction A "Fridge door, working". Values from design/build-brief.md. */
+/* Direction A "Fridge door, working". Values from design/build-brief.md.
+   Each colour token is written once, light and dark together; color-scheme picks the side.
+   The OS choice applies by default, and <html data-theme> (set before first paint) overrides it. */
 :root {
-  --paper: #f5efe2; --paper-2: #fbf7ee; --paper-3: #ece4d2;
-  --ink: #2b2420; --ink-2: #5e544c; --ink-3: #6f6457;
-  --pink: #c42f6c; --pink-ink: #fbf7ee;
-  --pink-soft: rgba(196, 47, 108, .12);
-  --line: rgba(43, 36, 32, .14);
-  --warn-bg: #2b2420; --warn-ink: #f5efe2;
-  --bad: #9c2b1f;
+  color-scheme: light dark;
+  --paper: light-dark(#f5efe2, #1f1b18); --paper-2: light-dark(#fbf7ee, #29241f); --paper-3: light-dark(#ece4d2, #17130f);
+  --ink: light-dark(#2b2420, #efe7da); --ink-2: light-dark(#5e544c, #bdb2a4); --ink-3: light-dark(#6f6457, #978c80);
+  --pink: light-dark(#c42f6c, #f07aa8); --pink-ink: light-dark(#fbf7ee, #1f1b18);
+  --pink-soft: light-dark(rgba(196, 47, 108, .12), rgba(240, 122, 168, .14));
+  --line: light-dark(rgba(43, 36, 32, .14), rgba(239, 231, 218, .14));
+  --warn-bg: light-dark(#2b2420, #5a4f45); --warn-ink: light-dark(#f5efe2, #efe7da);
+  --bad: light-dark(#9c2b1f, #ff8f7f);
 
   --sh-1: 0 2px 0 var(--line);
-  --sh-2: 3px 4px 0 rgba(43, 36, 32, .16);
-  --sh-3: 6px 8px 0 rgba(43, 36, 32, .18);
+  --sh-2: 3px 4px 0 light-dark(rgba(43, 36, 32, .16), rgba(0, 0, 0, .45));
+  --sh-3: 6px 8px 0 light-dark(rgba(43, 36, 32, .18), rgba(0, 0, 0, .5));
 
   --f-display: 'Gaegu', 'Comic Sans MS', cursive;
   --f-body: 'Atkinson Hyperlegible', system-ui, sans-serif;
@@ -36,36 +39,9 @@
   --d-fn: 160ms; --d-press: 100ms; --d-in: 700ms;
   /* data that arrives moves once: a number or bar to its new value, the curve bar's first fill, a new trade row */
   --d-data: 240ms; --d-fill: 600ms; --d-row: 400ms;
-
-  color-scheme: light;
 }
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
-    --paper: #1f1b18; --paper-2: #29241f; --paper-3: #17130f;
-    --ink: #efe7da; --ink-2: #bdb2a4; --ink-3: #978c80;
-    --pink: #f07aa8; --pink-ink: #1f1b18;
-    --pink-soft: rgba(240, 122, 168, .14);
-    --line: rgba(239, 231, 218, .14);
-    --warn-bg: #5a4f45; --warn-ink: #efe7da;
-    --bad: #ff8f7f;
-    --sh-2: 3px 4px 0 rgba(0, 0, 0, .45);
-    --sh-3: 6px 8px 0 rgba(0, 0, 0, .5);
-    color-scheme: dark;
-  }
-}
-:root[data-theme='dark'] {
-  --paper: #1f1b18; --paper-2: #29241f; --paper-3: #17130f;
-  --ink: #efe7da; --ink-2: #bdb2a4; --ink-3: #978c80;
-  --pink: #f07aa8; --pink-ink: #1f1b18;
-  --pink-soft: rgba(240, 122, 168, .14);
-  --line: rgba(239, 231, 218, .14);
-  --warn-bg: #5a4f45; --warn-ink: #efe7da;
-  --bad: #ff8f7f;
-  --sh-2: 3px 4px 0 rgba(0, 0, 0, .45);
-  --sh-3: 6px 8px 0 rgba(0, 0, 0, .5);
-  color-scheme: dark;
-}
+:root[data-theme='light'] { color-scheme: light; }
+:root[data-theme='dark'] { color-scheme: dark; }
 
 *, *::before, *::after { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
@@ -120,11 +96,8 @@ img { display: block; max-width: 100%; }
   background: var(--paper-2);
   border-radius: var(--r-lg);
   padding: var(--s-5);
-  box-shadow: var(--sh-2);
-}
-:root[data-theme='dark'] .panel { box-shadow: var(--sh-2), inset 0 1px 0 rgba(239, 231, 218, .07); }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) .panel { box-shadow: var(--sh-2), inset 0 1px 0 rgba(239, 231, 218, .07); }
+  /* the inset top light is the night-paper edge; in the light theme it is transparent */
+  box-shadow: var(--sh-2), inset 0 1px 0 light-dark(transparent, rgba(239, 231, 218, .07));
 }
 
 /* Buttons */
