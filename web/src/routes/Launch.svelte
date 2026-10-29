@@ -349,6 +349,8 @@
 
 <style>
   .pad { padding-top: var(--s-6); display: grid; gap: var(--s-6); }
+  /* the page name outranks the form under it */
+  .pad > .display { font-size: clamp(30px, 2.6vw, 36px); }
   .grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: var(--s-7); align-items: start; }
   .form { display: grid; gap: var(--s-5); padding: var(--s-6); }
   .two { display: grid; grid-template-columns: 1.4fr 1fr; gap: var(--s-4); }

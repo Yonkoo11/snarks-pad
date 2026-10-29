@@ -51,7 +51,7 @@
   const nPayments = $derived(epochs ? epochs.reduce((a, e) => a + e.solanaPayouts.count + e.shielded.count, 0) : null)
   const nBatches = $derived(epochs ? epochs.filter((e) => e.shielded.count > 0).length : null)
   // Real pages, newest first, the page number in the address (#/treasury?page=2), so a reader can point at one.
-  const PAGE = 6
+  const PAGE = 8
   let page = $state(Math.max(1, Number(new URLSearchParams(location.hash.split('?')[1] || '').get('page')) || 1))
   const pages = $derived(epochs ? Math.max(1, Math.ceil(epochs.length / PAGE)) : 1)
   const shownEpochs = $derived(!epochs ? [] : epochs.slice((page - 1) * PAGE, page * PAGE))
@@ -174,7 +174,7 @@
                   {/each}
                 </p>
               </div>
-              <div class="leg shd">
+              <div class="leg shd" class:none={e.shielded.count === 0}>
                 <p class="label">Shielded leg</p>
                 {#if e.shielded.count === 0}
                   <p class="muted">None this round{e.status === 'fallback_solana' ? '. The swap did not complete, so shielded holders were paid Solana ZEC instead.' : '.'}</p>
@@ -213,6 +213,8 @@
 </section>
 
 <style>
+  /* the page name outranks every number under it */
+  .pad > .display { font-size: clamp(30px, 2.6vw, 36px); }
   .lede { font-size: var(--t-20); line-height: 1.45; max-width: 60ch; }
   .when { font-size: var(--t-16); }
   .pad { padding-top: var(--s-6); display: grid; gap: var(--s-6); }
@@ -263,8 +265,9 @@
   .legs { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); font-size: var(--t-14); }
   .leg { display: grid; gap: var(--s-1); align-content: start; }
   .shd { position: relative; padding-left: calc(var(--s-4) + 8px); }
-  /* hatching marks what is shielded (the device) */
+  /* hatching marks what is shielded (the device); a round that sent nothing shielded gets a plain hairline, not the mark */
   .shd::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 8px; border-radius: var(--r-xs); background: repeating-linear-gradient(-55deg, var(--pink) 0 3px, transparent 3px 6px), var(--pink-soft); }
+  .shd.none::before { background: var(--line); width: 2px; }
   .links { display: flex; flex-wrap: wrap; gap: var(--s-1) var(--s-3); align-items: center; }
   @media (max-width: 760px) {
     .sheet { padding: var(--s-5); }

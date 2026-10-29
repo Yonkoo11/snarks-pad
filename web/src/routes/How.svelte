@@ -114,6 +114,8 @@
 
 <style>
   .pad { padding-top: var(--s-6); padding-bottom: var(--s-6); display: grid; gap: var(--s-7); }
+  /* the page name outranks the prose under it */
+  .top .display { font-size: clamp(30px, 2.6vw, 36px); }
   .top { display: grid; gap: var(--s-4); }
   .lede { font-size: var(--t-20); line-height: 1.45; max-width: 60ch; }
   .part { display: grid; gap: var(--s-4); }

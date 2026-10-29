@@ -9,4 +9,4 @@
   const everyH = $derived(everyMs !== null && everyMs > 0 ? Math.round(everyMs / 3_600_000) : null)
 </script>
 
-{#if at === null}{#if everyH !== null}{#if !bare}Rounds run {/if}about every <span class="mono">{everyH}h</span>{#if !bare}; times are not announced{/if}{:else}{bare ? 'not scheduled yet' : 'No payout scheduled yet'}{/if}{:else if due}{bare ? 'due now' : 'Payout due now'}{:else}{#if !bare}Next payout {/if}in <span class="mono">{countdown(at, now)}</span>{/if}
+{#if at === null}{#if everyH !== null}{bare ? 'about every' : 'Rounds run about every'} <span class="mono">{everyH}h</span>{#if !bare}; times are not announced{/if}{:else}{bare ? 'not scheduled yet' : 'No payout scheduled yet'}{/if}{:else if due}{bare ? 'due now' : 'Payout due now'}{:else}{bare ? 'in' : 'Next payout in'} <span class="mono">{countdown(at, now)}</span>{/if}

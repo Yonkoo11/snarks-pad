@@ -703,7 +703,8 @@ export const mock: Api = {
       paused: /[?&]paused=1/.test(location.href), epochsNeedingAttention: 0,
       // Mock only, with ?devnet=1: ?faucet=dry is a faucet whose key is out of test money; ?faucet=race says it has some and then answers 503 (the last fill went just before the click).
       faucet: /[?&]devnet=1/.test(location.href) ? { available: !/[?&]faucet=dry/.test(location.href), fillsLeft: /[?&]faucet=dry/.test(location.href) ? 0 : 42 } : null,
-      policy: { holdersShareOfClaimedBps: 7500, teamShareOfClaimedBps: 2500, meteoraShareOfFeeBps: 2000 },
+      // The same split the epochs above pay (holders 12.5% of the claim, owner policy 2026-10-12), so the bar and the rows tell one story.
+      policy: { holdersShareOfClaimedBps: 1250, teamShareOfClaimedBps: 8750, meteoraShareOfFeeBps: 2000 },
       team: { wallet: null, grossZats: ZEC(0.5412), deliveryCostZats: ZEC(0.0066), nativeZats: ZEC(0.0021), heldInKeeperZats: ZEC(0.5345), sweptZats: '0' },
     }
   },

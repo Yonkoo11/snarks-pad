@@ -26,11 +26,12 @@
   @media (max-width: 720px) { .hl { grid-template-columns: 1fr; gap: var(--s-5); } }
   ul { list-style: none; padding: 0; margin: var(--s-3) 0 0; display: grid; gap: var(--s-3); }
   li { position: relative; padding-left: var(--s-5); }
-  /* hatching marks what is shielded (the device); public items get a plain outline square */
+  /* hatching marks what is shielded (the device); public items get a flat ink dash, never an empty checkbox */
   li::before {
-    content: ''; position: absolute; left: 0; top: .3em; width: 12px; height: 12px; border-radius: var(--r-xs);
-    box-shadow: inset 0 0 0 1.5px var(--ink-3);
+    content: ''; position: absolute; left: 0; top: .55em; width: 12px; height: 3px; border-radius: var(--r-xs);
+    background: var(--ink-3);
   }
+  section:first-child li::before { top: .3em; height: 12px; }
   section:first-child li::before {
     box-shadow: none;
     background: repeating-linear-gradient(-55deg, var(--pink) 0 3px, transparent 3px 6px), var(--pink-soft);

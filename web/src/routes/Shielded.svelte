@@ -213,6 +213,8 @@
   .top { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--s-5); }
   .intro { display: grid; gap: var(--s-5); }
   .draw { flex: none; padding-top: var(--s-3); }
+  /* the page name outranks the prose under it */
+  .intro .display { font-size: clamp(30px, 2.6vw, 36px); }
   .lede { font-size: var(--t-20); line-height: 1.45; }
   .was { font-size: var(--t-14); }
   .was a { color: var(--ink); text-underline-offset: 3px; text-decoration-color: var(--ink-3); }

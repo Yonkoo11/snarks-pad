@@ -160,7 +160,8 @@
             <h1 class="display big-name">{coin.name}</h1>
             {#if coin.symbol === 'SNARKS'}<span class="chip">Coin #1</span>{/if}
             <span class="chip">{feeChip(coin)}</span>
-            <span class="chip">Pays holders {coin.holderShareBps / 100}% in ZEC</span>
+            <!-- the same trade-share figure the Home cards state, never the share-of-fee figure beside it -->
+            <span class="chip">Pays holders {String(Math.round(coin.feeBps * coin.holderShareBps / 10_000) / 100)}% in ZEC</span>
             {#if coin.stage === 'graduated'}<span class="chip">Graduated</span><span class="chip">Liquidity locked</span>{/if}
           </div>
           <div class="byline">
