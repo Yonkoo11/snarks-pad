@@ -11,9 +11,10 @@
   <section>
     <h3 class="h3">Not hidden</h3>
     <ul>
+      <!-- the operator line leads: it is the limit a holder most needs before signing (hidden from the public, not from the operator) -->
+      <li><strong>The pad operator knows which Solana wallet maps to which Zcash address.</strong></li>
       <li>Your Solana wallet and its token balance (public on Solana).</li>
       <li>That the pad paid a shielded batch this week, and its total.</li>
-      <li>The pad operator knows which Solana wallet maps to which Zcash address.</li>
       <li>Someone who compares the published payee list with payouts on chain can guess whether you opted in.</li>
       <li>Roughly how much you are paid: it follows from your public token balance.</li>
     </ul>

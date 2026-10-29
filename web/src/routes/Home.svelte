@@ -239,7 +239,7 @@
       <div><dt class="label">24h volume on this pad</dt><dd class="mono">{vol === null ? '–' : `${vol} ZEC`}</dd></div>
       <div><dt class="label">In the pot now</dt><dd class="mono">{padPot ? `${zec(padPot.accruedZats)} ZEC` : '–'}{#if padPot && usdOfZats(padPot.accruedZats, zecUsd.rate)} <span class="usd">{usdOfZats(padPot.accruedZats, zecUsd.rate)}</span>{/if}</dd></div>
       <!-- paid-to-holders and the shielded share lead the page now (the hero's proof strip); here the market keeps its own clock -->
-      <div><dt class="label">Next payout</dt><dd class="next">{#if treasury}<NextPayout at={treasury.nextEpochAt} {now} everyMs={treasury.cadence?.roundEveryMs ?? null} />{:else}<span class="mono">–</span>{/if}</dd></div>
+      <div><dt class="label">Next payout</dt><dd class="next">{#if treasury}<NextPayout at={treasury.nextEpochAt} {now} everyMs={treasury.cadence?.roundEveryMs ?? null} bare />{:else}<span class="mono">–</span>{/if}</dd></div>
     </dl>
   {/if}
 
@@ -300,7 +300,8 @@
   /* the proof strip: a paper slip, barely tilted, with the paid total as the biggest number on the page */
   .proof {
     display: flex; flex-wrap: wrap; gap: var(--s-3) var(--s-6); align-items: end;
-    background: var(--paper-2); border-radius: var(--r-xs); box-shadow: var(--sh-2);
+    background: var(--paper-2); border-radius: var(--r-xs);
+    box-shadow: var(--sh-2), inset 0 1px 0 light-dark(transparent, rgba(239, 231, 218, .07));
     padding: var(--s-4) var(--s-5); transform: rotate(-.4deg);
     text-decoration: none; color: inherit; max-width: max-content;
     transition: transform var(--d-fn) var(--ease), box-shadow var(--d-fn) var(--ease);
@@ -314,10 +315,11 @@
 
   /* the latest round: one receipt row under the hero, every number mono, the shielded leg hatched */
   .receipt {
-    display: flex; flex-wrap: wrap; gap: var(--s-3) var(--s-6); align-items: baseline;
+    display: flex; flex-wrap: wrap; gap: var(--s-3) var(--s-6); align-items: end; justify-content: space-between;
     text-decoration: none; color: inherit; padding: var(--s-4) var(--s-5);
     transition: transform var(--d-fn) var(--ease), box-shadow var(--d-fn) var(--ease);
   }
+  .r-head { align-self: center; }
   @media (hover: hover) { .receipt:hover { transform: translateY(-2px); box-shadow: var(--sh-3); } }
   .receipt:active { transform: translateY(1px); box-shadow: var(--sh-1); transition-duration: var(--d-press); }
   .r-head { display: flex; align-items: center; gap: var(--s-3); }
@@ -357,8 +359,13 @@
   .market { padding-top: var(--s-8); display: grid; gap: var(--s-4); }
   .controls { display: flex; flex-wrap: wrap; gap: var(--s-3); align-items: center; }
   /* the tabs and the view toggle are the shared .seg control (app.css); only their layout lives here */
-  .ctl { display: flex; align-items: center; gap: var(--s-2); }
-  .sel { width: 180px; min-height: 44px; padding: 0 var(--s-3); }
+  .ctl { display: flex; align-items: center; gap: var(--s-2); position: relative; }
+  /* the sort menu wears the same clothes as every other control: paper fill, no border, its own drawn chevron */
+  .sel {
+    width: 180px; min-height: 44px; padding: 0 var(--s-6) 0 var(--s-3);
+    appearance: none; border: 0; background: var(--paper-3); border-radius: var(--r-md); font-weight: 700; cursor: pointer;
+  }
+  .ctl::after { content: '\25BE'; position: absolute; right: var(--s-3); pointer-events: none; color: var(--ink-2); }
   .search { width: 220px; min-height: 44px; order: 3; }
   .view { margin-left: auto; order: 4; }
   /* the stats row: label over number, as many tiles as the row holds */

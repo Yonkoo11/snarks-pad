@@ -86,7 +86,7 @@
   <div class="top">
     <div class="intro">
       <h1 class="display">Get your rewards <em>shielded.</em></h1>
-      <p class="lede measure muted">By default your rewards arrive as Solana ZEC every 48 hours. Add your Zcash address and they arrive as native ZEC in your own shielded wallet instead, in one batch about once a week.</p>
+      <p class="lede measure muted">By default your rewards arrive as Solana ZEC every 48 hours. Add your Zcash address and they arrive as native ZEC in your own shielded wallet instead, in one batch about once a week. Shielded from the public, not from the pad's operator: the lists below say exactly what.</p>
     </div>
     <div class="draw"><Taped size="sm" /></div>
   </div>
