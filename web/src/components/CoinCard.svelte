@@ -118,6 +118,10 @@
   .c-coin { display: flex; align-items: center; gap: var(--s-3); min-width: 0; }
   .c-name { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-1) var(--s-2); min-width: 0; }
   .c-name strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* on a phone a name wraps to two lines instead of being cut (the rule every coin list follows) */
+  @media (max-width: 640px) {
+    .c-name strong, .name { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; }
+  }
   .sym { font-size: var(--t-14); color: var(--ink-2); }
   .num { text-align: right; }
   .age { font-size: var(--t-14); color: var(--ink-2); }

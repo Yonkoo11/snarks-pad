@@ -7,6 +7,9 @@
   import type { FeedState } from '../lib/tape'
   import { zecUsd } from '../lib/usd.svelte'
   import { poll } from '../lib/poll'
+  import { wallet } from '../lib/wallet.svelte'
+  import { readHoldings } from '../lib/holdings'
+  import type { Holding } from '../lib/profile'
   import Taped from '../components/Taped.svelte'
   import CurveBar from '../components/CurveBar.svelte'
   import CoinImage from '../components/CoinImage.svelte'
@@ -138,6 +141,14 @@
   })()
   const newSince = $derived(!!lastPaid && prevVisit !== null && Date.parse(lastPaid.at) > prevVisit)
   function toMarket() { document.getElementById('market-h')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }
+  // the return hook: a connected wallet sees its own bag above the market, read in the browser like the Holdings tab
+  let bag = $state<Holding[] | null>(null)
+  $effect(() => {
+    const w = wallet.address
+    bag = null
+    if (!w) return
+    readHoldings(w).then((r) => { if (wallet.address === w) bag = r }, () => {})
+  })
   // the tape tags a row "dev" when its wallet created that coin; the creators are read off the coins the page already holds
   const creators = $derived(Object.fromEntries([...(coins ?? []), ...(near ?? []), ...(fullList ?? [])].map((c) => [c.mint, c.creator])))
   // a board with fewer coins than a row holds offers the next slot to the visitor instead of an empty cell
@@ -178,6 +189,17 @@
       <span class="r-line"><span class="label">Paid</span><span class="mono">{n.toLocaleString('en-US')} {n === 1 ? 'wallet' : 'wallets'}</span></span>
       {#if lastPaid.shielded.count > 0}<span class="r-line"><span class="label"><span class="key hatch" aria-hidden="true"></span>Shielded leg</span><span class="mono">{zec(lastPaid.shielded.totalZats)} ZEC to {lastPaid.shielded.count}</span></span>{/if}
       <span class="r-go">Every round, with its transactions</span>
+    </a>
+  </section>
+{/if}
+
+<!-- a connected wallet's own line: what it holds here and when the next payout runs -->
+{#if wallet.address && bag && bag.length > 0}
+  <section class="wrap" aria-label="Your coins on this pad">
+    <a class="bagline panel" href="#/me?tab=holdings">
+      <span>You hold <span class="mono">{bag.length}</span> pad {bag.length === 1 ? 'coin' : 'coins'} with this wallet.</span>
+      {#if treasury}<span class="muted">Next payout <NextPayout at={treasury.nextEpochAt} now={now} everyMs={treasury.cadence?.roundEveryMs ?? null} bare /></span>{/if}
+      <span class="r-go">Your coins and rewards</span>
     </a>
   </section>
 {/if}
@@ -328,6 +350,13 @@
   .r-line .label { display: flex; align-items: center; gap: var(--s-1); }
   .r-go { margin-left: auto; font-weight: 700; font-size: var(--t-14); }
   .r-go::after { content: ' \2192'; }
+  .bagline {
+    display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-6); align-items: baseline;
+    margin-top: var(--s-4); padding: var(--s-3) var(--s-5);
+    text-decoration: none; color: inherit;
+    transition: transform var(--d-fn) var(--ease), box-shadow var(--d-fn) var(--ease);
+  }
+  @media (hover: hover) { .bagline:hover { transform: translateY(-2px); box-shadow: var(--sh-3); } }
 
   /* one band: the strip, and beside it at 1100px and above the live tape (320px); the tape drops under the strip below that */
   .band { padding-top: var(--s-7); display: grid; gap: var(--s-5); align-items: start; }
