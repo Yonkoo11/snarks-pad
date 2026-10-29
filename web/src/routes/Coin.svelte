@@ -26,6 +26,7 @@
   import CoinRewards from '../components/CoinRewards.svelte'
   import FixedPanel from '../components/FixedPanel.svelte'
   import PotSlip from '../components/PotSlip.svelte'
+  import ShareCard from '../components/ShareCard.svelte'
 
   // A trading page: the chart and the buy box first, then the numbers, then four tabs (the live trades, the holders, the
   // rewards and what is fixed), then where the fee goes.
@@ -299,6 +300,9 @@
         {:else}
           <WalletButton label="Get my referral link" />
         {/if}
+        <!-- the drawn card: what only this pad can put in a feed, the coin with what it has paid -->
+        <ShareCard {coin} />
+        <p class="muted small-note">The post opens with your link; attach the saved card to it.</p>
         <a class="btn ghost" href={xIntentUrl(coin.symbol, coinLink(coin.mint, wallet.address))} target="_blank" rel="noopener noreferrer">Post on X</a>
       </div>
 
@@ -375,6 +379,7 @@
   .creator p { font-size: var(--t-14); }
   .ref { display: grid; gap: var(--s-3); padding: var(--s-5); }
   .ref p { font-size: var(--t-14); }
+  .small-note { margin-top: calc(-1 * var(--s-1)); }
   .ref-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s-2); }
   .ref-row .input { font-size: var(--t-16); }
   .cta { position: relative; overflow: hidden; display: grid; gap: var(--s-2); padding: var(--s-5); padding-top: calc(var(--s-5) + 6px); text-decoration: none; transition: transform var(--d-fn) var(--ease); }
