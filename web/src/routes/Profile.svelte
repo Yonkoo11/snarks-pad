@@ -62,6 +62,10 @@
   }
   // The chosen tab can be out of sight in a strip that scrolls (a link to ?tab=rewards on a phone): the strip moves to show it, never the page.
   let strip = $state<HTMLDivElement>()
+  // the tab strip scrolls on a phone with its scrollbar hidden; a right-edge fade says more tabs exist
+  let moreRight = $state(false)
+  const updateCue = () => { if (strip) moreRight = strip.scrollLeft + strip.clientWidth < strip.scrollWidth - 4 }
+  $effect(() => { strip; const t = setTimeout(updateCue, 50); window.addEventListener('resize', updateCue); return () => { clearTimeout(t); window.removeEventListener('resize', updateCue) } })
   $effect(() => {
     const el = strip?.querySelector<HTMLElement>(`#ptab-${current}`)
     if (!strip || !el) return
@@ -95,8 +99,8 @@
       </div>
     </header>
 
-    <div class="tabs">
-      <div class="seg" role="tablist" aria-label="Profile sections" bind:this={strip}>
+    <div class="tabs" class:more={moreRight}>
+      <div class="seg" role="tablist" aria-label="Profile sections" bind:this={strip} onscroll={updateCue}>
         {#each tabs as t (t)}
           <button type="button" role="tab" id="ptab-{t}" aria-selected={current === t} aria-controls="ppanel" tabindex={current === t ? 0 : -1} class:on={current === t} onclick={() => select(t)} onkeydown={onTabKey}>
             {TAB_LABELS[t]}{#if t === 'launched' && profile && profile.launched.length > 0}<span class="cnt mono">{profile.launched.length}</span>{/if}
@@ -135,6 +139,8 @@
   .seen { font-size: var(--t-14); }
   /* the tabs scroll sideways on a phone instead of wrapping or widening the page */
   .tabs { min-width: 0; }
+  /* the cue that more tabs sit off-screen: the strip fades at its right edge until it is scrolled to the end */
+  .tabs.more .seg { mask-image: linear-gradient(90deg, #000 calc(100% - 36px), transparent); -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 36px), transparent); }
   .seg { width: max-content; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
   .seg::-webkit-scrollbar { display: none; }
   .seg > button { display: inline-flex; align-items: center; gap: var(--s-2); white-space: nowrap; flex: none; }

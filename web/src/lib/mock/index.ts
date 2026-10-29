@@ -56,11 +56,13 @@ const tierWindow = (feeBps: number): TierWindow => ({
 function tierOf(feeBps: number, available = true): Tier {
   const creator = (8000 * CREATOR_PCT[feeBps]) / 100
   const claimed = 8000 - creator
-  const team = Math.floor((claimed * 2500) / 10_000)
+  // owner policy 2026-10-12, same split the policy object and the epochs state: holders 12.5% of the
+  // claimed part, the team the rest (1000 on the creatorless 1% tier = 0.10% of volume, types.ts)
+  const holders = Math.floor((claimed * 1250) / 10_000)
   const f = feeBps / 10_000
   return {
     feeBps, available, postGraduationFeeBps: POST_FEE[feeBps], roundTripCostBps: Math.round((1 - (1 - f) ** 2) * 10_000),
-    meteoraShareBps: 2000, creatorShareBps: creator, holderShareBps: claimed - team, teamShareBps: team, claimedShareBps: claimed,
+    meteoraShareBps: 2000, creatorShareBps: creator, holderShareBps: holders, teamShareBps: claimed - holders, claimedShareBps: claimed,
     launchWindow: tierWindow(feeBps),
     migrationThresholdZats: String(CURVE_TARGET_ZATS),
     liquidity: { partnerLockedPct: LOCKED_LP[feeBps][0], creatorLockedPct: LOCKED_LP[feeBps][1], unlockedPct: 100 - LOCKED_LP[feeBps][0] - LOCKED_LP[feeBps][1] },

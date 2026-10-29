@@ -240,7 +240,7 @@
       {#if fixedWarns !== null}
         <button class="fixedline" type="button" onclick={goFixed}>
           <span class="fmark mono" class:warn={fixedWarns > 0} aria-hidden="true">{fixedWarns > 0 ? '!' : '✓'}</span>
-          {#if fixedWarns === 0}<span class="ftext">Fee, graduation, authorities and liquidity are fixed on chain. Nobody can change them, the pad included.</span>
+          {#if fixedWarns === 0}<span class="ftext">The fee, the graduation bar, minting, freezing and the liquidity are fixed on chain. Nobody can change them, the pad included.</span>
           {:else}<span class="ftext">{fixedWarns} of this coin's fixed facts {fixedWarns === 1 ? 'needs' : 'need'} a look before you buy.</span>{/if}
           <span class="fgo">Check each on chain &rarr;</span>
         </button>

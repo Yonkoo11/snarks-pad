@@ -190,7 +190,7 @@
         <span class="p-item"><span class="label">Paid to holders</span><span class="p-big"><CountUp value={Number(paidAll)} format={(v) => `${zec(BigInt(Math.round(v)))} ZEC`} /></span>{#if usdOfZats(paidAll, zecUsd.rate)}<span class="p-usd">{usdOfZats(paidAll, zecUsd.rate)}</span>{/if}</span>
         {#if nPayments !== null}<span class="p-item"><span class="label">Payments</span><span class="p-big"><CountUp value={nPayments} ms={700} format={(v) => Math.round(v).toLocaleString('en-US')} /></span></span>{/if}
         {#if nRounds !== null}<span class="p-item"><span class="label">Rounds</span><span class="mono p-big">{nRounds}</span></span>{/if}
-        <span class="p-item"><span class="label"><span class="key hatch" aria-hidden="true"></span>Of it shielded</span><span class="mono p-big">{zec(paidShd ?? 0n)} ZEC</span></span>
+        <span class="p-item"><span class="label"><span class="key hatch" aria-hidden="true"></span>Shielded</span><span class="mono p-big">{zec(paidShd ?? 0n)} ZEC</span></span>
       </a>
     {:else if paidAll === 0n}
       <p class="muted">No round has paid yet. The first payout lands after the first round closes.</p>
@@ -212,7 +212,7 @@
         <span class="r-head"><span class="mono r-id" title={lastPaid.id}>Round #{epochs ? epochs.length - epochs.findIndex((e) => e.id === lastPaid.id) : ''}</span><span class="muted">{ago(lastPaid.at, now)}</span>{#if newSince}<span class="chip">New since your last visit</span>{/if}</span>
         <span class="r-line"><span class="label">Claimed</span><span class="mono">{zec(lastPaid.harvestedZats)} ZEC</span></span>
         <span class="r-line"><span class="label">Paid</span><span class="mono">{n.toLocaleString('en-US')} {n === 1 ? 'wallet' : 'wallets'}</span></span>
-        {#if lastPaid.shielded.count > 0}<span class="r-line"><span class="label"><span class="key hatch" aria-hidden="true"></span>Shielded leg</span><span class="mono">{zec(lastPaid.shielded.totalZats)} ZEC to {lastPaid.shielded.count}</span></span>{/if}
+        {#if lastPaid.shielded.count > 0}<span class="r-line"><span class="label"><span class="key hatch" aria-hidden="true"></span>Shielded leg</span><span class="mono">{zec(lastPaid.shielded.totalZats)} ZEC to {lastPaid.shielded.count} {lastPaid.shielded.count === 1 ? 'wallet' : 'wallets'}</span></span>{/if}
         <span class="r-go">Every round, with its transactions</span>
       </a>
     {/if}

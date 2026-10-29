@@ -117,7 +117,8 @@
 
 
   {#if !failed}
-  <div class="sheet panel">
+  <!-- the round's clock, plain text under the latest payout: a sentence, not a near-empty slab of a panel -->
+  <div class="sheet">
     {#if t}
       <p class="when">{#if t.lastEpochAt}Last payout {ago(t.lastEpochAt, now)}.{/if}{#if latestSolanaOnly} Round #{numberOf(latestSolanaOnly.id)} paid <span class="mono">{zec(latestSolanaOnly.solanaPayouts.totalZats)} ZEC</span> as Solana ZEC to {latestSolanaOnly.solanaPayouts.count} wallets in {latestSolanaOnly.solanaPayouts.sigs.length} {latestSolanaOnly.solanaPayouts.sigs.length === 1 ? 'transaction' : 'transactions'}. Shares under the payout floor carry to the next round. It is listed below.{/if} {#if t.lastRunFoundNothing && t.lastRunAt}Last round ran {ago(t.lastRunAt, now)} and found nothing to claim yet.{/if} <NextPayout at={t.nextEpochAt} {now} everyMs={t.cadence?.roundEveryMs ?? null} />.</p>
       <p class="muted small">Rounds run every {every(t.cadence.roundEveryMs)} and pay Solana ZEC. The shielded share goes out about every {every(t.cadence.shieldedEveryMs)} in one batch.</p>
@@ -227,7 +228,7 @@
   .lede { font-size: var(--t-20); line-height: 1.45; max-width: 60ch; }
   .when { font-size: var(--t-16); }
   .pad { padding-top: var(--s-6); display: grid; gap: var(--s-6); }
-  .sheet { padding: var(--s-6); display: grid; gap: var(--s-4); }
+  .sheet { display: grid; gap: var(--s-2); max-width: 72ch; }
   .big { font-size: var(--t-20); font-weight: 500; line-height: 1.2; }
   .cov-r { font-size: var(--t-14); font-weight: 400; margin-left: var(--s-2); }
   .meta { font-size: var(--t-14); }
@@ -281,7 +282,6 @@
   /* the row's own check: the snapshot's short hash, and the button that re-hashes it in this browser */
   .check { display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-4); align-items: center; }
   @media (max-width: 760px) {
-    .sheet { padding: var(--s-5); }
     .legs { grid-template-columns: 1fr; gap: var(--s-3); }
     /* the stamp shrinks into the corner rather than eating the column */
     .row.stamped { padding-right: 0; padding-top: var(--s-6); }

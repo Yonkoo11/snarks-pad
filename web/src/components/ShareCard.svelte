@@ -20,7 +20,8 @@
 
   // the pad's paper palette, light side: the card is a physical object and keeps one look in both themes
   const PAPER = '#f5efe2', PAPER2 = '#fbf7ee', INK = '#2b2420', INK2 = '#5e544c', PINK = '#c42f6c', TAPE = 'rgba(232, 221, 192, .85)'
-  const TILE = ['#cbaee0', '#b5d9a4', '#a9bfe3', '#e3a9c6', '#e0c9a0']
+  // the same hue rule as CoinImage, so the card's tile is the coin's own tile
+  const tileHue = $derived([...coin.symbol].reduce((a, ch) => a + ch.charCodeAt(0), 0) % 360)
 
   function roundRect(c: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
     c.beginPath()
@@ -50,8 +51,7 @@
     return lines
   }
   function tile(c: CanvasRenderingContext2D, x: number, y: number, s: number) {
-    const bg = TILE[(coin.symbol.charCodeAt(0) + coin.symbol.length) % TILE.length]
-    c.fillStyle = bg; c.fillRect(x, y, s, s)
+    c.fillStyle = `hsl(${tileHue} 45% 80%)`; c.fillRect(x, y, s, s)
     c.fillStyle = INK; c.font = `700 ${Math.round(s * .45)}px Gaegu, sans-serif`
     c.textAlign = 'center'; c.textBaseline = 'middle'
     c.fillText(coin.symbol.slice(0, 1).toUpperCase(), x + s / 2, y + s / 2 + s * .04)
