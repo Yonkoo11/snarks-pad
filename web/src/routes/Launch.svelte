@@ -71,7 +71,7 @@
   const handover = $derived(creatorCheck.kind === 'ok' && !noShare ? creatorCheck.address : null)
   const creatorOk = $derived(noShare || (creatorCheck.kind !== 'bad' && (handover === null || walletTick)))
   $effect(() => { void walletIn; walletTick = false })
-  const tierLabel = (t: Tier) => (t.feeBps === 100 ? 'SNARKS tier' : t.postGraduationFeeBps < t.feeBps ? `drops to ${t.postGraduationFeeBps / 100}% after graduation` : 'about the same after graduation')
+  const tierLabel = (t: Tier) => (t.feeBps === 100 ? 'SNARKS tier, recommended' : t.postGraduationFeeBps < t.feeBps ? `drops to ${t.postGraduationFeeBps / 100}% after graduation` : 'about the same after graduation')
   // The first buy: Max is what the wallet holds of Solana ZEC, never more than the curve can take (lib/launch.ts). A buy above either would fail on chain, so the form says so and holds Launch.
   let firstBuy = $state('')
   let balance = $state<bigint | null>(null) // null while it loads, and when it cannot be read

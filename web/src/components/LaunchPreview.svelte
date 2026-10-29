@@ -15,7 +15,9 @@
   const win = $derived(tier ? windowRowOfTier(tier) : null)
 </script>
 
-<section class="card panel" aria-label="Preview of your coin">
+<section class="card panel taped" aria-label="Preview of your coin">
+  <span class="tape t1" aria-hidden="true"></span>
+  <span class="tape t2" aria-hidden="true"></span>
   <div class="top">
     <CoinImage src={imageSrc} symbol={symbol || '?'} size={88} />
     <div class="who">
@@ -74,9 +76,18 @@
   </dl>
 </section>
 <p class="onchain muted">Name, ticker, image, links and fee are written on chain at launch and cannot be changed after.</p>
+<p class="onchain muted">Launching needs about <span class="mono">0.02 SOL</span> in your wallet for the network fee and the coin's accounts, plus any first buy in Solana ZEC.</p>
 
 <style>
-  .card { display: grid; gap: var(--s-4); padding: var(--s-4); }
+  /* the draft coin, taped to the door like the drawing on Home: it is the thing being made */
+  .card { display: grid; gap: var(--s-4); padding: var(--s-4); position: relative; transform: rotate(-1deg); }
+  .tape {
+    position: absolute; width: 84px; height: 26px; top: -12px; z-index: 1;
+    background: rgba(236, 222, 190, .82);
+    box-shadow: 0 1px 0 rgba(43, 36, 32, .12);
+  }
+  .t1 { left: 10%; transform: rotate(-8deg); }
+  .t2 { right: 8%; transform: rotate(6deg); }
   .top { display: flex; gap: var(--s-4); align-items: center; min-width: 0; }
   .who { display: grid; gap: var(--s-1); min-width: 0; }
   .nm { font-size: var(--t-20); line-height: 1.25; overflow-wrap: anywhere; }
