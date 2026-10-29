@@ -1,12 +1,17 @@
 <script lang="ts">
   import { api, ApiError, optinMessage, optoutMessage, OPTIN_ERRORS } from '../lib/api'
-  import { zec, short } from '../lib/format'
+  import type { Epoch } from '../lib/types'
+  import { zec, short, ago } from '../lib/format'
   import { wallet, friendly } from '../lib/wallet.svelte'
   import { shieldedView } from '../lib/shielded.svelte'
   import WalletButton from '../components/WalletButton.svelte'
   import HiddenList from '../components/HiddenList.svelte'
   import Taped from '../components/Taped.svelte'
   import MyRewards from '../components/MyRewards.svelte'
+
+  // the proof this flow is real: the newest round that sent a shielded batch, read once
+  let latestBatch = $state<Epoch | null>(null)
+  $effect(() => { api.epochs().then((r) => (latestBatch = r.epochs.find((e) => e.shielded.count > 0 && e.shielded.zcashTxids.length > 0) ?? null), () => (latestBatch = null)) })
 
   let zaddr = $state('')
   let message = $state<string | null>(null)
@@ -87,6 +92,9 @@
     <div class="intro">
       <h1 class="display">Get your rewards <em>shielded.</em></h1>
       <p class="lede measure muted">By default your rewards arrive as Solana ZEC every 48 hours. Add your Zcash address and they arrive as native ZEC in your own shielded wallet instead, in one batch about once a week. Shielded from the public, not from the pad's operator: the lists below say exactly what.</p>
+      {#if latestBatch}
+        <p class="was muted">This runs: the last batch went out {ago(latestBatch.at)}, <span class="mono">{zec(latestBatch.shielded.totalZats)} ZEC</span> to {latestBatch.shielded.count} shielded {latestBatch.shielded.count === 1 ? 'address' : 'addresses'}. <a href="#/treasury">See it with its transaction.</a></p>
+      {/if}
     </div>
     <div class="draw"><Taped size="sm" /></div>
   </div>
@@ -161,6 +169,24 @@
     </div>
 
     <div class="limits" id="hidden-list">
+      <!-- the two ways your reward can travel, as the mail they resemble; the lists below say exactly what each hides -->
+      <div class="paths" role="img" aria-label="Without opting in your reward travels like a postcard: wallet, amount and time public on Solana. Opted in it travels like a sealed envelope: address and your share inside, only the batch total showing.">
+        <figure class="mail pc" aria-hidden="true">
+          <span class="pc-stamp"></span>
+          <span class="pc-row">your wallet <span class="pub mono">public</span></span>
+          <span class="pc-row">your amount <span class="pub mono">public</span></span>
+          <span class="pc-row">the time <span class="pub mono">public</span></span>
+          <figcaption>Default: a postcard. Anyone on Solana reads it.</figcaption>
+        </figure>
+        <figure class="mail env" aria-hidden="true">
+          <span class="env-flap"></span>
+          <span class="env-seal hatch"></span>
+          <span class="pc-row">batch total <span class="pub mono">public</span></span>
+          <span class="pc-row">your address <span class="redact hatch"></span></span>
+          <span class="pc-row">your share <span class="redact hatch"></span></span>
+          <figcaption>Opted in: a sealed envelope. Your address and share stay inside.</figcaption>
+        </figure>
+      </div>
       <HiddenList />
       <section class="covers panel" aria-labelledby="covers-h">
         <h2 class="h3" id="covers-h">What this covers</h2>
@@ -188,6 +214,8 @@
   .intro { display: grid; gap: var(--s-5); }
   .draw { flex: none; padding-top: var(--s-3); }
   .lede { font-size: var(--t-20); line-height: 1.45; }
+  .was { font-size: var(--t-14); }
+  .was a { color: var(--ink); text-underline-offset: 3px; text-decoration-color: var(--ink-3); }
   .grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: var(--s-7); align-items: start; margin-top: var(--s-4); }
   .steps { position: relative; overflow: hidden; padding: var(--s-6); display: grid; gap: var(--s-4); }
   .band { position: absolute; inset: 0 0 auto 0; height: 6px; }
@@ -212,6 +240,23 @@
   .move { display: grid; gap: var(--s-3); }
   .move a, .covers a { color: var(--ink); text-underline-offset: 3px; text-decoration-color: var(--ink-3); }
   .limits { display: grid; gap: var(--s-5); padding-top: var(--s-4); }
+  /* the two pieces of mail: a postcard read by anyone, an envelope sealed with the hatch */
+  .paths { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-4); }
+  .mail {
+    position: relative; margin: 0; display: grid; gap: var(--s-2); align-content: start;
+    background: var(--paper-2); border-radius: var(--r-xs); box-shadow: var(--sh-2), inset 0 1px 0 light-dark(transparent, rgba(239, 231, 218, .07));
+    padding: var(--s-4); padding-top: var(--s-6); font-size: var(--t-14);
+  }
+  .pc { transform: rotate(-.6deg); }
+  .env { transform: rotate(.6deg); overflow: hidden; }
+  .pc-stamp { position: absolute; top: var(--s-2); right: var(--s-2); width: 22px; height: 26px; border-radius: var(--r-xs); background: var(--paper-3); box-shadow: inset 0 0 0 1.5px var(--line); }
+  .env-flap { position: absolute; inset: 0 0 auto 0; height: 18px; background: var(--paper-3); clip-path: polygon(0 0, 100% 0, 50% 100%); }
+  .env-seal { position: absolute; top: 10px; left: 50%; width: 16px; height: 16px; margin-left: -8px; border-radius: var(--r-full); }
+  .pc-row { display: flex; justify-content: space-between; align-items: center; gap: var(--s-3); color: var(--ink-2); }
+  .pub { font-size: var(--t-12); color: var(--ink-3); text-transform: uppercase; letter-spacing: .06em; }
+  .redact { width: 72px; height: 10px; border-radius: var(--r-xs); }
+  .mail figcaption { padding-top: var(--s-2); border-top: 1px solid var(--line); color: var(--ink); font-weight: 700; font-size: var(--t-14); }
+  @media (max-width: 720px) { .paths { grid-template-columns: 1fr; } .pc, .env { transform: none; } }
   .limits :global(.hl) { grid-template-columns: 1fr; gap: var(--s-5); }
   .mine-wrap { display: grid; gap: var(--s-5); margin-top: var(--s-4); }
   @media (max-width: 900px) {
