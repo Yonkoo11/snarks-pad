@@ -218,6 +218,21 @@ function pricePoints(c: Coin): PricePoint[] {
   })
 }
 
+// Batch rounds publish a holder snapshot the browser can re-hash (VerifyRound): the file is a data: URL and the
+// published sha256 is that exact content's real hash, precomputed, so the check passes in the mock the way it
+// does against the engine. Content and hash change together or the demo shows a mismatch.
+const SNAPSHOTS: Record<number, string> = {
+  42: '7b85af4cde39d33a81ef0c3a4c83f5ef1249520e7d583c82a75815241158813f',
+  39: '888fc1fe17804e91d86989a50f28b0c3697f0a657258d2ea94d368b54e177443',
+  36: '90c895c831c12a65df2da015c7bd22ac2076afc894bc563a37844f2c97eda19e',
+}
+function snapshotOf(id: number): Epoch['snapshot'] {
+  const sha = SNAPSHOTS[id]
+  if (!sha) return null
+  const body = `SNARKS pad holder snapshot, epoch-${id}, mock\n`
+  return { sha256: sha, memoSig: sig(`memo:${id}`), url: `data:text/plain,${encodeURIComponent(body)}` }
+}
+
 function epochs(): Epoch[] {
   const last = Math.floor(NOW / EPOCH_MS) * EPOCH_MS
   return Array.from({ length: 7 }, (_, i) => {
@@ -249,6 +264,7 @@ function epochs(): Epoch[] {
       // v2.6: the same two numbers at the top level
       deliveryCostZats: String(shieldedCount ? fee + 32_000 : 0), teamNetZats: String(team - (shieldedCount ? fee + 32_000 : 0)),
       status: fallback ? 'fallback_solana' : 'ok',
+      snapshot: batchRound && !fallback ? snapshotOf(id) : null,
       // The team pays the delivery cost (the 1Click withdraw fee and the Zcash fee) out of its share, so shielded holders get their full share.
       split: {
         holdersZats: String(holders), teamZats: String(team),
@@ -629,7 +645,7 @@ export const mock: Api = {
     await wait(80)
     if (v25()) return null
     const head = 'epochId,at,status,coinMints,claimedZats,holdersZats,teamZats,deliveryCostZats,teamNetZats,holderShortfallZats,zcashNetworkFeeZats,solanaPayoutCount,solanaPayoutZats,shieldedCount,shieldedZats,snapshotSha256,snapshotMemoSig'
-    const rows = epochs().map((e) => [e.id, e.at, e.status, e.coinMints.join(';'), e.harvestedZats, e.split.holdersZats, e.split.teamZats, e.split.deliveryCostZats ?? '', e.split.teamNetZats ?? '', e.split.holderShortfallZats, e.feeZats, e.solanaPayouts.count, e.solanaPayouts.totalZats, e.shielded.count, e.shielded.totalZats, '', ''].join(','))
+    const rows = epochs().map((e) => [e.id, e.at, e.status, e.coinMints.join(';'), e.harvestedZats, e.split.holdersZats, e.split.teamZats, e.split.deliveryCostZats ?? '', e.split.teamNetZats ?? '', e.split.holderShortfallZats, e.feeZats, e.solanaPayouts.count, e.solanaPayouts.totalZats, e.shielded.count, e.shielded.totalZats, e.snapshot?.sha256 ?? '', e.snapshot?.memoSig ?? ''].join(','))
     return URL.createObjectURL(new Blob([[head, ...rows].join('\n') + '\n'], { type: 'text/csv' }))
   },
   async optinNonce(wallet) {

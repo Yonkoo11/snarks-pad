@@ -10,8 +10,9 @@ import type { CoinQuery } from './coins'
 export const USE_REAL = import.meta.env.VITE_API === 'real'
 const BASE: string = import.meta.env.VITE_API_BASE || 'http://localhost:8787/api'
 
-/** An absolute URL for a path the engine returned (such as a snapshot url "/api/epochs/..."), on the same origin as the API. */
+/** An absolute URL for a path the engine returned (such as a snapshot url "/api/epochs/..."), on the same origin as the API. A URL that is already absolute (or data:, as the mock's snapshot files are) passes through whole. */
 export function apiUrl(path: string): string {
+  if (/^(https?:|data:|blob:)/.test(path)) return path
   return new URL(BASE, location.href).origin + path
 }
 

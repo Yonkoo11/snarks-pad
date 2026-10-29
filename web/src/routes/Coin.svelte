@@ -24,6 +24,7 @@
   import HoldersTable from '../components/HoldersTable.svelte'
   import CoinRewards from '../components/CoinRewards.svelte'
   import FixedPanel from '../components/FixedPanel.svelte'
+  import PotSlip from '../components/PotSlip.svelte'
 
   // A trading page: the chart and the buy box first, then the numbers, then four tabs (the live trades, the holders, the
   // rewards and what is fixed), then where the fee goes.
@@ -92,6 +93,23 @@
     catch (e) { if (routeAbsent(e)) fixed = null; else { fixed = null; fixedErr = true } }
   }
   $effect(() => { loadFixed() })
+  // The facts a buyer checks first, counted off the fixed record; the Token info tab holds the full list with a
+  // chain link per line. null while the record is still loading or this engine lacks the route: no line, never a guess.
+  const fixedWarns = $derived.by(() => {
+    if (!fixed || !coin) return null
+    const grad = coin.stage === 'graduated'
+    let n = 0
+    if (fixed.tokenAuthorities.mintAuthority !== null && grad) n++
+    if (fixed.tokenAuthorities.freezeAuthority !== null) n++
+    if (fixed.tokenAuthorities.updateAuthority !== null) n++
+    if (fixed.liquidity.unlockedPct > 0) n++
+    return n
+  })
+  function goFixed() {
+    tab = 'fixed'
+    document.getElementById('tab-fixed')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }
+
   // the creator's links (contract v2.7 `socials`), https only: the engine validates them at launch and the page never renders anything else as a link
   const links = $derived(coin?.socials ? (['website', 'x', 'telegram'] as const).map((k) => ({ k, href: coin!.socials![k] })).filter((l): l is { k: 'x' | 'website' | 'telegram'; href: string } => typeof l.href === 'string' && /^https:\/\//.test(l.href)) : [])
   const linkLabel = { website: 'Website', x: 'X', telegram: 'Telegram' } as const
@@ -192,6 +210,16 @@
         <div><dt class="label">Trading fee</dt><dd class="mono">{feeLabel(coin, true)}</dd></div>
       </dl>
 
+      <!-- the one-line answer to "can this rug?": counted off the fixed record, opened in full on the Token info tab -->
+      {#if fixedWarns !== null}
+        <button class="fixedline" type="button" onclick={goFixed}>
+          <span class="fmark mono" class:warn={fixedWarns > 0} aria-hidden="true">{fixedWarns > 0 ? '!' : '✓'}</span>
+          {#if fixedWarns === 0}<span class="ftext">Fee, graduation, authorities and liquidity are fixed on chain. Nobody can change them, the pad included.</span>
+          {:else}<span class="ftext">{fixedWarns} of this coin's fixed facts {fixedWarns === 1 ? 'needs' : 'need'} a look before you buy.</span>{/if}
+          <span class="fgo">Check each on chain &rarr;</span>
+        </button>
+      {/if}
+
       <section class="tabs-sec" aria-label="Trades, holders, rewards and token info">
         <div class="seg ctabs" role="tablist" aria-label="Coin details">
           {#each TABS as t (t.id)}
@@ -220,6 +248,9 @@
       <div class="trade-slot"><BuyBox {coin} {mint} thresholdZats={fixed?.migration.thresholdZats ?? null} {windowLeft} feeNowBps={coin.feeNowBps ?? null} ontraded={load} /></div>
       <!-- the payout rule a buyer needs before buying, in the Payouts page's own words -->
       <p class="timing muted">Your share of payouts follows the least you held at random checks during the round, so buying just before a payout earns nothing for that round.</p>
+
+      <!-- the reason to hold, visible without a click: this coin's own pot and its clock -->
+      <div class="pot-slot"><PotSlip {coin} {pot} {treasury} {now} rate={zecUsd.rate} /></div>
 
       {#if isCreator}
         <div class="creator panel">
@@ -271,6 +302,20 @@
   .stats { display: grid; grid-template-columns: repeat(5, auto); justify-content: start; gap: var(--s-6); margin: 0; }
   .stats dd { margin: var(--s-1) 0 0; font-size: var(--t-20); font-weight: 500; }
   .stats dd.usd { margin-top: 0; font-size: var(--t-14); font-weight: 400; color: var(--ink-2); }
+  /* the trust line: a plain paper strip, the mark drawn like the Token info tab's own, the whole line a button into that tab */
+  .fixedline {
+    display: flex; align-items: center; gap: var(--s-3); flex-wrap: wrap; text-align: left;
+    border: 0; background: var(--paper-2); border-radius: var(--r-sm); box-shadow: var(--sh-1);
+    padding: var(--s-3) var(--s-4); font: inherit; color: var(--ink); cursor: pointer;
+    transition: transform var(--d-fn) var(--ease), box-shadow var(--d-fn) var(--ease);
+  }
+  @media (hover: hover) { .fixedline:hover { transform: translateY(-2px); box-shadow: var(--sh-2); } }
+  .fixedline:active { transform: translateY(1px); transition-duration: var(--d-press); }
+  .fmark { width: 24px; height: 24px; display: grid; place-items: center; border-radius: var(--r-full); background: var(--ink); color: var(--paper); font-weight: 500; flex: none; }
+  .fmark.warn { background: var(--bad); }
+  .ftext { font-size: var(--t-14); }
+  .fgo { margin-left: auto; font-weight: 700; font-size: var(--t-14); white-space: nowrap; }
+
   .byline { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-4); }
   .links { display: flex; flex-wrap: wrap; gap: var(--s-2); margin: 0; padding: 0; list-style: none; }
   .links li { display: flex; }
@@ -320,7 +365,7 @@
     .stats { grid-template-columns: repeat(2, auto); gap: var(--s-4) var(--s-6); }
     .stats dd { font-size: var(--t-16); }
     .main, .side-col { display: contents; }
-    .head { order: 1; } .trade-slot { order: 2; } .timing { order: 3; } .main > :global(.chart) { order: 3; } .stats { order: 4; } .tabs-sec { order: 6; } .main > :global(.fs) { order: 7; } .creator, .ref { order: 8; } .cta { order: 9; }
+    .head { order: 1; } .trade-slot { order: 2; } .timing { order: 3; } .pot-slot { order: 3; } .main > :global(.chart) { order: 3; } .stats { order: 4; } .fixedline { order: 5; } .tabs-sec { order: 6; } .main > :global(.fs) { order: 7; } .creator, .ref { order: 8; } .cta { order: 9; }
   }
   @media (max-width: 640px) {
     /* the buy box sits inside the first screen: a tighter top, the description on two lines (the full text sits under the box in the tabs' pages anyway) */

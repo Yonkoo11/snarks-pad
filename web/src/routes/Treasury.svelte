@@ -10,6 +10,8 @@
   import NextPayout from '../components/NextPayout.svelte'
   import Addr from '../components/Addr.svelte'
   import Postmark from '../components/Postmark.svelte'
+  import CountUp from '../components/CountUp.svelte'
+  import VerifyRound from '../components/VerifyRound.svelte'
 
   let t = $state<Treasury | null>(null)
   let epochs = $state<Epoch[] | null>(null)
@@ -75,7 +77,7 @@
   <!-- the all-time line: the page's proof, added up from the rounds below -->
   {#if epochs && epochs.length > 0}
     <dl class="all" aria-label="All payouts added up">
-      <div><dt class="label">Paid to holders</dt><dd class="mono a-big">{zec(paidAllTime ?? 0n)} ZEC</dd></div>
+      <div><dt class="label">Paid to holders</dt><dd class="a-big"><CountUp value={Number(paidAllTime ?? 0n)} format={(v) => `${zec(BigInt(Math.round(v)))} ZEC`} /></dd></div>
       <div><dt class="label">Payments</dt><dd class="mono">{(nPayments ?? 0).toLocaleString('en-US')}</dd></div>
       <div><dt class="label">Rounds</dt><dd class="mono">{epochs.length}</dd></div>
       <div><dt class="label"><span class="key hatch" aria-hidden="true"></span>Shielded</dt><dd class="mono">{zec(paidShieldedTime ?? 0n)} ZEC in {nBatches} {nBatches === 1 ? 'batch' : 'batches'}</dd></div>
@@ -104,6 +106,7 @@
         {#if latestShielded.shielded.swap.provider === 'simulated'}<p class="muted small">The swap into native ZEC was simulated in this test setup.</p>{/if}
         {#if latestShielded.snapshot}
           <p class="muted small">Holder snapshot <span class="mono">{short(latestShielded.snapshot.sha256, 10, 8)}</span>, <a href={apiUrl(latestShielded.snapshot.url)} target="_blank" rel="noreferrer">open the file</a>{#if latestShielded.snapshot.memoSig}, hash written to Solana in memo <Addr value={latestShielded.snapshot.memoSig} head={6} tail={4} href={solUrl(latestShielded.snapshot.memoSig)} label="memo signature" />{/if}. To check that your own note arrived, look for it in your wallet.</p>
+          <VerifyRound sha256={latestShielded.snapshot.sha256} url={latestShielded.snapshot.url} />
         {/if}
       </article>
     {:else}
@@ -193,6 +196,12 @@
                 {/if}
               </div>
             </div>
+            {#if e.snapshot}
+              <div class="check">
+                <span class="muted small">Holder snapshot <span class="mono">{short(e.snapshot.sha256, 8, 6)}</span>{#if e.snapshot.memoSig}, its hash in memo <Addr value={e.snapshot.memoSig} head={6} tail={4} href={solUrl(e.snapshot.memoSig)} label="memo signature" />{/if}</span>
+                <VerifyRound sha256={e.snapshot.sha256} url={e.snapshot.url} compact />
+              </div>
+            {/if}
           </article>
         {/each}
       </div>
@@ -207,7 +216,7 @@
         </nav>
       {/if}
     {/if}
-    <p class="muted small">What you can check here: every transaction above, and each round's holder list file with its hash written to Solana. What you cannot see is the operator's server; <a href="#/how">the How page</a> says what you have to trust.</p>
+    <p class="muted small">What you can check here: every transaction above, and each round's holder list file, re-hashed by your own browser against the hash written to Solana. What you cannot see is the operator's server; <a href="#/how">the How page</a> says what you have to trust.</p>
   </section>
   {/if}
 </section>
@@ -269,6 +278,8 @@
   .shd::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 8px; border-radius: var(--r-xs); background: repeating-linear-gradient(-55deg, var(--pink) 0 3px, transparent 3px 6px), var(--pink-soft); }
   .shd.none::before { background: var(--line); width: 2px; }
   .links { display: flex; flex-wrap: wrap; gap: var(--s-1) var(--s-3); align-items: center; }
+  /* the row's own check: the snapshot's short hash, and the button that re-hashes it in this browser */
+  .check { display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-4); align-items: center; }
   @media (max-width: 760px) {
     .sheet { padding: var(--s-5); }
     .legs { grid-template-columns: 1fr; gap: var(--s-3); }

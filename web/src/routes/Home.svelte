@@ -11,6 +11,8 @@
   import { readHoldings } from '../lib/holdings'
   import type { Holding } from '../lib/profile'
   import Taped from '../components/Taped.svelte'
+  import CountUp from '../components/CountUp.svelte'
+  import FillBar from '../components/FillBar.svelte'
   import CurveBar from '../components/CurveBar.svelte'
   import CoinImage from '../components/CoinImage.svelte'
   import CoinCard from '../components/CoinCard.svelte'
@@ -140,6 +142,21 @@
     } catch { return null }
   })()
   const newSince = $derived(!!lastPaid && prevVisit !== null && Date.parse(lastPaid.at) > prevVisit)
+  // The round strip under the hero carries the pot and the clock, so the stats row near the grid does not repeat them.
+  const stripClock = $derived(!!treasury || !!padPot)
+  // A round landing while the page is open: the new receipt announces itself once, then sits still.
+  let seenRound: string | null = null
+  let landed = $state(false)
+  $effect(() => {
+    const id = lastPaid?.id ?? null
+    if (id === null) return
+    if (seenRound === null) { seenRound = id; return }
+    if (id !== seenRound) {
+      seenRound = id; landed = true
+      const t = setTimeout(() => (landed = false), 1400)
+      return () => clearTimeout(t)
+    }
+  })
   function toMarket() { document.getElementById('market-h')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }
   // the return hook: a connected wallet sees its own bag above the market, read in the browser like the Holdings tab
   let bag = $state<Holding[] | null>(null)
@@ -163,8 +180,8 @@
     <!-- the proof, biggest thing after the headline: what this pad has already paid, linked to the rounds that prove it -->
     {#if paidAll !== null && paidAll > 0n}
       <a class="proof" href="#/treasury" aria-label="Every payout round, with its transactions">
-        <span class="p-item"><span class="label">Paid to holders</span><span class="mono p-big">{zec(paidAll)} ZEC</span>{#if usdOfZats(paidAll, zecUsd.rate)}<span class="p-usd">{usdOfZats(paidAll, zecUsd.rate)}</span>{/if}</span>
-        {#if nPayments !== null}<span class="p-item"><span class="label">Payments</span><span class="mono p-big">{nPayments.toLocaleString('en-US')}</span></span>{/if}
+        <span class="p-item"><span class="label">Paid to holders</span><span class="p-big"><CountUp value={Number(paidAll)} format={(v) => `${zec(BigInt(Math.round(v)))} ZEC`} /></span>{#if usdOfZats(paidAll, zecUsd.rate)}<span class="p-usd">{usdOfZats(paidAll, zecUsd.rate)}</span>{/if}</span>
+        {#if nPayments !== null}<span class="p-item"><span class="label">Payments</span><span class="p-big"><CountUp value={nPayments} ms={700} format={(v) => Math.round(v).toLocaleString('en-US')} /></span></span>{/if}
         {#if nRounds !== null}<span class="p-item"><span class="label">Rounds</span><span class="mono p-big">{nRounds}</span></span>{/if}
         <span class="p-item"><span class="label"><span class="key hatch" aria-hidden="true"></span>Of it shielded</span><span class="mono p-big">{zec(paidShd ?? 0n)} ZEC</span></span>
       </a>
@@ -179,17 +196,28 @@
   <div class="art"><Taped settle /></div>
 </section>
 
-<!-- the latest paid round, a receipt pinned under the hero; the Payouts page holds every one -->
-{#if lastPaid}
-  {@const n = lastPaid.shielded.count + lastPaid.solanaPayouts.count}
-  <section class="wrap" aria-label="Latest payout round">
-    <a class="receipt panel" href="#/treasury">
-      <span class="r-head"><span class="mono r-id" title={lastPaid.id}>Round #{epochs ? epochs.length - epochs.findIndex((e) => e.id === lastPaid.id) : ''}</span><span class="muted">{ago(lastPaid.at, now)}</span>{#if newSince}<span class="chip">New since your last visit</span>{/if}</span>
-      <span class="r-line"><span class="label">Claimed</span><span class="mono">{zec(lastPaid.harvestedZats)} ZEC</span></span>
-      <span class="r-line"><span class="label">Paid</span><span class="mono">{n.toLocaleString('en-US')} {n === 1 ? 'wallet' : 'wallets'}</span></span>
-      {#if lastPaid.shielded.count > 0}<span class="r-line"><span class="label"><span class="key hatch" aria-hidden="true"></span>Shielded leg</span><span class="mono">{zec(lastPaid.shielded.totalZats)} ZEC to {lastPaid.shielded.count}</span></span>{/if}
-      <span class="r-go">Every round, with its transactions</span>
-    </a>
+<!-- the round strip: the latest receipt beside the pot that is filling for the next one. The pad's heartbeat, pinned under the hero. -->
+{#if lastPaid || stripClock}
+  <section class="wrap roundstrip" aria-label="The latest payout and the pot for the next">
+    {#if lastPaid}
+      {@const n = lastPaid.shielded.count + lastPaid.solanaPayouts.count}
+      <a class="receipt panel" class:landed href="#/treasury">
+        <span class="r-head"><span class="mono r-id" title={lastPaid.id}>Round #{epochs ? epochs.length - epochs.findIndex((e) => e.id === lastPaid.id) : ''}</span><span class="muted">{ago(lastPaid.at, now)}</span>{#if newSince}<span class="chip">New since your last visit</span>{/if}</span>
+        <span class="r-line"><span class="label">Claimed</span><span class="mono">{zec(lastPaid.harvestedZats)} ZEC</span></span>
+        <span class="r-line"><span class="label">Paid</span><span class="mono">{n.toLocaleString('en-US')} {n === 1 ? 'wallet' : 'wallets'}</span></span>
+        {#if lastPaid.shielded.count > 0}<span class="r-line"><span class="label"><span class="key hatch" aria-hidden="true"></span>Shielded leg</span><span class="mono">{zec(lastPaid.shielded.totalZats)} ZEC to {lastPaid.shielded.count}</span></span>{/if}
+        <span class="r-go">Every round, with its transactions</span>
+      </a>
+    {/if}
+    {#if stripClock}
+      <div class="potcard panel">
+        <p class="label">In the pot for the next round</p>
+        <p class="pot-line"><span class="mono pot-big">{padPot ? `${zec(padPot.accruedZats)} ZEC` : '–'}</span>{#if padPot && usdOfZats(padPot.accruedZats, zecUsd.rate)}<span class="pot-usd">{usdOfZats(padPot.accruedZats, zecUsd.rate)}</span>{/if}</p>
+        {#if padPot}<p class="muted pot-sub">Trading fees accruing across {padPot.coins} {padPot.coins === 1 ? 'coin' : 'coins'}, waiting for the round to claim them.</p>{/if}
+        <FillBar fromIso={treasury?.lastEpochAt ?? null} toIso={treasury?.nextEpochAt ?? null} {now} />
+        <p class="pot-clock">{#if treasury}<NextPayout at={treasury.nextEpochAt} {now} everyMs={treasury.cadence?.roundEveryMs ?? null} />{:else}<span class="mono">–</span>{/if}</p>
+      </div>
+    {/if}
   </section>
 {/if}
 
@@ -259,9 +287,11 @@
       <div><dt class="label">Coins</dt><dd class="mono">{nCoins ?? '–'}</dd></div>
       <div><dt class="label">Graduated</dt><dd class="mono">{nGrad ?? '–'}</dd></div>
       <div><dt class="label">24h volume on this pad</dt><dd class="mono">{vol === null ? '–' : `${vol} ZEC`}</dd></div>
-      <div><dt class="label">In the pot now</dt><dd class="mono">{padPot ? `${zec(padPot.accruedZats)} ZEC` : '–'}{#if padPot && usdOfZats(padPot.accruedZats, zecUsd.rate)} <span class="usd">{usdOfZats(padPot.accruedZats, zecUsd.rate)}</span>{/if}</dd></div>
-      <!-- paid-to-holders and the shielded share lead the page now (the hero's proof strip); here the market keeps its own clock -->
-      <div><dt class="label">Next payout</dt><dd class="next">{#if treasury}<NextPayout at={treasury.nextEpochAt} {now} everyMs={treasury.cadence?.roundEveryMs ?? null} bare />{:else}<span class="mono">–</span>{/if}</dd></div>
+      <!-- the pot and the clock live on the round strip under the hero; they return here only when that strip has nothing to show -->
+      {#if !stripClock}
+        <div><dt class="label">In the pot now</dt><dd class="mono">–</dd></div>
+        <div><dt class="label">Next payout</dt><dd class="mono">–</dd></div>
+      {/if}
     </dl>
   {/if}
 
@@ -335,6 +365,23 @@
   .p-item:first-child .p-big { font-size: clamp(26px, 2.2vw, 32px); line-height: 1.1; }
   .p-usd { font-size: var(--t-14); color: var(--ink-3); }
 
+  /* the round strip: the receipt takes the width it needs, the pot card holds the clock beside it */
+  .roundstrip { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: var(--s-4); align-items: stretch; }
+  .roundstrip:not(:has(.receipt)) { grid-template-columns: minmax(0, 560px); }
+  .potcard { display: grid; gap: var(--s-2); align-content: start; padding: var(--s-4) var(--s-5); }
+  .pot-line { display: flex; align-items: baseline; gap: var(--s-2); flex-wrap: wrap; }
+  .pot-big { font-size: var(--t-20); font-weight: 500; }
+  .pot-usd { font-size: var(--t-14); color: var(--ink-3); }
+  .pot-sub { font-size: var(--t-14); }
+  .pot-clock { font-size: var(--t-14); font-weight: 700; }
+  /* a round that lands while the page is open: the receipt drops in once, then sits still (entrance-only) */
+  .receipt.landed { animation: land 600ms var(--ease) backwards; }
+  @keyframes land {
+    from { transform: translateY(-10px) rotate(-.8deg); box-shadow: var(--sh-3); opacity: 0; }
+    to { transform: none; box-shadow: var(--sh-1); opacity: 1; }
+  }
+  @media (prefers-reduced-motion: reduce) { .receipt.landed { animation: none; } }
+
   /* the latest round: one receipt row under the hero, every number mono, the shielded leg hatched */
   .receipt {
     display: flex; flex-wrap: wrap; gap: var(--s-3) var(--s-6); align-items: end; justify-content: space-between;
@@ -400,8 +447,6 @@
   /* the stats row: label over number, as many tiles as the row holds */
   .stats { display: flex; flex-wrap: wrap; gap: var(--s-3) var(--s-6); margin: 0; }
   .stats dd { margin: var(--s-1) 0 0; font-size: var(--t-20); font-weight: 500; }
-  .stats dd.next { font-size: var(--t-16); font-weight: 400; }
-  .stats dd .usd { margin-left: 0.5em; font-size: var(--t-14); font-weight: 400; color: var(--ink-3); }
   .stats .label { display: flex; align-items: center; gap: var(--s-1); }
   .stats-sk { height: 52px; max-width: 70ch; }
   /* as many cards as fit at 250px and up; with fewer coins than a row the cards grow to fill it, up to 440px each */
@@ -432,6 +477,7 @@
     .art :global(.tape) { width: 44px; height: 14px; top: -7px; }
     .band { padding-top: var(--s-6); }
     .market { padding-top: var(--s-7); }
+    .roundstrip { grid-template-columns: 1fr; }
   }
   @media (max-width: 1100px) {
     .band.with-tape { grid-template-columns: 1fr; }
