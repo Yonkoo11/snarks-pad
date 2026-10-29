@@ -154,13 +154,14 @@
   <section class="wrap pad grid">
     <div class="main">
       <header class="head">
-        <CoinImage src={coin.imageUrl} symbol={coin.symbol} size={56} />
+        <CoinImage src={coin.imageUrl} symbol={coin.symbol} size={88} />
         <div class="title">
           <div class="trow">
-            <h1 class="display">{coin.name}</h1>
+            <h1 class="display big-name">{coin.name}</h1>
             {#if coin.symbol === 'SNARKS'}<span class="chip">Coin #1</span>{/if}
             <span class="chip">{feeChip(coin)}</span>
-            {#if coin.stage === 'graduated'}<span class="chip">Graduated</span>{/if}
+            <span class="chip">Pays holders {coin.holderShareBps / 100}% in ZEC</span>
+            {#if coin.stage === 'graduated'}<span class="chip">Graduated</span><span class="chip">Liquidity locked</span>{/if}
           </div>
           <div class="byline">
             <p class="meta muted"><span class="mono">${coin.symbol}</span>, created {ago(coin.createdAt)}, creator <a class="plink mono" href={profileHref(coin.creator)} title={coin.creator}>{short(coin.creator)}</a>, mint <Addr value={coin.mint} label="mint address" href={solscanTokenUrl(coin.mint, mode)} /></p>
@@ -216,6 +217,8 @@
 
     <aside class="side-col">
       <div class="trade-slot"><BuyBox {coin} {mint} thresholdZats={fixed?.migration.thresholdZats ?? null} {windowLeft} feeNowBps={coin.feeNowBps ?? null} ontraded={load} /></div>
+      <!-- the payout rule a buyer needs before buying, in the Payouts page's own words -->
+      <p class="timing muted">Your share of payouts follows the least you held at random checks during the round, so buying just before a payout earns nothing for that round.</p>
 
       {#if isCreator}
         <div class="creator panel">
@@ -257,7 +260,10 @@
   .grid { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: var(--s-7); align-items: start; }
   .main { display: grid; gap: var(--s-6); }
   .head { display: flex; gap: var(--s-4); align-items: flex-start; }
+  /* the coin is the subject: its name is the biggest text on the page */
+  .big-name { font-size: clamp(30px, 2.6vw, 40px); }
   .title { display: grid; gap: var(--s-2); min-width: 0; }
+  .timing { font-size: var(--t-14); max-width: 48ch; }
   .trow { display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap; }
   .meta { font-size: var(--t-14); }
   .desc { font-size: var(--t-16); }
@@ -313,7 +319,7 @@
     .stats { grid-template-columns: repeat(2, auto); gap: var(--s-4) var(--s-6); }
     .stats dd { font-size: var(--t-16); }
     .main, .side-col { display: contents; }
-    .head { order: 1; } .trade-slot { order: 2; } .main > :global(.chart) { order: 3; } .stats { order: 4; } .tabs-sec { order: 6; } .main > :global(.fs) { order: 7; } .creator, .ref { order: 8; } .cta { order: 9; }
+    .head { order: 1; } .trade-slot { order: 2; } .timing { order: 3; } .main > :global(.chart) { order: 3; } .stats { order: 4; } .tabs-sec { order: 6; } .main > :global(.fs) { order: 7; } .creator, .ref { order: 8; } .cta { order: 9; }
   }
   @media (max-width: 640px) {
     /* the buy box sits inside the first screen: a tighter top, the description on two lines (the full text sits under the box in the tabs' pages anyway) */

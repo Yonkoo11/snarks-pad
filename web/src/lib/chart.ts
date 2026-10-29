@@ -38,6 +38,16 @@ export function plot(points: ChartPoint[], w: number, h: number, padRatio = 0.1)
   return { line, area, xs, ys, min, max }
 }
 
+// The chart's time ranges. 'all' is every point the engine keeps (at most its newest 300 trades).
+export type Range = 'all' | '7d' | '24h'
+
+/** The cut-off for a range against `now`, or null for every point. */
+export function sinceOf(range: Range, now: number): number | null {
+  if (range === '24h') return now - 24 * 3_600_000
+  if (range === '7d') return now - 7 * 24 * 3_600_000
+  return null
+}
+
 /** Index of the drawn point closest to `x` (viewBox units). */
 export function nearestIndex(xs: number[], x: number): number {
   let best = 0
