@@ -13,9 +13,8 @@
   import Taped from '../components/Taped.svelte'
   import CountUp from '../components/CountUp.svelte'
   import FillBar from '../components/FillBar.svelte'
-  import CurveBar from '../components/CurveBar.svelte'
-  import CoinImage from '../components/CoinImage.svelte'
   import CoinCard from '../components/CoinCard.svelte'
+  import PulseBoard from '../components/PulseBoard.svelte'
   import NextPayout from '../components/NextPayout.svelte'
   import TradesTape from '../components/TradesTape.svelte'
 
@@ -24,8 +23,12 @@
   // every 10 s while the tab is visible; the tape also takes the engine's stream when it has one.
   const PAGE = 12
   const POLL_MS = 10_000
-  const TAPE_ROWS = 5 // five 44px rows sit level with the strip beside them at 1440
-  const NEAR: CoinQuery = { sort: 'progress', stage: 'curve', limit: 5, offset: 0 }
+  const TAPE_ROWS = 8 // eight 44px rows sit level with the three lanes beside them at 1440
+  // the pulse board's three lanes: newest first, nearest graduation first, biggest graduated first
+  const LANE_N = 4
+  const FRESH: CoinQuery = { sort: 'new', limit: LANE_N, offset: 0 }
+  const FILLING: CoinQuery = { sort: 'progress', stage: 'curve', limit: LANE_N, offset: 0 }
+  const GRADUATED: CoinQuery = { sort: 'mcap', stage: 'graduated', limit: LANE_N, offset: 0 }
   let mode = $state<PadMode | null>(null)
   $effect(() => onMode((m) => (mode = m)))
   let tapeState = $state<FeedState>('loading')
@@ -61,7 +64,9 @@
     return () => clearTimeout(t)
   })
 
-  let near = $state<Coin[] | null>(null)
+  let laneFresh = $state<Coin[] | null>(null)
+  let laneFilling = $state<Coin[] | null>(null)
+  let laneGraduated = $state<Coin[] | null>(null)
   let coins = $state<Coin[] | null>(null)
   let total = $state(0)
   let fullList = $state<Coin[] | null>(null) // every coin, when the engine answered without paging (v2.4); null when it paged for us
@@ -87,9 +92,11 @@
     const query: CoinQuery = { sort: serverSort(sort), stage: stage || undefined, q: q || undefined, limit: PAGE, offset: (page - 1) * PAGE }
     const pin = sort === 'featured'
     try {
-      const [n, l] = await Promise.all([api.coins(NEAR), api.coins(query)])
+      const [f, n, g, l] = await Promise.all([api.coins(FRESH), api.coins(FILLING), api.coins(GRADUATED), api.coins(query)])
       if (id !== reqId) return // a newer request is in flight
-      near = pageOf(n, NEAR, false).coins
+      laneFresh = pageOf(f, FRESH, false).coins
+      laneFilling = pageOf(n, FILLING, false).coins
+      laneGraduated = pageOf(g, GRADUATED, false).coins
       const pg = pageOf(l, query, pin)
       coins = pg.coins; total = pg.total; fullList = pg.full
       err = null; pollErr = false; lastRead = Date.now()
@@ -167,7 +174,7 @@
     readHoldings(w).then((r) => { if (wallet.address === w) bag = r }, () => {})
   })
   // the tape tags a row "dev" when its wallet created that coin; the creators are read off the coins the page already holds
-  const creators = $derived(Object.fromEntries([...(coins ?? []), ...(near ?? []), ...(fullList ?? [])].map((c) => [c.mint, c.creator])))
+  const creators = $derived(Object.fromEntries([...(coins ?? []), ...(laneFresh ?? []), ...(laneFilling ?? []), ...(laneGraduated ?? []), ...(fullList ?? [])].map((c) => [c.mint, c.creator])))
   // a board with fewer coins than a row holds offers the next slot to the visitor instead of an empty cell
   const offerLaunch = $derived(!!coins && coins.length > 0 && coins.length < 4 && !filtering && page === 1)
 </script>
@@ -233,29 +240,16 @@
 {/if}
 
 <div class="wrap band" class:with-tape={tapeState !== 'absent'}>
-  <section class="strip" aria-labelledby="near-h">
+  <section class="strip" aria-labelledby="pulse-h">
     <div class="sec-head">
-      <h2 class="h3" id="near-h">Closest to graduation</h2>
+      <h2 class="h3" id="pulse-h">On the pad right now</h2>
       {#if pollErr}<p class="live error">Lost the connection to the pad. Trying again every {POLL_MS / 1000}s.</p>
       {/if}
     </div>
-    {#if near === null}
-      {#if failed}<p class="muted">Not loaded.</p>
-      {:else}<div class="near" aria-busy="true" aria-label="Loading the coins closest to graduation">{#each [0, 1, 2, 3] as i (i)}<div class="skel near-sk"></div>{/each}</div>{/if}
-    {:else if near.length === 0}
-      <p class="muted">No coin is on a curve right now.</p>
+    {#if failed && laneFresh === null}
+      <p class="muted">Not loaded.</p>
     {:else}
-      <div class="near">
-        {#each near as c (c.mint)}
-          <a class="ncard panel" href="#/coin/{c.mint}">
-            <CoinImage src={c.imageUrl} symbol={c.symbol} size={40} />
-            <span class="nt"><strong class="name">{c.name}</strong><span class="mono sym">${c.symbol}</span></span>
-            <span class="nb">{#if c.curveProgress === undefined}<span class="mono pc">–</span>{:else}<span class="bar"><CurveBar progress={c.curveProgress} stage={c.stage} compact /></span><span class="mono pc">{pct(c.curveProgress)}</span>{/if}</span>
-            <span class="nm">Market cap <span class="mono">{c.marketCapZec === undefined ? '–' : `${zec(c.marketCapZec, 2)} ZEC`}</span></span>
-            {#if c.curveRoomZats !== undefined}<span class="nm"><span class="mono">{zec(c.curveRoomZats, 2)} ZEC</span> to go</span>{/if}
-          </a>
-        {/each}
-      </div>
+      <PulseBoard fresh={laneFresh} filling={laneFilling} graduated={laneGraduated} {now} />
     {/if}
   </section>
   <!-- the pad-wide tape; an engine without GET /trades (v2.5) answers 404 and the block is not shown -->
@@ -413,25 +407,6 @@
   .tape-sec[hidden] { display: none; }
   .sec-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s-4); flex-wrap: wrap; }
   .live { font-size: var(--t-14); }
-  /* one to five cards close the row: each cell at least 180px (four across beside the tape), a card at most 320px wide */
-  .near { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--s-3); }
-  .ncard {
-    display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: var(--s-2) var(--s-3); align-items: center; padding: var(--s-3); border-radius: var(--r-md); max-width: 320px;
-    text-decoration: none; color: inherit; transition: transform var(--d-fn) var(--ease), box-shadow var(--d-fn) var(--ease);
-  }
-  @media (hover: hover) { .ncard:hover { transform: translateY(-2px); box-shadow: var(--sh-3); } }
-  .ncard:active { transform: translateY(1px); box-shadow: var(--sh-1); transition-duration: var(--d-press); }
-  .nt { display: grid; min-width: 0; }
-  /* a long name wraps to two lines, never gets cut */
-  .name { font-size: var(--t-16); line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-  .sym { font-size: var(--t-14); color: var(--ink-2); }
-  .nb { grid-column: 1 / -1; display: flex; align-items: center; gap: var(--s-3); }
-  .nb .bar { flex: 1; min-width: 0; }
-  .pc { font-size: var(--t-14); color: var(--ink-2); min-width: 4ch; text-align: right; }
-  .nm { grid-column: 1 / -1; font-size: var(--t-14); color: var(--ink-2); }
-  .nm .mono { color: var(--ink); }
-  .near-sk { height: 112px; border-radius: var(--r-md); max-width: 320px; }
-
   .market { padding-top: var(--s-8); display: grid; gap: var(--s-4); }
   .controls { display: flex; flex-wrap: wrap; gap: var(--s-3); align-items: center; }
   /* the tabs and the view toggle are the shared .seg control (app.css); only their layout lives here */
@@ -481,9 +456,6 @@
   }
   @media (max-width: 1100px) {
     .band.with-tape { grid-template-columns: 1fr; }
-    /* the strip scrolls inside its own box; the page never widens */
-    .near { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: var(--s-1); }
-    .ncard, .near-sk { flex: 0 0 220px; scroll-snap-align: start; }
   }
   @media (max-width: 800px) {
     .lhead { grid-template-columns: minmax(0, 2fr) 1fr 1.2fr; }
