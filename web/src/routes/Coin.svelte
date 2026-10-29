@@ -8,6 +8,7 @@
   import { sharesOfCoin } from '../lib/fees'
   import { zecUsd } from '../lib/usd.svelte'
   import { wallet, friendly } from '../lib/wallet.svelte'
+  import { readHoldings } from '../lib/holdings'
   import { referralLink } from '../lib/referral'
   import { profileHref } from '../lib/profile'
   import { hostOf, LINKS_WARNING } from '../lib/socials'
@@ -93,6 +94,30 @@
     catch (e) { if (routeAbsent(e)) fixed = null; else { fixed = null; fixedErr = true } }
   }
   $effect(() => { loadFixed() })
+  // ---- your cut: the connected wallet's share of this pot, estimated from its real balance (read in the
+  // browser, like the profile's Holdings tab) against the eligible supply (total minus the pool vaults,
+  // which are never paid). The payout itself follows the least held at the round's random checks, so the
+  // line says "about" and says the condition.
+  let myBal = $state<bigint | null>(null)
+  let holdSum = $state<{ supply: string; poolPct: number | null } | null>(null)
+  $effect(() => {
+    const w = wallet.address
+    myBal = null
+    if (!w) return
+    readHoldings(w).then((hs) => { if (wallet.address === w) myBal = hs.find((h) => h.coin.mint === mint)?.amount ?? 0n }, () => {})
+  })
+  $effect(() => { api.holders(mint, { limit: 1 }).then((h) => (holdSum = { supply: h.supply, poolPct: h.poolPct }), () => (holdSum = null)) })
+  const yourCutZats = $derived.by(() => {
+    if (myBal === null || myBal <= 0n || !holdSum || !pot) return null
+    let supply: bigint
+    try { supply = BigInt(holdSum.supply || '0') } catch { return null }
+    if (supply <= 0n) return null
+    const poolBps = BigInt(Math.max(0, Math.min(10_000, Math.round((holdSum.poolPct ?? 0) * 100))))
+    const eligible = (supply * (10_000n - poolBps)) / 10_000n
+    if (eligible <= 0n) return null
+    return (BigInt(pot.holdersZats) * (myBal > eligible ? eligible : myBal)) / eligible
+  })
+
   // The facts a buyer checks first, counted off the fixed record; the Token info tab holds the full list with a
   // chain link per line. null while the record is still loading or this engine lacks the route: no line, never a guess.
   const fixedWarns = $derived.by(() => {
@@ -250,7 +275,7 @@
       <p class="timing muted">Your share of payouts follows the least you held at random checks during the round, so buying just before a payout earns nothing for that round.</p>
 
       <!-- the reason to hold, visible without a click: this coin's own pot and its clock -->
-      <div class="pot-slot"><PotSlip {coin} {pot} {treasury} {now} rate={zecUsd.rate} /></div>
+      <div class="pot-slot"><PotSlip {coin} {pot} {treasury} {now} rate={zecUsd.rate} yourCut={yourCutZats} /></div>
 
       {#if isCreator}
         <div class="creator panel">

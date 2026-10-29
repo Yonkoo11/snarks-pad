@@ -6,6 +6,7 @@
   import { wallet as walletStore, friendly } from '../lib/wallet.svelte'
   import { shieldedView } from '../lib/shielded.svelte'
   import Addr from './Addr.svelte'
+  import CountUp from './CountUp.svelte'
 
   // "My rewards" (contract v2.6 GET /rewards/:wallet): with a wallet connected, every round that paid it Solana ZEC, with the
   // batch signature and the coins it came from. The shielded rail is the wallet's own business (v2.9): the public answer holds
@@ -100,7 +101,11 @@
     {:else if view === undefined}
       <div class="skel" style="height: 120px" aria-busy="true" aria-label="Loading your rewards"></div>
     {:else}
-      <p class="sum">Paid to <span class="mono">{short(wallet)}</span> as Solana ZEC: <span class="mono">{zec(view.solana.totalZats)} ZEC</span> over {view.solana.count} {view.solana.count === 1 ? 'round' : 'rounds'}.</p>
+      <!-- the passbook's head: this wallet's own paid total, the biggest number in the panel -->
+      <dl class="pass" aria-label="What this wallet has been paid">
+        <div><dt class="label">Paid to <span class="mono">{short(wallet)}</span> as Solana ZEC</dt><dd class="pass-big"><CountUp value={Number(view.solana.totalZats)} format={(v) => `${zec(BigInt(Math.round(v)))} ZEC`} /></dd></div>
+        <div><dt class="label">Rounds</dt><dd class="mono pass-n">{view.solana.count}</dd></div>
+      </dl>
       {#if view.solana.payouts.length === 0}
         <p class="muted">No Solana ZEC payout to this wallet yet. A wallet is paid from the round after it bought, by the least it held at random checks during that round.</p>
       {:else}
@@ -172,7 +177,11 @@
 <style>
   .mine, .verify { display: grid; gap: var(--s-3); padding: var(--s-5); }
   .state { display: grid; gap: var(--s-3); justify-items: start; }
-  .sum .mono { color: var(--ink); }
+  .pass { display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-7); align-items: end; margin: 0; }
+  .pass div { display: grid; gap: 2px; }
+  .pass dd { margin: 0; }
+  .pass-big { font-size: clamp(24px, 2vw, 30px); font-weight: 500; line-height: 1.1; }
+  .pass-n { font-size: var(--t-20); }
   .rows { display: grid; }
   .r { display: grid; grid-template-columns: 1.4fr 1fr 1fr 1.4fr; gap: var(--s-3); align-items: center; padding: var(--s-2) 0; border-bottom: 1px solid var(--line); font-size: var(--t-14); }
   .r.head { padding-bottom: var(--s-1); }

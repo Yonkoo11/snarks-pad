@@ -6,7 +6,7 @@
   // holders and when it is next paid. The Rewards tab keeps the detail (legs, transactions, running
   // totals); this slip is the reason to hold, visible without a click. An engine without GET /pot
   // (pot === null) gets no slip rather than a slab of dashes.
-  let { coin, pot, treasury, now, rate }: { coin: CoinDetail; pot: Pot | null | undefined; treasury: Treasury | null; now: number; rate: number | null } = $props()
+  let { coin, pot, treasury, now, rate, yourCut = null }: { coin: CoinDetail; pot: Pot | null | undefined; treasury: Treasury | null; now: number; rate: number | null; yourCut?: bigint | null } = $props()
 
   const nextAt = $derived(pot && pot.nextPayoutAt !== null ? pot.nextPayoutAt : treasury?.nextEpochAt ?? null)
   const nextDue = $derived(nextAt !== null && Date.parse(nextAt) - now <= 0)
@@ -33,6 +33,10 @@
       {:else if nextDue}The round is running now.
       {:else}Pays in <span class="mono">{countdown(nextAt, now)}</span>{/if}
     </p>
+    {#if yourCut !== null && yourCut > 0n}
+      <!-- the personal number: an estimate from the wallet's real balance, said as one, with the rule's condition -->
+      <p class="cut">At your balance, about <span class="mono">{zec(yourCut, 6)} ZEC</span> of this pot is yours next round, if you hold through the round's checks.</p>
+    {/if}
     {#if pot.lastPayout}
       <p class="muted last">Last round paid this coin's holders <span class="mono">{zec(pot.lastPayout.totalZats)} ZEC</span> {ago(pot.lastPayout.at, now)}.</p>
     {/if}
@@ -53,6 +57,7 @@
   .for { font-size: var(--t-14); color: var(--ink-2); }
   .of { font-size: var(--t-14); max-width: 44ch; }
   .clock { font-size: var(--t-14); font-weight: 700; }
+  .cut { font-size: var(--t-14); padding: var(--s-2) var(--s-3); background: var(--paper-3); border-radius: var(--r-sm); max-width: 44ch; }
   .last { font-size: var(--t-14); }
   /* the slip sits flat on a phone, like the hero's proof strip */
   @media (max-width: 640px) { .slip { transform: none; } }
