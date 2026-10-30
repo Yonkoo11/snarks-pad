@@ -347,7 +347,8 @@
         <div class="go">
           <button class="btn primary block" type="submit" disabled={!!busy || hold !== null || !tierOk || !socialsOk || !creatorOk || (!!lookalike && !lookalikeOk) || !buyOk}>{busy ?? (hold === 'sending' ? 'Uploading the image…' : `Launch ${symbol ? '$' + symbol : 'coin'}`)}</button>
           {#if hold === 'failed'}<small class="hint">The picture did not upload. Try again or remove it, then launch.</small>
-          {:else if launchProblem}<small class="hint">{launchProblem}</small>{/if}
+          {:else if launchProblem}<small class="hint">{launchProblem}</small>
+          {:else if !shown}<small class="hint">No art yet: your coin will wear a drawn stand-in. Coins with their own art get seen.</small>{/if}
         </div>
       {:else}
         <div class="connect"><WalletButton primary label="Connect wallet to launch" /></div>

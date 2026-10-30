@@ -20,9 +20,12 @@
   --hover: light-dark(rgba(43, 36, 32, .06), rgba(239, 231, 218, .08));
   --hover-strong: light-dark(rgba(43, 36, 32, .1), rgba(239, 231, 218, .13));
 
+  /* one light for every hard shadow: the offsets are variables, and the pointer nudges them a
+     little (App.svelte), so the paper reads as lifted under a moving hand. Reduced motion pins them. */
+  --shx: 3px; --shy: 4px;
   --sh-1: 0 2px 0 var(--line);
-  --sh-2: 3px 4px 0 light-dark(rgba(43, 36, 32, .16), rgba(0, 0, 0, .45));
-  --sh-3: 6px 8px 0 light-dark(rgba(43, 36, 32, .18), rgba(0, 0, 0, .5));
+  --sh-2: var(--shx) var(--shy) 0 light-dark(rgba(43, 36, 32, .16), rgba(0, 0, 0, .45));
+  --sh-3: calc(var(--shx) * 2) calc(var(--shy) * 2) 0 light-dark(rgba(43, 36, 32, .18), rgba(0, 0, 0, .5));
 
   --f-display: 'Gaegu', 'Comic Sans MS', cursive;
   --f-body: 'Atkinson Hyperlegible', system-ui, sans-serif;

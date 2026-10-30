@@ -10,6 +10,7 @@
   import { reducedMotion, dataTween } from '../lib/motion'
   import { flip } from 'svelte/animate'
   import CoinCard from '../components/CoinCard.svelte'
+  import CoinImage from '../components/CoinImage.svelte'
   import Pager from '../components/Pager.svelte'
 
   // The catalog is its own page: one job (pick a coin), every coin, real pages. Launching is the one
@@ -28,6 +29,14 @@
   let search = $state('')
   let q = $state('')
   let view = $state<'grid' | 'list'>('grid')
+  // the one filter chip the product earns: coins whose holders have actually been paid shielded ZEC.
+  // The engine has no such filter, so the chip reads the whole list once (up to 1000) and pages here.
+  let shieldedOnly = $state(false)
+  let allForChip = $state<Coin[] | null>(null)
+  $effect(() => {
+    if (!shieldedOnly || allForChip) return
+    api.coins({ all: true, limit: 1000 }).then((r) => (allForChip = r.coins), () => (shieldedOnly = false))
+  })
   const tab = $derived<Tab>(stage === 'graduated' ? 'graduated' : sort === 'new' ? 'new' : sort === 'volume' ? 'rising' : 'all')
   function pickTab(t: Tab) {
     if (t === 'graduated') stage = 'graduated'
@@ -48,6 +57,7 @@
     return () => clearTimeout(t)
   })
 
+  let spot = $state<Coin | null>(null) // the biggest market cap on the pad, the page's one big face
   let coins = $state<Coin[] | null>(null)
   let total = $state(0)
   let fullList = $state<Coin[] | null>(null)
@@ -59,7 +69,6 @@
 
   // the page lives in the address (#/coins?page=2), the house list standard
   let page = $state(Math.max(1, Number(new URLSearchParams(location.hash.split('?')[1] || '').get('page')) || 1))
-  const pages = $derived(Math.max(1, Math.ceil(total / PAGE)))
   function goPage(p: number) {
     page = Math.min(Math.max(1, p), pages)
     history.replaceState(null, '', page > 1 ? `#/coins?page=${page}` : '#/coins')
@@ -89,6 +98,9 @@
       else err = e instanceof ApiError && e.code === 'unreachable' ? 'Could not reach the pad. Check your connection and try again.' : 'Could not load the coins from the pad.'
     }
   }
+  async function loadSpot() {
+    try { const r = await api.coins({ sort: 'mcap', limit: 1 }); spot = r.coins[0] ?? null } catch { /* the strip just stays away */ }
+  }
   let statsGone = false
   async function loadStats() {
     if (statsGone) return
@@ -97,8 +109,13 @@
   $effect(() => { zecUsd.refresh() })
   $effect(() => poll(load, POLL_MS))
   $effect(() => poll(loadStats, POLL_MS))
+  $effect(() => poll(loadSpot, POLL_MS))
   $effect(() => { const t = setInterval(() => (now = Date.now()), 1000); return () => clearInterval(t) })
 
+  const shieldedList = $derived(allForChip ? allForChip.filter((c) => BigInt(c.rewards.paidShieldedZec || '0') > 0n) : null)
+  const shownCoins = $derived(shieldedOnly ? (shieldedList ? shieldedList.slice((page - 1) * PAGE, page * PAGE) : null) : coins)
+  const shownTotal = $derived(shieldedOnly ? (shieldedList?.length ?? 0) : total)
+  const pages = $derived(Math.max(1, Math.ceil(shownTotal / PAGE)))
   const failed = $derived(!!err && !coins)
   const filtering = $derived(!!q || stage !== '')
   const nCoins = $derived(stats?.coins ?? fullList?.length ?? null)
@@ -125,6 +142,20 @@
     <a class="btn primary" href="#/launch">Launch a coin</a>
   </header>
 
+  {#if spot}
+    <!-- the pad's one big face: the largest market cap, letscash's LARGEST translated to paper -->
+    <a class="spot panel" href="#/coin/{spot.mint}">
+      <CoinImage src={spot.imageUrl} symbol={spot.symbol} size={96} />
+      <span class="s-t"><span class="label">The biggest on the pad</span><strong class="s-name">{spot.name}</strong><span class="mono s-sym">${spot.symbol}</span></span>
+      <dl class="s-nums">
+        <div><dt class="label">Market cap</dt><dd class="mono">{spot.marketCapZec === undefined ? '–' : `${zec(spot.marketCapZec, 2)} ZEC`}</dd></div>
+        <div><dt class="label">24h volume</dt><dd class="mono">{spot.volume24hZats === undefined ? '–' : `${zec(spot.volume24hZats, 2)} ZEC`}</dd></div>
+        <div><dt class="label">Holders</dt><dd class="mono">{spot.holders == null ? '–' : spot.holders.toLocaleString('en-US')}</dd></div>
+      </dl>
+      <span class="s-go" aria-hidden="true">&rarr;</span>
+    </a>
+  {/if}
+
   <div class="controls">
     <div class="seg tabs" role="group" aria-label="Coin lists">
       {#each TABS as t (t.id)}<button type="button" aria-pressed={tab === t.id} onclick={() => pickTab(t.id)}>{t.label}</button>{/each}
@@ -135,17 +166,22 @@
       <button type="button" aria-pressed={view === 'list'} onclick={() => (view = 'list')}>List</button>
     </div>
     <input class="input search" type="search" placeholder="Search coins" aria-label="Search coins by name or ticker" autocomplete="off" bind:value={search} />
+    <button class="chipbtn" type="button" aria-pressed={shieldedOnly} onclick={() => { shieldedOnly = !shieldedOnly; page = 1; history.replaceState(null, '', '#/coins') }}>
+      <span class="key hatch" aria-hidden="true"></span>Shielded delivery
+    </button>
   </div>
   {#if pollErr}<p class="live error" role="alert">Lost the connection to the pad. Trying again every {POLL_MS / 1000}s.</p>{/if}
 
-  {#if coins === null}
+  {#if shownCoins === null}
     {#if failed}
       <div class="fail"><p class="error" role="alert">{err}</p><button class="btn" type="button" onclick={load}>Try again</button></div>
     {:else}
       <div class="grid" aria-busy="true" aria-label="Loading the coins">{#each [0, 1, 2, 3, 4, 5, 6, 7] as i (i)}<div class="skel card-sk"></div>{/each}</div>
     {/if}
-  {:else if coins.length === 0}
-    {#if filtering}
+  {:else if shownCoins.length === 0}
+    {#if shieldedOnly}
+      <div class="none"><p class="muted">No coin's holders have been paid shielded ZEC yet.</p><button class="btn ghost" type="button" onclick={() => (shieldedOnly = false)}>Show all coins</button></div>
+    {:else if filtering}
       <div class="none"><p class="muted">No coins match.</p><button class="btn ghost" type="button" onclick={showAll}>Show all coins</button></div>
     {:else}
       <div class="panel empty"><p>No coins yet. Launch the first.</p><a class="btn primary" href="#/launch">Launch a coin</a></div>
@@ -158,11 +194,11 @@
         <span role="columnheader" class="label num hide-md">Holders</span><span role="columnheader" class="label">Bonded</span>
         <span role="columnheader" class="label num hide-md">Fee</span><span role="columnheader" class="label num hide-md">Age</span>
       </div>
-      {#each coins as c (c.mint)}<CoinCard coin={c} view="list" rate={zecUsd.rate} {now} />{/each}
+      {#each shownCoins as c (c.mint)}<CoinCard coin={c} view="list" rate={zecUsd.rate} {now} />{/each}
     </div>
   {:else}
     <div class="grid">
-      {#each coins as c (c.mint)}<div class="cardcell" animate:flip={dataTween()}><CoinCard coin={c} rate={zecUsd.rate} {now} /></div>{/each}
+      {#each shownCoins as c (c.mint)}<div class="cardcell" animate:flip={dataTween()}><CoinCard coin={c} rate={zecUsd.rate} {now} gallery={tab === 'graduated'} /></div>{/each}
       {#if offerLaunch}
         <a class="card launch panel" href="#/launch">
           <span class="h3">Your coin here.</span>
@@ -173,7 +209,7 @@
     </div>
   {/if}
 
-  <Pager {page} {pages} {total} per={PAGE} label="Catalog pages" unit="Coins" onpage={goPage} />
+  <Pager {page} {pages} total={shownTotal} per={PAGE} label="Catalog pages" unit="Coins" onpage={goPage} />
 </section>
 
 <style>
@@ -185,6 +221,22 @@
   .day { display: flex; gap: var(--s-2) var(--s-5); flex-wrap: wrap; margin: 0; }
   .day div { display: grid; gap: 2px; }
   .day dd { margin: 0; font-size: var(--t-20); font-weight: 500; }
+  .spot { display: flex; gap: var(--s-5); align-items: center; padding: var(--s-4) var(--s-5); text-decoration: none; color: inherit; flex-wrap: wrap;
+    transition: transform var(--d-fn) var(--ease), box-shadow var(--d-fn) var(--ease); }
+  @media (hover: hover) { .spot:hover { transform: translateY(-2px); box-shadow: var(--sh-3); } }
+  .s-t { display: grid; gap: 2px; min-width: 0; }
+  .s-name { font-family: var(--f-display); font-size: clamp(24px, 2.2vw, 32px); line-height: 1.05; }
+  .s-sym { color: var(--ink-2); font-size: var(--t-14); }
+  .s-nums { display: flex; gap: var(--s-2) var(--s-6); flex-wrap: wrap; margin: 0 0 0 auto; }
+  .s-nums div { display: grid; gap: 2px; }
+  .s-nums dd { margin: 0; font-size: var(--t-20); font-weight: 500; }
+  .s-go { font-size: var(--t-20); font-weight: 700; }
+  .chipbtn { display: inline-flex; align-items: center; gap: var(--s-2); min-height: 44px; padding: 0 var(--s-4); border: 0; border-radius: var(--r-full);
+    background: var(--paper-3); color: var(--ink-2); font: inherit; font-weight: 700; font-size: var(--t-14); cursor: pointer;
+    transition: background-color var(--d-fn) var(--ease), color var(--d-fn) var(--ease), box-shadow var(--d-fn) var(--ease); }
+  .chipbtn[aria-pressed='true'] { background: var(--paper-2); color: var(--ink); box-shadow: var(--sh-2); }
+  @media (hover: hover) { .chipbtn:hover:not([aria-pressed='true']) { background: var(--hover); color: var(--ink); } }
+  .key { display: inline-block; width: 12px; height: 12px; border-radius: var(--r-xs); flex: none; }
   .controls { display: flex; flex-wrap: wrap; gap: var(--s-3); align-items: center; }
   .ctl { display: flex; align-items: center; gap: var(--s-2); position: relative; }
   .sel {

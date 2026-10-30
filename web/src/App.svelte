@@ -6,6 +6,7 @@
   import BottomBar from './components/BottomBar.svelte'
   import Palette from './components/room/Palette.svelte'
   import { router } from './lib/router.svelte'
+  import { reducedMotion } from './lib/motion'
   import Home from './routes/Home.svelte'
   import CoinPage from './routes/Coin.svelte'
   // Home and the coin page paint eagerly (the first screen and the first click); every other page is its own chunk,
@@ -28,6 +29,25 @@
   // A route change moves focus to the page region, so a keyboard or screen-reader user lands on the
   // new page instead of staying on the link they clicked; the title change announces the page.
   let mainEl = $state<HTMLElement>()
+  // The hand is the lamp: the pointer nudges every hard shadow's offset a little (at most ~1.2px),
+  // so the paper objects read as truly lifted. One rAF-throttled listener; touch and reduced motion
+  // leave the light still.
+  $effect(() => {
+    if (reducedMotion() || !matchMedia('(hover: hover)').matches) return
+    let raf = 0
+    const onMove = (e: PointerEvent) => {
+      if (raf) return
+      raf = requestAnimationFrame(() => {
+        raf = 0
+        const nx = (e.clientX / innerWidth - 0.5) * 2
+        const ny = (e.clientY / innerHeight - 0.5) * 2
+        document.documentElement.style.setProperty('--shx', `${(3 - nx * 1.2).toFixed(2)}px`)
+        document.documentElement.style.setProperty('--shy', `${(4 - ny * 1.2).toFixed(2)}px`)
+      })
+    }
+    addEventListener('pointermove', onMove, { passive: true })
+    return () => { removeEventListener('pointermove', onMove); cancelAnimationFrame(raf) }
+  })
   let firstRoute = true
   $effect(() => {
     r.name

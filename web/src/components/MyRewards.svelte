@@ -8,6 +8,7 @@
   import Addr from './Addr.svelte'
   import CountUp from './CountUp.svelte'
   import Pager from './Pager.svelte'
+  import { tearReceipt } from '../lib/receiptcard'
 
   // "My rewards" (contract v2.6 GET /rewards/:wallet): with a wallet connected, every round that paid it Solana ZEC, with the
   // batch signature and the coins it came from. The shielded rail is the wallet's own business (v2.9): the public answer holds
@@ -113,7 +114,9 @@
         <span role="cell"><span class="mono">{numberOf(r.epochId)}</span> <span class="muted small">{when(r.at)}</span></span>
         <span role="cell" class="mono coins">{#each r.coins as c (c.mint)}<span title="{zec(c.shareZats, 6)} ZEC from this coin at planning time">${symbolOf(c.mint)}</span>{/each}</span>
         <span role="cell" class="mono num">{zec(r.zats, 6)} ZEC</span>
-        <span role="cell" class="sig"><Addr value={r.sig} head={6} tail={6} href={solanaTxUrl(r.sig, mode)} label="Solana signature" /></span>
+        <span role="cell" class="sig"><Addr value={r.sig} head={6} tail={6} href={solanaTxUrl(r.sig, mode)} label="Solana signature" />
+          {#if wallet}<button class="tear" type="button" title="Tear this receipt off as a picture" onclick={() => tearReceipt(r, numberOf(r.epochId), r.coins.map((c) => `$${symbolOf(c.mint)}`), wallet)}>Tear off</button>{/if}
+        </span>
       </div>
     {/each}
   </div>
@@ -216,6 +219,10 @@
   .r.head { padding-bottom: var(--s-1); }
   .coins { display: flex; flex-wrap: wrap; gap: var(--s-1) var(--s-2); }
   .num { text-align: right; }
+  /* the tear: a perforated stub of a button */
+  .tear { border: 0; background: transparent; color: var(--ink-2); font: inherit; font-size: var(--t-12); font-weight: 700; cursor: pointer;
+    padding: 2px var(--s-2); border-left: 2px dashed var(--line); margin-left: var(--s-2); }
+  @media (hover: hover) { .tear:hover { color: var(--ink); background: var(--hover); } }
   .small { font-size: var(--t-14); }
   .sealed { display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap; }
   .sealed .bar { display: inline-block; width: 92px; height: 1em; border-radius: var(--r-xs); }

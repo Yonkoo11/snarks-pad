@@ -7,7 +7,7 @@
   // or v2.6 field an older engine does not send is a dash, never 0. The hatched chip appears only on a coin whose holders
   // have been paid shielded ZEC (the device marks what is shielded, and nothing else).
   // `preview`: the launch form's live card for a coin that does not exist yet; the numbers it cannot know are dashes and it links nowhere.
-  let { coin, view = 'grid', rate = null, now = Date.now(), preview = false }: { coin: Coin; view?: 'grid' | 'list'; rate?: number | null; now?: number; preview?: boolean } = $props()
+  let { coin, view = 'grid', rate = null, now = Date.now(), preview = false, gallery = false }: { coin: Coin; view?: 'grid' | 'list'; rate?: number | null; now?: number; preview?: boolean; gallery?: boolean } = $props()
   const vol = $derived(preview || coin.volume24hZats === undefined ? null : `${zec(coin.volume24hZats, 2)} ZEC`)
   const usd = $derived(preview || coin.marketCapZec === undefined ? null : usdOfZats(coin.marketCapZec, rate))
   const shielded = $derived(BigInt(coin.rewards.paidShieldedZec || '0') > 0n)
@@ -56,10 +56,11 @@
     <span role="cell" class="num hide-md age">{ago(coin.createdAt, now)}</span>
   </a>
 {:else}
-  <a class="card panel" class:preview href={preview ? undefined : `#/coin/${coin.mint}`} aria-label={preview ? 'Preview of your coin\'s card' : undefined}>
-    <!-- the art is a tile beside the name, not a poster over the card: the information is the card -->
+  <a class="card panel" class:preview class:gallery href={preview ? undefined : `#/coin/${coin.mint}`} aria-label={preview ? 'Preview of your coin\'s card' : undefined}>
+    <!-- the art is a tile beside the name, not a poster over the card: the information is the card.
+         On the graduated wall (gallery) the art steps up and the lock line is the point. -->
     <span class="head">
-      <CoinImage src={coin.imageUrl} symbol={coin.symbol} size={56} />
+      <CoinImage src={coin.imageUrl} symbol={coin.symbol} size={gallery ? 96 : 56} />
       <span class="title"><strong class="name">{coin.name}</strong><span class="row2"><span class="mono">${coin.symbol}</span><span>{age}</span></span></span>
     </span>
     <dl class="nums">
@@ -68,6 +69,9 @@
       <div><dt class="label">Holders</dt><dd class="mono v">{holders ?? '–'}</dd></div>
       <div><dt class="label">24h change</dt><dd class="mono v" class:down={change?.startsWith('−')} class:muted={noTrade}>{change ?? '–'}</dd></div>
     </dl>
+    {#if gallery && graduated}
+      <span class="lockline">Liquidity locked for good{coin.graduatedAt ? ` \u00b7 graduated ${ago(coin.graduatedAt, now)}` : ''}</span>
+    {/if}
     <span class="bond">
       {#if graduated}<span class="chip">Graduated</span>
       {:else if coin.curveProgress === undefined}<span class="mono pc">–</span>
@@ -97,6 +101,8 @@
   .card:not(.preview):active { transform: translateY(1px); box-shadow: var(--sh-1); transition-duration: var(--d-press); }
   .card.preview { cursor: default; }
   .head { display: flex; align-items: center; gap: var(--s-3); min-width: 0; }
+  .gallery .head :global(.ci) { border-radius: var(--r-sm); }
+  .lockline { font-size: var(--t-14); font-weight: 700; }
   .title { display: grid; gap: 2px; min-width: 0; }
   .name { font-size: var(--t-16); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .row2 { display: flex; gap: var(--s-2); font-size: var(--t-14); color: var(--ink-2); }
