@@ -147,6 +147,33 @@ textarea.input { resize: vertical; min-height: 96px; }
 /* The device: crayon hatching marks what is shielded, and nothing else */
 .hatch { background: repeating-linear-gradient(-55deg, var(--pink) 0 3px, transparent 3px 6px), var(--pink-soft); }
 
+/* The door: the enamel panel a page's first screen is pinned to. The surface only; each page lays
+   out its own grid on it. Light: a shade deeper than the page's paper. Dark: a green-grey kitchen
+   at night; the paper objects on it stay cream (.onpaper below). */
+.door {
+  position: relative; overflow: hidden; border-radius: 18px;
+  background: light-dark(#ebdfc6, #252b27);
+  box-shadow: inset 0 2px 0 light-dark(rgba(255, 255, 255, .55), rgba(239, 231, 218, .06)),
+    inset 0 -3px 0 light-dark(rgba(43, 36, 32, .08), rgba(0, 0, 0, .3)), var(--sh-2);
+}
+.door::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none; opacity: .6; z-index: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='linear' slope='0.045'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.door > * { position: relative; }
+
+/* A paper note taped to the door; use with .onpaper so it stays paper in both themes. */
+.note {
+  position: relative; display: grid; gap: var(--s-2); justify-items: start;
+  background: var(--paper-2); border-radius: var(--r-xs); box-shadow: var(--sh-2);
+  padding: var(--s-4) var(--s-5); padding-top: calc(var(--s-4) + 6px);
+  color: var(--ink); text-decoration: none;
+}
+.note .label { color: var(--ink-3); }
+.note .tape { position: absolute; width: 72px; height: 22px; top: -10px; background: rgba(236, 222, 190, .85); box-shadow: 0 1px 0 rgba(43, 36, 32, .12); }
+.note .nt1 { left: 18%; transform: rotate(-6deg); }
+.note .nt2 { right: 14%; transform: rotate(5deg); }
+
 /* Paper objects: anything inside .onpaper is a physical piece of paper and keeps its daylight
    colors in BOTH themes. The dark theme darkens the room (the door, the page), never the paper:
    a receipt does not turn black at night, the kitchen does. The subtree re-pins the tokens, so

@@ -27,6 +27,7 @@
   import FixedPanel from '../components/FixedPanel.svelte'
   import PotSlip from '../components/PotSlip.svelte'
   import ShareCard from '../components/ShareCard.svelte'
+  import Lamp from '../components/room/Lamp.svelte'
 
   // A trading page: the chart and the buy box first, then the numbers, then four tabs (the live trades, the holders, the
   // rewards and what is fixed), then where the fee goes.
@@ -195,7 +196,9 @@
 {:else if !coin}
   <section class="wrap pad grid"><div class="skel" style="height: 360px"></div><div class="skel" style="height: 360px"></div></section>
 {:else}
-  <section class="wrap pad grid">
+  <section class="wrap pad">
+  <div class="door tgrid">
+    <Lamp lastAt={treasury?.lastEpochAt ?? null} nextAt={treasury?.nextEpochAt ?? null} {now} />
     <div class="main">
       <header class="head">
         <CoinImage src={coin.imageUrl} symbol={coin.symbol} size={88} />
@@ -270,7 +273,7 @@
       <FeeSplit split={sharesOfCoin(coin)} />
     </div>
 
-    <aside class="side-col">
+    <aside class="side-col onpaper">
       <div class="trade-slot"><BuyBox {coin} {mint} thresholdZats={fixed?.migration.thresholdZats ?? null} {windowLeft} feeNowBps={coin.feeNowBps ?? null} ontraded={load} /></div>
       <!-- the payout rule a buyer needs before buying, in the Payouts page's own words -->
       <p class="timing muted">Your share of payouts follows the least you held at random checks during the round, so buying just before a payout earns nothing for that round.</p>
@@ -313,18 +316,21 @@
         <span class="go">Set it up →</span>
       </a>
     </aside>
+  </div>
   </section>
 {/if}
 
 <style>
   .pad { padding-top: var(--s-6); }
-  .grid { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: var(--s-7); align-items: start; }
+  /* the trading room: the whole screen on one door, the buy box and its notes as paper on it */
+  .tgrid { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: var(--s-7); align-items: start; padding: clamp(20px, 3vw, 40px); }
   .main { display: grid; gap: var(--s-6); }
   .head { display: flex; gap: var(--s-4); align-items: flex-start; }
   /* the coin is the subject: its name is the biggest text on the page */
   .big-name { font-size: clamp(30px, 2.6vw, 40px); }
   .title { display: grid; gap: var(--s-2); min-width: 0; }
-  .timing { font-size: var(--t-14); max-width: 48ch; }
+  /* bare text on the door inside the paper-pinned column: it takes the door's own muted ink, not the paper's */
+  .timing { font-size: var(--t-14); max-width: 48ch; color: light-dark(#5e544c, #bdb2a4); }
   .trow { display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap; }
   .meta { font-size: var(--t-14); }
   .desc { font-size: var(--t-16); }
@@ -391,7 +397,7 @@
 
   @media (max-width: 960px) {
     /* one column, the buy box right under the title: a holder arriving from a phone link buys before reading the rest */
-    .grid { grid-template-columns: 1fr; gap: var(--s-6); }
+    .tgrid { grid-template-columns: 1fr; gap: var(--s-6); }
     .stats { grid-template-columns: repeat(2, auto); gap: var(--s-4) var(--s-6); }
     .stats dd { font-size: var(--t-16); }
     .main, .side-col { display: contents; }

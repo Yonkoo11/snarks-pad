@@ -346,8 +346,8 @@
 <style>
   /* ---- the door: one enamel panel, the workstation the first screen is pinned to ---- */
   .doorwrap { padding-top: var(--s-4); }
+  /* the surface comes from app.css .door; this page lays its workstation grid on it */
   .door {
-    position: relative; overflow: hidden;
     display: grid; gap: var(--s-5) var(--s-6);
     grid-template-columns: minmax(280px, 340px) minmax(0, 1fr) minmax(320px, 400px);
     grid-template-areas: 'head head proof' 'money shelves proof';
@@ -355,18 +355,7 @@
     align-items: start;
     min-height: min(78vh, 860px);
     padding: clamp(20px, 3vw, 44px);
-    border-radius: 18px;
-    /* enamel, not page paper: a shade deeper by day, a green-grey kitchen at night */
-    background: light-dark(#ebdfc6, #252b27);
-    box-shadow: inset 0 2px 0 light-dark(rgba(255, 255, 255, .55), rgba(239, 231, 218, .06)),
-      inset 0 -3px 0 light-dark(rgba(43, 36, 32, .08), rgba(0, 0, 0, .3)), var(--sh-2);
   }
-  /* the door's tooth: one tiled noise, rasterized once by the browser, under everything on it */
-  .door::before {
-    content: ''; position: absolute; inset: 0; pointer-events: none; opacity: .6; z-index: 0;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='linear' slope='0.045'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
-  }
-  .door > * { position: relative; }
   .d-head { grid-area: head; display: grid; gap: var(--s-2); max-width: 70ch; }
   .d-head .display { font-size: clamp(26px, 2.4vw, 36px); }
   .lede { font-size: var(--t-16); line-height: 1.45; color: var(--ink-2); max-width: 60ch; }
@@ -383,17 +372,7 @@
   .art { display: grid; justify-items: center; padding-top: 84px; }
   .key { display: inline-block; width: 12px; height: 12px; border-radius: var(--r-xs); flex: none; }
 
-  /* paper notes taped to the door: the till and the pot. .onpaper keeps them cream in both themes. */
-  .note {
-    position: relative; display: grid; gap: var(--s-2); justify-items: start;
-    background: var(--paper-2); border-radius: var(--r-xs); box-shadow: var(--sh-2);
-    padding: var(--s-4) var(--s-5); padding-top: calc(var(--s-4) + 6px);
-    text-decoration: none; color: var(--ink);
-  }
-  .note .label { color: var(--ink-3); }
-  .note .tape { position: absolute; width: 72px; height: 22px; top: -10px; background: rgba(236, 222, 190, .85); box-shadow: 0 1px 0 rgba(43, 36, 32, .12); }
-  .nt1 { left: 18%; transform: rotate(-6deg); }
-  .nt2 { right: 14%; transform: rotate(5deg); }
+  /* the till and the pot wear the shared .note (app.css); only their tilts live here */
   .meter { transform: rotate(-.8deg); }
   .pot { transform: rotate(.6deg); width: 100%; }
   .m-big { display: flex; align-items: baseline; gap: 0.16em; font-size: clamp(40px, 3.4vw, 58px); font-weight: 500; line-height: 1; letter-spacing: -0.01em; }

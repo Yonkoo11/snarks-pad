@@ -12,6 +12,7 @@
   import Postmark from '../components/Postmark.svelte'
   import CountUp from '../components/CountUp.svelte'
   import VerifyRound from '../components/VerifyRound.svelte'
+  import Lamp from '../components/room/Lamp.svelte'
 
   let t = $state<Treasury | null>(null)
   let epochs = $state<Epoch[] | null>(null)
@@ -80,32 +81,46 @@
 </script>
 
 <section class="wrap pad">
-  <h1 class="display">Payouts.</h1>
-  <p class="lede muted">Every payout to holders, with its transactions.</p>
-
-  <!-- the all-time line: the page's proof, added up from the rounds below -->
-  {#if epochs && epochs.length > 0}
-    <dl class="all" aria-label="All payouts added up">
-      <div><dt class="label">Paid to holders</dt><dd class="a-big"><CountUp value={Number(paidAllTime ?? 0n)} format={(v) => `${zec(BigInt(Math.round(v)))} ZEC`} /></dd></div>
-      <div><dt class="label">Payments</dt><dd class="mono">{(nPayments ?? 0).toLocaleString('en-US')}</dd></div>
-      <div><dt class="label">Rounds</dt><dd class="mono">{epochs.length}</dd></div>
-      <div><dt class="label"><span class="key hatch" aria-hidden="true"></span>Shielded</dt><dd class="mono">{zec(paidShieldedTime ?? 0n)} ZEC in {nBatches} {nBatches === 1 ? 'batch' : 'batches'}</dd></div>
-    </dl>
-  {/if}
-  {#if failed}
-    <div class="fail">
-      <p class="error">{err}</p>
-      <button class="btn" type="button" onclick={load}>Try again</button>
+  <!-- the proof wall: the page's door, the all-time note and the latest shielded receipt pinned under the lamp -->
+  <div class="door">
+    <Lamp lastAt={t?.lastEpochAt ?? null} nextAt={t?.nextEpochAt ?? null} {now} />
+    <div class="d-left">
+      <h1 class="display">Payouts.</h1>
+      <p class="lede muted">Every payout to holders, with its transactions.</p>
+      {#if epochs && epochs.length > 0}
+        <dl class="all note onpaper" aria-label="All payouts added up">
+          <span class="tape nt1" aria-hidden="true"></span>
+          <div class="a-first"><dt class="label">Paid to holders</dt><dd class="a-big"><CountUp value={Number(paidAllTime ?? 0n)} format={(v) => `${zec(BigInt(Math.round(v)))} ZEC`} /></dd></div>
+          <div><dt class="label">Payments</dt><dd class="mono">{(nPayments ?? 0).toLocaleString('en-US')}</dd></div>
+          <div><dt class="label">Rounds</dt><dd class="mono">{epochs.length}</dd></div>
+          <div><dt class="label"><span class="key hatch" aria-hidden="true"></span>Shielded</dt><dd class="mono">{zec(paidShieldedTime ?? 0n)} ZEC in {nBatches} {nBatches === 1 ? 'batch' : 'batches'}</dd></div>
+        </dl>
+      {/if}
+      {#if !failed}
+      <div class="sheet">
+        {#if t}
+          <p class="when">{#if t.lastEpochAt}Last payout {ago(t.lastEpochAt, now)}.{/if}{#if latestSolanaOnly} Round #{numberOf(latestSolanaOnly.id)} paid <span class="mono">{zec(latestSolanaOnly.solanaPayouts.totalZats)} ZEC</span> as Solana ZEC to {latestSolanaOnly.solanaPayouts.count} wallets in {latestSolanaOnly.solanaPayouts.sigs.length} {latestSolanaOnly.solanaPayouts.sigs.length === 1 ? 'transaction' : 'transactions'}. Shares under the payout floor carry to the next round. It is listed below.{/if} {#if t.lastRunFoundNothing && t.lastRunAt}Last round ran {ago(t.lastRunAt, now)} and found nothing to claim yet.{/if} <NextPayout at={t.nextEpochAt} {now} everyMs={t.cadence?.roundEveryMs ?? null} />.</p>
+          <p class="muted small">Rounds run every {every(t.cadence.roundEveryMs)} and pay Solana ZEC. The shielded share goes out about every {every(t.cadence.shieldedEveryMs)} in one batch.</p>
+        {:else}
+          <div class="skel" style="height: 48px" aria-busy="true" aria-label="Loading the payouts"></div>
+        {/if}
+      </div>
+      {/if}
     </div>
-  {/if}
 
-  {#if !failed}
-  <section class="lead" aria-labelledby="lead-h">
-    <h2 class="h2" id="lead-h">Latest shielded payout</h2>
-    {#if !epochs}
-      <div class="skel" style="height: 176px" aria-busy="true" aria-label="Loading the latest payout"></div>
-    {:else if latestShielded}
-      <article class="panel latest">
+    <div class="d-right">
+      {#if failed}
+        <div class="fail">
+          <p class="error">{err}</p>
+          <button class="btn" type="button" onclick={load}>Try again</button>
+        </div>
+      {:else}
+      <section class="lead" aria-labelledby="lead-h">
+        <h2 class="h2 d-lead-h" id="lead-h">Latest shielded payout</h2>
+        {#if !epochs}
+          <div class="skel" style="height: 176px" aria-busy="true" aria-label="Loading the latest payout"></div>
+        {:else if latestShielded}
+          <article class="panel latest onpaper">
         <span class="band hatch" aria-hidden="true"></span>
         <p class="muted">{when(latestShielded.at)} ({ago(latestShielded.at, now)}), round #{numberOf(latestShielded.id)}, {t ? netName[t.zcashNetwork] : ''}.</p>
         <p><span class="mono big">{zec(latestShielded.shielded.totalZats)} ZEC</span> in one batched shielded transaction to {latestShielded.shielded.count} {latestShielded.shielded.count === 1 ? 'address' : 'addresses'}.</p>
@@ -118,24 +133,15 @@
           <VerifyRound sha256={latestShielded.snapshot.sha256} url={latestShielded.snapshot.url} onverified={() => markChecked(latestShielded.id)} />
         {/if}
       </article>
-    {:else}
-      <p class="muted">No shielded payout yet.</p>
-    {/if}
-  </section>
-  {/if}
-
-
-  {#if !failed}
-  <!-- the round's clock, plain text under the latest payout: a sentence, not a near-empty slab of a panel -->
-  <div class="sheet">
-    {#if t}
-      <p class="when">{#if t.lastEpochAt}Last payout {ago(t.lastEpochAt, now)}.{/if}{#if latestSolanaOnly} Round #{numberOf(latestSolanaOnly.id)} paid <span class="mono">{zec(latestSolanaOnly.solanaPayouts.totalZats)} ZEC</span> as Solana ZEC to {latestSolanaOnly.solanaPayouts.count} wallets in {latestSolanaOnly.solanaPayouts.sigs.length} {latestSolanaOnly.solanaPayouts.sigs.length === 1 ? 'transaction' : 'transactions'}. Shares under the payout floor carry to the next round. It is listed below.{/if} {#if t.lastRunFoundNothing && t.lastRunAt}Last round ran {ago(t.lastRunAt, now)} and found nothing to claim yet.{/if} <NextPayout at={t.nextEpochAt} {now} everyMs={t.cadence?.roundEveryMs ?? null} />.</p>
-      <p class="muted small">Rounds run every {every(t.cadence.roundEveryMs)} and pay Solana ZEC. The shielded share goes out about every {every(t.cadence.shieldedEveryMs)} in one batch.</p>
-    {:else}
-      <div class="skel" style="height: 48px" aria-busy="true" aria-label="Loading the payouts"></div>
-    {/if}
+        {:else}
+          <p class="muted">No shielded payout yet.</p>
+        {/if}
+      </section>
+      {/if}
+    </div>
   </div>
 
+  {#if !failed}
   <section class="policy">
     <FeeSplit split={t ? sharesFromPolicy(t.policy) : undefined} />
     <details class="how">
@@ -232,8 +238,20 @@
 </section>
 
 <style>
-  /* the page name outranks every number under it */
-  .pad > .display { font-size: clamp(30px, 2.6vw, 36px); }
+  /* the proof wall: the page's door, the all-time note left, the latest receipt pinned right */
+  .door {
+    display: grid; gap: var(--s-5) var(--s-7);
+    grid-template-columns: minmax(0, 1.1fr) minmax(300px, 520px);
+    align-items: start;
+    padding: clamp(20px, 3vw, 44px);
+  }
+  .d-left { display: grid; gap: var(--s-4); justify-items: start; }
+  .d-right { display: grid; gap: var(--s-3); align-content: start; min-width: 0; }
+  .d-lead-h { font-family: var(--f-display); font-size: var(--t-20); }
+  .all.note { transform: rotate(-.5deg); width: auto; }
+  @media (max-width: 1000px) { .door { grid-template-columns: 1fr; } }
+
+  .display { font-size: clamp(30px, 2.6vw, 36px); }
   .lede { font-size: var(--t-20); line-height: 1.45; max-width: 60ch; }
   .when { font-size: var(--t-16); }
   .pad { padding-top: var(--s-6); display: grid; gap: var(--s-6); }
@@ -252,8 +270,9 @@
   .split { font-size: var(--t-14); }
 
   /* the all-time line: the paid total is the page's biggest number */
-  .all { display: flex; flex-wrap: wrap; gap: var(--s-3) var(--s-7); margin: 0; align-items: end; }
+  .all { display: flex; flex-wrap: wrap; gap: var(--s-3) var(--s-6); margin: 0; align-items: end; }
   .all div { display: grid; gap: 2px; }
+  .all .a-first { flex: 1 1 100%; }
   .all .label { display: flex; align-items: center; gap: var(--s-1); }
   .all dd { margin: 0; font-size: var(--t-20); }
   .all .a-big { font-size: clamp(28px, 2.4vw, 36px); line-height: 1.1; }
