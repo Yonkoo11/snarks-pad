@@ -17,6 +17,7 @@
   import { monoNow, secondsLeft } from '../lib/window'
   import PriceChart from '../components/PriceChart.svelte'
   import CoinImage from '../components/CoinImage.svelte'
+  import DecisionStrip from '../components/DecisionStrip.svelte'
   import LiveNumber from '../components/LiveNumber.svelte'
   import WalletButton from '../components/WalletButton.svelte'
   import FeeSplit from '../components/FeeSplit.svelte'
@@ -249,6 +250,8 @@
         <div><dt class="label">Trading fee</dt><dd class="mono">{feeLabel(coin, true)}</dd></div>
       </dl>
 
+      <DecisionStrip {coin} {pot} {now} />
+
       <!-- the one-line answer to "can this rug?": counted off the fixed record, opened in full on the Token info tab -->
       {#if fixedWarns !== null}
         <button class="fixedline" type="button" onclick={goFixed}>
@@ -414,7 +417,7 @@
     .stats { grid-template-columns: repeat(2, auto); gap: var(--s-4) var(--s-6); }
     .stats dd { font-size: var(--t-16); }
     .main, .side-col { display: contents; }
-    .head { order: 1; } .trade-slot { order: 2; } .pot-slot { order: 3; } .main > :global(.chart) { order: 3; } .stats { order: 4; } .fixedline { order: 5; } .tabs-sec { order: 6; } .main > :global(.fs) { order: 7; } .creator, .ref { order: 8; } .cta { order: 9; }
+    .head { order: 1; } .trade-slot { order: 2; } .pot-slot { order: 3; } .main > :global(.chart) { order: 3; } .stats { order: 4; } .main > :global(.strip) { order: 4; } .fixedline { order: 5; } .tabs-sec { order: 6; } .main > :global(.fs) { order: 7; } .creator, .ref { order: 8; } .cta { order: 9; }
   }
   @media (max-width: 640px) {
     /* the buy box sits inside the first screen: a tighter top, the description on two lines (the full text sits under the box in the tabs' pages anyway) */
