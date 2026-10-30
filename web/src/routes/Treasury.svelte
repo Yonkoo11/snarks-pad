@@ -179,6 +179,10 @@
               <span class="muted">{when(e.at)}</span>
               <span>claimed <span class="mono">{zec(e.harvestedZats)} ZEC</span> from {e.coinMints.length} {e.coinMints.length === 1 ? 'coin' : 'coins'}</span>
               <span class="st caps {e.status}">{statusText[e.status]}</span>
+              {#if checked.includes(e.id)}
+                <!-- the earned stamp: inked only on a device whose own sha256 matched the memo; never a default badge -->
+                <span class="earned caps">re-hashed<small>on this device</small></span>
+              {/if}
             </div>
             <p class="split muted">
               Holders <span class="mono">{zec(e.split.holdersZats)}</span>, team <span class="mono">{zec(e.split.teamZats)}</span>,
@@ -245,6 +249,10 @@
   .all.note { transform: rotate(-.5deg); width: auto; }
   .door2 { display: grid; gap: var(--s-6); padding: clamp(20px, 3vw, 40px); }
   .rows.onpaper { background: var(--paper-2); border-radius: var(--r-xs); box-shadow: var(--sh-2); padding: var(--s-2) var(--s-5); }
+  .earned { display: inline-grid; justify-items: center; gap: 0; padding: 2px 8px; border: 1.5px solid var(--good); border-radius: var(--r-xs);
+    color: var(--good); font-family: var(--f-mono); font-size: var(--t-11); font-weight: 700; letter-spacing: .08em; line-height: 1.2;
+    transform: rotate(-2deg); }
+  .earned small { font-size: 9px; letter-spacing: .04em; font-weight: 400; text-transform: none; }
   @media (max-width: 1000px) { .door { grid-template-columns: 1fr; } }
 
   .display { font-size: clamp(30px, 2.6vw, 36px); }
