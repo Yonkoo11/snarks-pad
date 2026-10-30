@@ -11,7 +11,11 @@
   import { flip } from 'svelte/animate'
   import CoinCard from '../components/CoinCard.svelte'
   import CoinImage from '../components/CoinImage.svelte'
+  import DeskRow from '../components/DeskRow.svelte'
   import Pager from '../components/Pager.svelte'
+  import { watched } from '../lib/looked'
+  import { wallet } from '../lib/wallet.svelte'
+  import { readHoldings } from '../lib/holdings'
 
   // The catalog is its own page: one job (pick a coin), every coin, real pages. Launching is the one
   // act here, so it is the button in the header, not a nav destination. The Pad door stays one screen
@@ -32,10 +36,27 @@
   // the one filter chip the product earns: coins whose holders have actually been paid shielded ZEC.
   // The engine has no such filter, so the chip reads the whole list once (up to 1000) and pages here.
   let shieldedOnly = $state(false)
+  // the other chip the product earns: the coins this browser starred, with what moved since the star
+  let watchingOnly = $state(false)
+  let watchMints = $state<Set<string>>(new Set(Object.keys(watched())))
+  const rereadWatch = () => (watchMints = new Set(Object.keys(watched())))
   let allForChip = $state<Coin[] | null>(null)
   $effect(() => {
-    if (!shieldedOnly || allForChip) return
-    api.coins({ all: true, limit: 1000 }).then((r) => (allForChip = r.coins), () => (shieldedOnly = false))
+    if (!(shieldedOnly || watchingOnly) || allForChip) return
+    api.coins({ all: true, limit: 1000 }).then((r) => (allForChip = r.coins), () => { shieldedOnly = false; watchingOnly = false })
+  })
+
+  // the connected wallet's bag: one read per connection, marks the rows it holds
+  let bag = $state<Map<string, bigint> | null>(null)
+  $effect(() => {
+    const addr = wallet.address
+    if (!addr) { bag = null; return }
+    let live = true
+    readHoldings(addr).then(
+      (hs) => { if (live) bag = new Map(hs.map((h) => [h.coin.mint, h.valueZats ?? 0n])) },
+      () => { if (live) bag = null },
+    )
+    return () => { live = false }
   })
   const tab = $derived<Tab>(stage === 'graduated' ? 'graduated' : sort === 'new' ? 'new' : sort === 'volume' ? 'rising' : 'all')
   function pickTab(t: Tab) {
@@ -112,9 +133,14 @@
   $effect(() => poll(loadSpot, POLL_MS))
   $effect(() => { const t = setInterval(() => (now = Date.now()), 1000); return () => clearInterval(t) })
 
-  const shieldedList = $derived(allForChip ? allForChip.filter((c) => BigInt(c.rewards.paidShieldedZec || '0') > 0n) : null)
-  const shownCoins = $derived(shieldedOnly ? (shieldedList ? shieldedList.slice((page - 1) * PAGE, page * PAGE) : null) : coins)
-  const shownTotal = $derived(shieldedOnly ? (shieldedList?.length ?? 0) : total)
+  const chips = $derived(shieldedOnly || watchingOnly)
+  const chipList = $derived(
+    chips && allForChip
+      ? allForChip.filter((c) => (!shieldedOnly || BigInt(c.rewards.paidShieldedZec || '0') > 0n) && (!watchingOnly || watchMints.has(c.mint)))
+      : null,
+  )
+  const shownCoins = $derived(chips ? (chipList ? chipList.slice((page - 1) * PAGE, page * PAGE) : null) : coins)
+  const shownTotal = $derived(chips ? (chipList?.length ?? 0) : total)
   const pages = $derived(Math.max(1, Math.ceil(shownTotal / PAGE)))
   const failed = $derived(!!err && !coins)
   const filtering = $derived(!!q || stage !== '')
@@ -162,12 +188,15 @@
     </div>
     <label class="ctl"><span class="label">Sort</span><select class="input sel" value={sort} onchange={pickSort}>{#each SORTS as s (s.id)}<option value={s.id}>{s.label}</option>{/each}</select></label>
     <div class="seg view" role="group" aria-label="View">
-      <button type="button" aria-pressed={view === 'grid'} onclick={() => (view = 'grid')}>Grid</button>
-      <button type="button" aria-pressed={view === 'list'} onclick={() => (view = 'list')}>List</button>
+      <button type="button" aria-pressed={view === 'grid'} onclick={() => (view = 'grid')}>Cards</button>
+      <button type="button" aria-pressed={view === 'list'} onclick={() => (view = 'list')}>Ledger</button>
     </div>
     <input class="input search" type="search" placeholder="Search coins" aria-label="Search coins by name or ticker" autocomplete="off" bind:value={search} />
     <button class="chipbtn" type="button" aria-pressed={shieldedOnly} onclick={() => { shieldedOnly = !shieldedOnly; page = 1; history.replaceState(null, '', '#/coins') }}>
       <span class="key hatch" aria-hidden="true"></span>Shielded delivery
+    </button>
+    <button class="chipbtn" type="button" aria-pressed={watchingOnly} onclick={() => { watchingOnly = !watchingOnly; rereadWatch(); page = 1; history.replaceState(null, '', '#/coins') }}>
+      <span class="key star" aria-hidden="true">★</span>Watching
     </button>
   </div>
   {#if pollErr}<p class="live error" role="alert">Lost the connection to the pad. Trying again every {POLL_MS / 1000}s.</p>{/if}
@@ -179,7 +208,9 @@
       <div class="grid" aria-busy="true" aria-label="Loading the coins">{#each [0, 1, 2, 3, 4, 5, 6, 7] as i (i)}<div class="skel card-sk"></div>{/each}</div>
     {/if}
   {:else if shownCoins.length === 0}
-    {#if shieldedOnly}
+    {#if watchingOnly}
+      <div class="none"><p class="muted">{watchMints.size === 0 ? 'Nothing starred yet. The star on any row starts a watch, in this browser.' : 'None of your starred coins matched.'}</p><button class="btn ghost" type="button" onclick={() => (watchingOnly = false)}>Show all coins</button></div>
+    {:else if shieldedOnly}
       <div class="none"><p class="muted">No coin's holders have been paid shielded ZEC yet.</p><button class="btn ghost" type="button" onclick={() => (shieldedOnly = false)}>Show all coins</button></div>
     {:else if filtering}
       <div class="none"><p class="muted">No coins match.</p><button class="btn ghost" type="button" onclick={showAll}>Show all coins</button></div>
@@ -187,14 +218,28 @@
       <div class="panel empty"><p>No coins yet. Launch the first.</p><a class="btn primary" href="#/launch">Launch a coin</a></div>
     {/if}
   {:else if view === 'list'}
-    <div class="list" role="table" aria-label="Coins">
-      <div class="lhead" role="row">
-        <span role="columnheader" class="label">Coin</span><span role="columnheader" class="label num">Market cap</span>
-        <span role="columnheader" class="label num hide-md">24h volume</span><span role="columnheader" class="label num hide-md">24h</span>
-        <span role="columnheader" class="label num hide-md">Holders</span><span role="columnheader" class="label">Bonded</span>
-        <span role="columnheader" class="label num hide-md">Fee</span><span role="columnheader" class="label num hide-md">Age</span>
+    <!-- the ledger: the one surface allowed past ten datapoints. One unit per column, the unit
+         in the header; the slow cells fill in for the rows on screen only. -->
+    <div class="list" role="table" aria-label="Coins, as a ledger">
+      <div class="dhead" role="row">
+        <span role="columnheader" class="label">Coin</span>
+        <span role="columnheader" class="label num">ZEC / 1M</span>
+        <span role="columnheader" class="label num">24h</span>
+        <span role="columnheader" class="label num hide-md">Mcap ZEC</span>
+        <span role="columnheader" class="label num hide-md">Vol ZEC</span>
+        <span role="columnheader" class="label num hide-md">Holders</span>
+        <span role="columnheader" class="label num hide-md">Supply</span>
+        <span role="columnheader" class="label num hide-md">Paid ZEC</span>
+        <span role="columnheader" class="label num hide-md">Next / holder</span>
+        <span role="columnheader" class="label num">Trades</span>
+        <span role="columnheader" class="label num hide-md">Age</span>
       </div>
-      {#each shownCoins as c (c.mint)}<CoinCard coin={c} view="list" rate={zecUsd.rate} {now} />{/each}
+      {#each shownCoins as c (c.mint)}
+        <div animate:flip={dataTween()}>
+          <DeskRow coin={c} {now} bagZats={bag?.get(c.mint) ?? null} deltaBase={watchingOnly ? 'star' : 'look'} onstarchange={rereadWatch} />
+        </div>
+      {/each}
+      <p class="lnote muted small">Supply: the tick is the ten largest wallets, the notch the dev, the block the pool. Next / holder: what the round would pay each holder if it closed now. Trade lines cover each coin's last recorded trades; a dashed stretch is time with no trades.</p>
     </div>
   {:else}
     <div class="grid">
@@ -255,12 +300,17 @@
   .launch:active { transform: translateY(1px); transition-duration: var(--d-press); }
   .card-sk { height: 360px; border-radius: var(--r-md); }
   .list { display: grid; }
-  .lhead { display: grid; grid-template-columns: minmax(0, 2.2fr) 1.1fr 1fr .7fr .7fr 1.3fr .6fr .7fr; gap: var(--s-4); padding: 0 var(--s-3) var(--s-2); }
+  .dhead { display: grid; grid-template-columns: minmax(0, 2.4fr) .9fr .6fr .9fr .9fr .6fr 64px 1.1fr .9fr 84px .6fr; gap: var(--s-3);
+    padding: 0 var(--s-2) var(--s-2); border-bottom: 1.5px solid var(--ink-3); }
+  .dhead .label { font-size: var(--t-11); }
+  .lnote { padding-top: var(--s-2); max-width: 86ch; }
+  .key.star { width: auto; height: auto; color: var(--pink); font-size: var(--t-12); line-height: 1; }
   .num { text-align: right; }
   .fail, .none { display: grid; gap: var(--s-3); justify-items: start; padding: var(--s-4) 0; }
   .empty { display: grid; gap: var(--s-4); justify-items: center; align-content: center; min-height: 160px; text-align: center; font-size: var(--t-20); font-weight: 700; }
   @media (max-width: 800px) {
-    .lhead { grid-template-columns: minmax(0, 2fr) 1fr 1.2fr; }
+    .dhead { grid-template-columns: minmax(0, 1fr) auto auto; }
+    .dhead > :nth-last-child(2) { display: none; } /* the Trades header: the line fills the row's second line unlabelled */
     .hide-md { display: none; }
   }
   @media (max-width: 640px) {

@@ -16,6 +16,7 @@
   --line: light-dark(rgba(43, 36, 32, .14), rgba(239, 231, 218, .14));
   --warn-bg: light-dark(#2b2420, #5a4f45); --warn-ink: light-dark(#f5efe2, #efe7da);
   --bad: light-dark(#9c2b1f, #ff8f7f);
+  --good: light-dark(#2f6b45, #7fc89a);
   /* the one hover and press tint for flat elements (rows, links-as-areas); lifted elements use transform+shadow instead */
   --hover: light-dark(rgba(43, 36, 32, .06), rgba(239, 231, 218, .08));
   --hover-strong: light-dark(rgba(43, 36, 32, .1), rgba(239, 231, 218, .13));
@@ -31,7 +32,7 @@
   --f-body: 'Atkinson Hyperlegible', system-ui, sans-serif;
   --f-mono: 'JetBrains Mono', ui-monospace, monospace;
 
-  --t-12: 12px; --t-14: 14px; --t-16: 16px; --t-20: 20px;
+  --t-11: 11px; --t-12: 12px; --t-14: 14px; --t-16: 16px; --t-20: 20px;
   /* the headline is a one-line banner over the market, not a poster: 28px at 1440, 24px at 390 */
   --t-display: clamp(24px, 2vw, 28px);
   --t-h2: 24px;
