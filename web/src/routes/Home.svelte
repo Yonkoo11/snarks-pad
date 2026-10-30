@@ -10,6 +10,7 @@
   import { reducedMotion } from '../lib/motion'
   import { wallet } from '../lib/wallet.svelte'
   import { readHoldings } from '../lib/holdings'
+  import { downloadPayoutIcs } from '../lib/ics'
   import type { Holding } from '../lib/profile'
   import FillBar from '../components/FillBar.svelte'
   import Lamp from '../components/room/Lamp.svelte'
@@ -184,6 +185,10 @@
           <p class="pot-line"><span class="mono pot-big">{padPot ? `${zec(padPot.accruedZats)} ZEC` : '–'}</span>{#if padPot && usdOfZats(padPot.accruedZats, zecUsd.rate)}<span class="pot-usd">{usdOfZats(padPot.accruedZats, zecUsd.rate)}</span>{/if}</p>
           <FillBar fromIso={treasury?.lastEpochAt ?? null} toIso={treasury?.nextEpochAt ?? null} {now} />
           <p class="pot-clock">{#if treasury}<NextPayout at={treasury.nextEpochAt} {now} everyMs={treasury.cadence?.roundEveryMs ?? null} />{:else}<span class="mono">–</span>{/if}</p>
+          {#if treasury?.nextEpochAt}
+            <!-- the countdown as a magnet you can take: a real .ics from the engine's own timestamp -->
+            <button class="btn ghost cal" type="button" onclick={() => downloadPayoutIcs(treasury!.nextEpochAt!)}>Pin the payout to my calendar</button>
+          {/if}
         </div>
       {/if}
       <div class="actions">
@@ -279,6 +284,7 @@
   .pot-big { font-size: clamp(24px, 2vw, 30px); font-weight: 500; line-height: 1.1; }
   .pot-usd { font-size: var(--t-14); color: var(--ink-3); }
   .pot-clock { font-size: var(--t-16); font-weight: 700; }
+  .cal { min-height: 40px; padding: 0 var(--s-3); font-size: var(--t-14); justify-self: start; }
   .pot-clock :global(.mono) { font-size: var(--t-20); font-weight: 500; }
   .r-go { margin-left: auto; font-weight: 700; font-size: var(--t-14); }
   .r-go::after { content: ' \2192'; }

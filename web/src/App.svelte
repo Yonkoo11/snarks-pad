@@ -4,6 +4,7 @@
   import Nav from './components/Nav.svelte'
   import Footer from './components/Footer.svelte'
   import BottomBar from './components/BottomBar.svelte'
+  import Palette from './components/room/Palette.svelte'
   import { router } from './lib/router.svelte'
   import Home from './routes/Home.svelte'
   import CoinPage from './routes/Coin.svelte'
@@ -35,6 +36,7 @@
   })
 </script>
 
+<Palette />
 <ModeBanner />
 <PauseBanner />
 <Nav />

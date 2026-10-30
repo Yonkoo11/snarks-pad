@@ -5,6 +5,7 @@
   import { wallet, friendly } from '../lib/wallet.svelte'
   import { shieldedView } from '../lib/shielded.svelte'
   import WalletButton from '../components/WalletButton.svelte'
+  import SealButton from '../components/room/SealButton.svelte'
   import HiddenList from '../components/HiddenList.svelte'
   import Taped from '../components/Taped.svelte'
   import MyRewards from '../components/MyRewards.svelte'
@@ -161,7 +162,8 @@
               {:else}
                 <p class="muted">Your wallet shows the exact text before you sign: this wallet, this Zcash address, and a one-time code.</p>
               {/if}
-              <button class="btn" class:primary={!!wallet.address} onclick={register} disabled={!wallet.address || !addr || !!hint || !!busy}>{busy ?? 'Sign and get my rewards shielded'}</button>
+              <SealButton label="Hold to seal: get my rewards shielded" busy={busy} disabled={!wallet.address || !addr || !!hint} onseal={register} />
+              {#if !wallet.address}<p class="small muted">Connect a wallet above first.</p>{:else if !addr || hint}<p class="small muted">Paste a valid Zcash address above first.</p>{/if}
             </div>
           </li>
         </ol>
