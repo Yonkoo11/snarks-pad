@@ -102,7 +102,7 @@
           <p class="when">{#if t.lastEpochAt}Last payout {ago(t.lastEpochAt, now)}.{/if}{#if latestSolanaOnly} Round #{numberOf(latestSolanaOnly.id)} paid <span class="mono">{zec(latestSolanaOnly.solanaPayouts.totalZats)} ZEC</span> as Solana ZEC to {latestSolanaOnly.solanaPayouts.count} wallets in {latestSolanaOnly.solanaPayouts.sigs.length} {latestSolanaOnly.solanaPayouts.sigs.length === 1 ? 'transaction' : 'transactions'}. Shares under the payout floor carry to the next round. It is listed below.{/if} {#if t.lastRunFoundNothing && t.lastRunAt}Last round ran {ago(t.lastRunAt, now)} and found nothing to claim yet.{/if} <NextPayout at={t.nextEpochAt} {now} everyMs={t.cadence?.roundEveryMs ?? null} />.</p>
           <p class="muted small">Rounds run every {every(t.cadence.roundEveryMs)} and pay Solana ZEC. The shielded share goes out about every {every(t.cadence.shieldedEveryMs)} in one batch.</p>
         {:else}
-          <div class="skel" style="height: 48px" aria-busy="true" aria-label="Loading the payouts"></div>
+          <div class="skel" style="height: 48px" aria-busy="true" role="status" aria-label="Loading the payouts"></div>
         {/if}
       </div>
       {/if}
@@ -118,7 +118,7 @@
       <section class="lead" aria-labelledby="lead-h">
         <h2 class="h2 d-lead-h" id="lead-h">Latest shielded payout</h2>
         {#if !epochs}
-          <div class="skel" style="height: 176px" aria-busy="true" aria-label="Loading the latest payout"></div>
+          <div class="skel" style="height: 176px" aria-busy="true" role="status" aria-label="Loading the latest payout"></div>
         {:else if latestShielded}
           <article class="panel latest onpaper">
         <span class="band hatch" aria-hidden="true"></span>
@@ -162,7 +162,7 @@
       {#if csvUrl && epochs?.length}<a class="btn ghost csv" href={csvUrl} download="snarks-epochs.csv">Download every round as CSV</a>{/if}
     </div>
     {#if !epochs}
-      <div class="skel" style="height: 240px" aria-busy="true" aria-label="Loading the payout rounds"></div>
+      <div class="skel" style="height: 240px" aria-busy="true" role="status" aria-label="Loading the payout rounds"></div>
     {:else if epochs.length === 0}
       <p class="muted">No payout rounds yet.</p>
     {:else}

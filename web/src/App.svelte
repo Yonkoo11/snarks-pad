@@ -19,16 +19,25 @@
   const r = $derived(router.route)
   // One title per page; the coin page writes its own once the coin is known, and the profile page always writes its own (a tab click must not put the generic one back).
   const titles = {
-    home: 'SNARKS pad', coin: 'Coin, SNARKS pad', me: 'Your profile, SNARKS pad', launch: 'Launch a coin, SNARKS pad', shielded: 'Shielded delivery, SNARKS pad', treasury: 'Treasury, SNARKS pad',
+    home: 'SNARKS pad', coin: 'Coin, SNARKS pad', me: 'Your profile, SNARKS pad', launch: 'Launch a coin, SNARKS pad', shielded: 'Shielded delivery, SNARKS pad', treasury: 'Payouts, SNARKS pad',
     how: 'How it works, SNARKS pad', terms: 'Terms of use, SNARKS pad', privacy: 'Privacy, SNARKS pad', risk: 'Risk notice, SNARKS pad', missing: 'Page not found, SNARKS pad',
   } as const
   $effect(() => { if (r.name !== 'profile') document.title = titles[r.name] })
+  // A route change moves focus to the page region, so a keyboard or screen-reader user lands on the
+  // new page instead of staying on the link they clicked; the title change announces the page.
+  let mainEl = $state<HTMLElement>()
+  let firstRoute = true
+  $effect(() => {
+    r.name
+    if (firstRoute) { firstRoute = false; return }
+    mainEl?.focus({ preventScroll: true })
+  })
 </script>
 
 <ModeBanner />
 <PauseBanner />
 <Nav />
-<main>
+<main bind:this={mainEl} tabindex="-1">
   {#if r.name === 'home'}<Home />
   {:else if r.name === 'coin'}{#key r.mint}<CoinPage mint={r.mint} />{/key}
   {:else if r.name === 'profile'}{#key r.wallet}{#await Profile() then M}<M.default address={r.wallet} tab={r.tab} />{/await}{/key}

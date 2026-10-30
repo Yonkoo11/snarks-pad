@@ -34,7 +34,7 @@
     <section class="lane" aria-labelledby="lane-{lane.id}">
       <h3 class="h3" id="lane-{lane.id}">{lane.title}</h3>
       {#if lane.coins === null}
-        <div class="skel lane-sk" aria-busy="true" aria-label="Loading {lane.title}"></div>
+        <div class="skel lane-sk" aria-busy="true" role="status" aria-label="Loading {lane.title}"></div>
       {:else if lane.coins.length === 0}
         <p class="muted none">{lane.empty}</p>
       {:else}

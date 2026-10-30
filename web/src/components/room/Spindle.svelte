@@ -57,12 +57,13 @@
 
 <div class="scene">
   {#if stack === null}
-    <div class="skel" style="height: 380px; width: min(400px, 86vw)" aria-busy="true" aria-label="Loading the payout rounds"></div>
+    <div class="skel" style="height: 380px; width: min(400px, 86vw)" aria-busy="true" role="status" aria-label="Loading the payout rounds"></div>
   {:else if stack.length === 0}
     <p class="muted">The first round's receipt lands here once it pays.</p>
   {:else}
     <img class="mascot" src="/mascot-256.jpg" alt="" aria-hidden="true" class:still />
-    <div class="pile" role="img" aria-label="{stack.length} payout round receipts, newest on top">
+    <!-- a group, not an image: the top slip is a real link and must stay reachable to AT -->
+    <div class="pile" role="group" aria-label="{stack.length} payout round receipts, newest on top">
       {#each stack as e, i (e.id)}
         {@const p = seat(e.id, i, stack.length)}
         {#if i < stack.length - 1}

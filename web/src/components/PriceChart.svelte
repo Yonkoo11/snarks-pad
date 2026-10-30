@@ -60,7 +60,7 @@
   <div class="c-head">
     <h2 class="h3" id="chart-h">Price</h2>
     {#if p && data[shown]}
-      <p class="read mono" aria-live="polite">{read(data[shown].v)} <span class="muted">{ago(new Date(data[shown].t).toISOString())}</span></p>
+      <p class="read mono">{read(data[shown].v)} <span class="muted">{ago(new Date(data[shown].t).toISOString())}</span></p>
     {/if}
     <div class="c-ctl">
       <div class="seg mini" role="group" aria-label="Time range">
@@ -87,8 +87,8 @@
     {/if}
   {:else}
     <!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions -->
-    <div class="plot" bind:this={box} onpointermove={move} onpointerleave={() => (hover = null)} onkeydown={key} tabindex="0" role="img"
-      aria-label="Price of {symbol} over its last {data.length} trades, from {pricePerMillion(String(first.v))} to {pricePerMillion(String(last.v))} ZEC. Use the left and right arrow keys to read each trade.">
+    <div class="plot" bind:this={box} onpointermove={move} onpointerleave={() => (hover = null)} onkeydown={key} tabindex="0" role="group"
+      aria-roledescription="price chart" aria-label="Price of {symbol} over its last {data.length} trades, from {pricePerMillion(String(first.v))} to {pricePerMillion(String(last.v))} ZEC. Use the left and right arrow keys to read each trade.">
       <div class="inner">
       <svg viewBox="0 0 {W} {H}" preserveAspectRatio="none" aria-hidden="true">
         <path class="area" d={p.area} />

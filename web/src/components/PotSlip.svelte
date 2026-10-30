@@ -15,7 +15,7 @@
 </script>
 
 {#if pot === undefined}
-  <div class="skel" style="height: 132px" aria-busy="true" aria-label="Loading this coin's pot"></div>
+  <div class="skel" style="height: 132px" aria-busy="true" role="status" aria-label="Loading this coin's pot"></div>
 {:else if pot}
   <aside class="slip" aria-label="What this coin's holders are owed next">
     <p class="label">In this coin's pot</p>

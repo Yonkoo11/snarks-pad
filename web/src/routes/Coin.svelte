@@ -13,6 +13,7 @@
   import { profileHref } from '../lib/profile'
   import { hostOf, LINKS_WARNING } from '../lib/socials'
   import { poll } from '../lib/poll'
+  import { reducedMotion } from '../lib/motion'
   import { monoNow, secondsLeft } from '../lib/window'
   import PriceChart from '../components/PriceChart.svelte'
   import CoinImage from '../components/CoinImage.svelte'
@@ -78,6 +79,15 @@
   type Tab = 'trades' | 'holders' | 'rewards' | 'fixed'
   let tab = $state<Tab>('trades')
   const TABS: { id: Tab; label: string }[] = [{ id: 'trades', label: 'Trades' }, { id: 'holders', label: 'Holders' }, { id: 'rewards', label: 'Rewards' }, { id: 'fixed', label: 'Token info' }]
+  /** Arrow keys, Home and End move between the tabs; the tab list is one tab stop (the Profile page's pattern). */
+  function onTabKey(e: KeyboardEvent) {
+    const i = TABS.findIndex((t) => t.id === tab)
+    const next = e.key === 'ArrowRight' ? (i + 1) % TABS.length : e.key === 'ArrowLeft' ? (i + TABS.length - 1) % TABS.length : e.key === 'Home' ? 0 : e.key === 'End' ? TABS.length - 1 : -1
+    if (next < 0) return
+    e.preventDefault()
+    tab = TABS[next].id
+    document.getElementById(`tab-${TABS[next].id}`)?.focus()
+  }
   // the rounds, the treasury and the coin's pot feed the Rewards tab; the fixed facts (read once, the engine caches them 30 s) feed
   // the What is fixed tab and the buy box's "ZEC to go". A failure is a dash, never an error on this page; a route this engine lacks is null.
   let epochs = $state<Epoch[] | null>(null)
@@ -134,7 +144,7 @@
   })
   function goFixed() {
     tab = 'fixed'
-    document.getElementById('tab-fixed')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    document.getElementById('tab-fixed')?.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'center' })
   }
 
   // the creator's links (contract v2.7 `socials`), https only: the engine validates them at launch and the page never renders anything else as a link
@@ -192,7 +202,7 @@
 </script>
 
 {#if err}
-  <section class="wrap pad"><p class="error">{err}</p><a class="btn" href="#/">Back to coins</a></section>
+  <section class="wrap pad"><p class="error" role="alert">{err}</p><div class="errrow"><button class="btn" type="button" onclick={load}>Try again</button><a class="btn ghost" href="#/">Back to coins</a></div></section>
 {:else if !coin}
   <section class="wrap pad grid"><div class="skel" style="height: 360px"></div><div class="skel" style="height: 360px"></div></section>
 {:else}
@@ -252,7 +262,7 @@
       <section class="tabs-sec" aria-label="Trades, holders, rewards and token info">
         <div class="seg ctabs" role="tablist" aria-label="Coin details">
           {#each TABS as t (t.id)}
-            <button type="button" role="tab" id="tab-{t.id}" aria-selected={tab === t.id} aria-controls="panel-{t.id}" class:on={tab === t.id} onclick={() => (tab = t.id)}>
+            <button type="button" role="tab" id="tab-{t.id}" aria-selected={tab === t.id} aria-controls="panel-{t.id}" tabindex={tab === t.id ? 0 : -1} class:on={tab === t.id} onclick={() => (tab = t.id)} onkeydown={onTabKey}>
               {#if t.id === 'fixed'}<span class="long">{t.label}</span><span class="short" aria-hidden="true">Info</span>{:else}{t.label}{/if}{#if t.id === 'holders' && coin.holders}<span class="cnt mono">{coin.holders.toLocaleString('en-US')}</span>{/if}
             </button>
           {/each}
@@ -287,6 +297,7 @@
           {#if creatorFees}
             <p class="muted">{zec(curveOwed)} ZEC are waiting on the curve{#if creatorFees.graduated}, and {zec(poolOwed)} ZEC in the graduated pool{/if}. Only your wallet can claim them: you sign, and the pad never holds this money.</p>
             <button class="btn block" disabled={claiming || (curveOwed <= 0n && poolOwed <= 0n)} onclick={claimCreatorFees}>{claiming ? 'Confirm in your wallet…' : 'Claim creator fees'}</button>
+            {#if !claiming && curveOwed <= 0n && poolOwed <= 0n}<p class="muted small-note">Nothing to claim yet; fees appear here as your coin trades.</p>{/if}
             {#each claimed as sig (sig)}<p class="ok">Claim sent. Signature <span class="mono">{short(sig, 6, 6)}</span></p>{/each}
           {:else}
             <p class="muted">Reading your fees from the chain…</p>
@@ -322,6 +333,7 @@
 
 <style>
   .pad { padding-top: var(--s-6); }
+  .errrow { display: flex; gap: var(--s-3); margin-top: var(--s-3); }
   /* the trading room: the whole screen on one door, the buy box and its notes as paper on it */
   .tgrid { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: var(--s-7); align-items: start; padding: clamp(20px, 3vw, 40px); }
   .main { display: grid; gap: var(--s-6); }

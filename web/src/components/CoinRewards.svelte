@@ -31,7 +31,7 @@
   <section class="last" aria-labelledby="last-h">
     <h3 class="h3" id="last-h">Last payout</h3>
     {#if pot === undefined || epochs === null}
-      <div class="skel" style="height: 72px" aria-busy="true" aria-label="Loading the last payout"></div>
+      <div class="skel" style="height: 72px" aria-busy="true" role="status" aria-label="Loading the last payout"></div>
     {:else if !lastRound}
       <p class="muted">No round has paid this coin's holders yet.</p>
     {:else}

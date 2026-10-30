@@ -41,11 +41,11 @@
 </script>
 
 <div class="tape" class:compact>
-  {#if feed === 'lost'}<p class="live error">Lost the connection to the pad. Trying again every {everyMs / 1000}s.</p>
+  {#if feed === 'lost'}<p class="live error" role="alert">Lost the connection to the pad. Trying again every {everyMs / 1000}s.</p>
   {:else if feed === 'absent' && fallbackNote}<p class="live muted" aria-live="off">{fallbackNote}</p>{/if}
 
   {#if feed === 'loading'}
-    <div class="skel sk" aria-busy="true" aria-label="Loading the trades"></div>
+    <div class="skel sk" aria-busy="true" role="status" aria-label="Loading the trades"></div>
   {:else if shown.length === 0}
     <p class="muted">{mint ? 'No trades yet. The first buy starts the curve.' : 'No trades yet.'}</p>
   {:else}

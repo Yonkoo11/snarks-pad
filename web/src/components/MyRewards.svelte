@@ -112,7 +112,7 @@
     {#if err}
       <div class="state"><p class="error">Could not read your rewards from the pad.</p><button class="btn" type="button" onclick={() => wallet && load(wallet)}>Try again</button></div>
     {:else if view === undefined}
-      <div class="skel" style="height: 120px" aria-busy="true" aria-label="Loading your rewards"></div>
+      <div class="skel" style="height: 120px" aria-busy="true" role="status" aria-label="Loading your rewards"></div>
     {:else}
       <!-- the passbook's head: this wallet's own paid total, the biggest number in the panel -->
       <dl class="pass" aria-label="What this wallet has been paid">

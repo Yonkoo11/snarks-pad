@@ -1,17 +1,18 @@
 <script lang="ts">
   import { router } from '../lib/router.svelte'
-  // The phone's bottom bar (shown at 640px and below, app.css gives the page room for it): Explore, Launch, Shielded,
-  // Treasury, each a 44px-plus target, the current page in full ink. Shielded carries the hatched key, the one device.
+  // The phone bottom bar (shown at 640px and below, app.css gives the page room for it): Explore, Launch, Shielded,
+  // Payouts and Me, each a 44px-plus target, the current page in full ink. Shielded carries the hatched key, the one device.
   const items = [
     { href: '#/', name: 'home', label: 'Explore' },
     { href: '#/launch', name: 'launch', label: 'Launch' },
     { href: '#/shielded', name: 'shielded', label: 'Shielded' },
     { href: '#/treasury', name: 'treasury', label: 'Payouts' },
+    { href: '#/me', name: 'me', label: 'Me' },
   ] as const
   const current = $derived(router.route.name === 'coin' ? 'home' : router.route.name)
 </script>
 
-<nav class="bar" aria-label="Pages">
+<nav class="bar" aria-label="Primary">
   {#each items as it (it.name)}
     <a href={it.href} aria-current={current === it.name ? 'page' : undefined}>
       {#if it.name === 'home'}
@@ -20,6 +21,8 @@
         <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="12" cy="12" r="8.5" /><path d="M12 8v8M8 12h8" /></svg>
       {:else if it.name === 'shielded'}
         <span class="key hatch" aria-hidden="true"></span>
+      {:else if it.name === 'me'}
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="12" cy="8.5" r="4" /><path d="M4.5 20.5c1.6-3.6 4.2-5.5 7.5-5.5s5.9 1.9 7.5 5.5" /></svg>
       {:else}
         <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><rect x="4" y="3.5" width="16" height="17" rx="1.5" /><path d="M8 8.5h8M8 12.5h8M8 16.5h5" /></svg>
       {/if}
@@ -31,7 +34,7 @@
 <style>
   .bar {
     display: none; position: fixed; inset: auto 0 0 0; z-index: 30;
-    grid-template-columns: repeat(4, 1fr); background: var(--paper-2); box-shadow: 0 -2px 0 var(--line);
+    grid-template-columns: repeat(5, 1fr); background: var(--paper-2); box-shadow: 0 -2px 0 var(--line);
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
   a {

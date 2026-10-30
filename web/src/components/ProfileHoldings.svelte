@@ -29,7 +29,7 @@
 {#if err}
   <div class="state"><p class="error">Could not read this wallet's coins from Solana.</p><button class="btn" type="button" onclick={load}>Try again</button></div>
 {:else if rows === null}
-  <div class="skel sk" aria-busy="true" aria-label="Loading the coins this wallet holds"></div>
+  <div class="skel sk" aria-busy="true" role="status" aria-label="Loading the coins this wallet holds"></div>
 {:else if rows.length === 0}
   <div class="state">
     <p class="muted">{you ? 'You hold' : 'This wallet holds'} no SNARKS pad coins yet.</p>

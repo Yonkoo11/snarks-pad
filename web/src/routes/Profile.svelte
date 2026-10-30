@@ -119,7 +119,7 @@
       {:else if loadErr}
         <div class="state"><p class="error">Could not load this wallet.</p><button class="btn" type="button" onclick={load}>Try again</button></div>
       {:else if profile === null}
-        <div class="skel sk" aria-busy="true" aria-label="Loading this wallet"></div>
+        <div class="skel sk" aria-busy="true" role="status" aria-label="Loading this wallet"></div>
       {:else if current === 'launched'}
         <ProfileLaunched coins={profile.launched} {address} {you} />
       {:else}

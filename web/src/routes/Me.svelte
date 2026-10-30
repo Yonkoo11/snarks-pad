@@ -11,7 +11,7 @@
 
 <section class="wrap pad">
   {#if wallet.address}
-    <div class="skel" style="height: 120px" aria-busy="true" aria-label="Opening your profile"></div>
+    <div class="skel" style="height: 120px" aria-busy="true" role="status" aria-label="Opening your profile"></div>
   {:else}
     <h1 class="display">Connect a wallet to see your profile.</h1>
     <p class="muted measure">What you hold, the coins you launched, your trades and what the pad has paid you, in one place.</p>

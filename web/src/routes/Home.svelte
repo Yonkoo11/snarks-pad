@@ -7,6 +7,7 @@
   import type { FeedState } from '../lib/tape'
   import { zecUsd } from '../lib/usd.svelte'
   import { poll } from '../lib/poll'
+  import { reducedMotion } from '../lib/motion'
   import { wallet } from '../lib/wallet.svelte'
   import { readHoldings } from '../lib/holdings'
   import type { Holding } from '../lib/profile'
@@ -170,7 +171,7 @@
       if (mine && lastPaid?.id === id) youWerePaid = `You were paid ${zec(mine.zats, 6)} ZEC this round.`
     }, () => {})
   })
-  function toMarket() { document.getElementById('market-h')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }
+  function toMarket() { document.getElementById('market-h')?.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'start' }) }
   // The scene's entrance plays once per session: the first arrival gets the drop and the till roll,
   // every later visit (navigating back, theme flips) finds the door already settled. "It replays
   // for no reason" is the bug this kills.
@@ -214,7 +215,7 @@
 
     <aside class="d-money">
       {#if paidAll !== null && paidAll > 0n}
-        <a class="meter note onpaper" href="#/treasury" aria-label="Every payout round, with its transactions">
+        <a class="meter note onpaper" href="#/treasury">
           <span class="tape nt1" aria-hidden="true"></span>
           <span class="label">Paid to holders so far</span>
           <span class="m-big"><Odometer text={zec(paidAll)} delay={450} roll={firstScene} /><span class="m-unit">ZEC</span></span>
@@ -253,7 +254,7 @@
 
     <div class="d-shelves">
       <h2 class="d-shelf-h" id="pulse-h">On the pad right now</h2>
-      {#if pollErr}<p class="live error">Lost the connection to the pad. Trying again every {POLL_MS / 1000}s.</p>{/if}
+      {#if pollErr}<p class="live error" role="alert">Lost the connection to the pad. Trying again every {POLL_MS / 1000}s.</p>{/if}
       {#if failed && laneFresh === null}
         <p class="muted">Not loaded.</p>
       {:else}
@@ -287,8 +288,8 @@
 <section class="wrap market" aria-labelledby="market-h">
   <h2 class="h3" id="market-h">Coins</h2>
   <div class="controls">
-    <div class="seg tabs" role="tablist" aria-label="Coin lists">
-      {#each TABS as t (t.id)}<button type="button" role="tab" aria-selected={tab === t.id} class:on={tab === t.id} onclick={() => pickTab(t.id)}>{t.label}</button>{/each}
+    <div class="seg tabs" role="group" aria-label="Coin lists">
+      {#each TABS as t (t.id)}<button type="button" aria-pressed={tab === t.id} onclick={() => pickTab(t.id)}>{t.label}</button>{/each}
     </div>
     <label class="ctl"><span class="label">Sort</span><select class="input sel" value={sort} onchange={pickSort}>{#each SORTS as s (s.id)}<option value={s.id}>{s.label}</option>{/each}</select></label>
     <div class="seg view" role="group" aria-label="View">
@@ -301,7 +302,7 @@
   <!-- the pad's numbers live on the door's money rail; the catalog is just the catalog -->
   {#if coins === null}
     {#if failed}
-      <div class="fail"><p class="error">{err}</p><button class="btn" type="button" onclick={load}>Try again</button></div>
+      <div class="fail"><p class="error" role="alert">{err}</p><button class="btn" type="button" onclick={load}>Try again</button></div>
     {:else}
       <div class="grid" aria-busy="true" aria-label="Loading the coins">{#each [0, 1, 2, 3, 4, 5, 6, 7] as i (i)}<div class="skel card-sk"></div>{/each}</div>
     {/if}
@@ -335,7 +336,7 @@
   {/if}
 
   {#if total > PAGE}
-    <nav class="pages" aria-label="Pages">
+    <nav class="pages" aria-label="Catalog pages">
       <button class="btn" type="button" disabled={page <= 1} onclick={() => (page -= 1)}>Previous</button>
       <p class="mono">Page {page} of {pages}</p>
       <button class="btn" type="button" disabled={page >= pages} onclick={() => (page += 1)}>Next</button>

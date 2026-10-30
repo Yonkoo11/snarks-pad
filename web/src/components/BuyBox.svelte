@@ -170,9 +170,9 @@
     {@const line = windowLineParts(windowLeft, feeNowBps)}
     <p class="window" role="timer">Launch window: <span class="mono">{line.left}</span> left, fee now <span class="mono">{line.fee}</span></p>
   {/if}
-  <div class="seg tabs" role="tablist" aria-label="Buy or sell">
-    <button role="tab" aria-selected={side === 'buy'} class:on={side === 'buy'} onclick={() => pickSide('buy')}>Buy</button>
-    <button role="tab" aria-selected={side === 'sell'} class:on={side === 'sell'} onclick={() => pickSide('sell')}>Sell</button>
+  <div class="seg tabs" role="group" aria-label="Buy or sell">
+    <button type="button" aria-pressed={side === 'buy'} onclick={() => pickSide('buy')}>Buy</button>
+    <button type="button" aria-pressed={side === 'sell'} onclick={() => pickSide('sell')}>Sell</button>
   </div>
 
   <label class="field">
@@ -223,7 +223,7 @@
     {/if}
     {#if shortZec}<p class="error">Your wallet holds <span class="mono">{zec(balances.zec ?? 0n)} ZEC</span> on Solana, less than this buy.</p>{/if}
     {#if shortToken}<p class="error">You hold <span class="mono">{tokens(balances.token ?? 0n)} {sym}</span>, less than this sell.</p>{/if}
-    {#if tradeErr}<p class="error">{tradeErr}</p>{/if}
+    {#if tradeErr}<p class="error" role="alert">{tradeErr}</p>{/if}
     {#if shortZec || shortFunds}
       {#if mode === 'devnet'}<p class="get muted">Test money: use "Get test SOL and ZEC" in the banner at the top.</p>
       {:else if mode === 'mainnet'}<p class="get"><a href={GET_ZEC_URL} target="_blank" rel="noreferrer">Get ZEC on Solana</a> <span class="muted">(Jupiter swaps SOL into Solana ZEC; a new tab)</span></p>{/if}
@@ -234,6 +234,7 @@
     <button class="btn primary block" disabled={!canSend} onclick={submit}>
       {sending ? 'Confirm in your wallet…' : windowOpen ? waitLabel(windowLeft) : `${side === 'buy' ? 'Buy' : 'Sell'} $${sym}`}
     </button>
+    {#if !canSend && !sending && !windowOpen && !shortZec && !shortToken && !tx}<small class="why muted">Type an amount to get a quote first.</small>{/if}
   {:else}
     <WalletButton primary label="Connect wallet to buy" />
   {/if}
@@ -270,6 +271,7 @@
   .qrow { display: flex; justify-content: space-between; gap: var(--s-3); }
   .qrow.big { color: var(--ink); font-weight: 700; }
   .get { font-size: var(--t-14); }
+  .why { font-size: var(--t-14); }
   .get a { color: var(--ink); font-weight: 700; text-underline-offset: 3px; text-decoration-color: var(--ink-3); }
   .ok { font-size: var(--t-14); display: flex; gap: var(--s-1); align-items: center; flex-wrap: wrap; }
   .room { font-size: var(--t-14); margin-top: calc(-1 * var(--s-2)); }

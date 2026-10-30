@@ -43,7 +43,7 @@
   {#if err}
     <div class="state"><p class="error">Could not load these facts from the pad.</p>{#if onretry}<button class="btn" type="button" onclick={onretry}>Try again</button>{/if}</div>
   {:else if fixed === undefined}
-    <div class="skel sk" aria-busy="true" aria-label="Loading the token info"></div>
+    <div class="skel sk" aria-busy="true" role="status" aria-label="Loading the token info"></div>
   {:else}
     <ul class="facts">
       {#each shown as f (f.id)}

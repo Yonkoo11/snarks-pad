@@ -164,6 +164,15 @@ textarea.input { resize: vertical; min-height: 96px; }
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='linear' slope='0.045'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 .door > * { position: relative; }
+/* text sitting directly on the enamel gets inks tuned to the door, not the page: the light door is
+   deeper than the page's paper and the faint ink fails contrast there. Paper children re-pin again
+   via .onpaper, so receipts are untouched. */
+.door {
+  --ink: light-dark(#2b2420, #efe7da);
+  --ink-2: light-dark(#564e46, #bdb2a4);
+  --ink-3: light-dark(#5e544c, #a89d90);
+  --line: light-dark(rgba(43, 36, 32, .16), rgba(239, 231, 218, .16));
+}
 
 /* A paper note taped to the door; use with .onpaper so it stays paper in both themes. */
 .note {
@@ -221,3 +230,6 @@ textarea.input { resize: vertical; min-height: 96px; }
   /* every finite animation by name: the taped drawing's settle, the curve bar's first fill, a new trade row */
   .taped, .curve .fill, .curve .capwrap, .trow.new, .row.new { animation: none !important; }
 }
+
+/* focused by the router on route change; the pink ring is not wanted on a whole-page focus */
+main:focus { outline: none; }

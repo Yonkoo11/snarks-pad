@@ -28,7 +28,7 @@
   {#if err}
     <div class="state"><p class="error">Could not load the holders.</p><button class="btn" type="button" onclick={load}>Try again</button></div>
   {:else if view === undefined}
-    <div class="skel sk" aria-busy="true" aria-label="Loading the holders"></div>
+    <div class="skel sk" aria-busy="true" role="status" aria-label="Loading the holders"></div>
   {:else if view === null}
     <p class="muted">{count ?? '–'} holders. The holder list is not available on this pad's engine yet.</p>
   {:else}

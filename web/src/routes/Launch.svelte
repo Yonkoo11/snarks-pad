@@ -98,6 +98,16 @@
   const buyShort = $derived(buyZats !== null && balance !== null && buyZats > balance)
   const buyTooBig = $derived(buyZats !== null && !buyShort && maxBuy !== null && buyZats > maxBuy)
   const buyOk = $derived(buyZats !== null && !buyShort && !buyTooBig)
+  // the disabled launch button names its first unmet condition, instead of refusing silently
+  const launchProblem = $derived.by(() => {
+    if (busy || hold !== null) return null
+    if (!tierOk) return 'Pick a fee tier above, and confirm it if it asked.'
+    if (!buyOk) return 'Fix the first buy above.'
+    if (!creatorOk) return 'Fix the creator wallet above.'
+    if (!socialsOk) return 'Fix the links above.'
+    if (lookalike && !lookalikeOk) return 'Confirm the look-alike name above.'
+    return null
+  })
   const ready = $derived(nameOk && symOk && buyOk && !!wallet.address && tierOk && socialsOk && creatorOk && (!lookalike || lookalikeOk) && hold === null)
   const useMax = () => { if (maxBuy !== null && maxBuy > 0n) firstBuy = zatsText(maxBuy) }
 
@@ -285,7 +295,7 @@
           </fieldset>
         {:else if tiers === undefined}
           <span>Trading fee on this coin</span>
-          <div class="skel tiers-sk" aria-busy="true" aria-label="Loading the fee levels"></div>
+          <div class="skel tiers-sk" aria-busy="true" role="status" aria-label="Loading the fee levels"></div>
         {:else}
           <span>Trading fee</span>
         {/if}
@@ -298,25 +308,29 @@
       <div class="field">
         <span id="first-buy-l">First buy (optional, ZEC)</span>
         <div class="buy-row">
-          <input class="input mono" inputmode="decimal" placeholder="0" bind:value={firstBuy} aria-labelledby="first-buy-l" aria-invalid={!buyOk} />
+          <input class="input mono" inputmode="decimal" placeholder="0" bind:value={firstBuy} aria-labelledby="first-buy-l" aria-invalid={!buyOk} aria-describedby="buy-note" />
           <button class="btn ghost max" type="button" onclick={useMax} disabled={maxBuy === null || maxBuy <= 0n}
             title="Spends all the Solana ZEC in your wallet, up to what the curve can take. The trading fee comes out of the amount; nothing is added on top.">Max</button>
         </div>
+        <div id="buy-note" class="notewrap">
         {#if buyZats === null}<small class="error">Type a number, like 0.5</small>
         {:else if buyShort}<small class="error"><span>Your wallet holds <span class="mono">{zec(balance ?? 0n)} ZEC</span> on Solana, less than this buy.</span></small>
         {:else if buyTooBig}<small class="error"><span>That is more than the curve can take at launch. <span class="mono">{zec(maxBuy ?? 0n, 2)} ZEC</span> is the most.</span></small>
         {:else if wallet.address}<small>{balance === null ? 'Your Solana ZEC balance could not be read.' : `Your wallet holds ${zec(balance)} ZEC on Solana.`}</small>
         {:else}<small>Connect a wallet to see how much you can spend.</small>{/if}
+        </div>
       </div>
 
       {#if !noShare}
       <div class="creator">
         <label class="field">
           <span>Creator wallet (optional)</span>
-          <input class="input mono" autocomplete="off" spellcheck="false" placeholder="Wallet address" bind:value={walletIn} aria-invalid={creatorCheck.kind === 'bad'} />
+          <input class="input mono" autocomplete="off" spellcheck="false" placeholder="Wallet address" bind:value={walletIn} aria-invalid={creatorCheck.kind === 'bad'} aria-describedby="creator-note" />
+          <div id="creator-note" class="notewrap">
           <small>Receives your share of the trading fee. Leave blank to use the connected wallet.</small>
           {#if creatorCheck.kind === 'bad'}<small class="error">{creatorCheck.error}</small>
           {:else if creatorCheck.kind === 'same'}<small>{SAME_WALLET}</small>{/if}
+          </div>
         </label>
         {#if handover}
           <div class="echo">
@@ -331,12 +345,13 @@
       {#if wallet.address}
         <div class="go">
           <button class="btn primary block" type="submit" disabled={!!busy || hold !== null || !tierOk || !socialsOk || !creatorOk || (!!lookalike && !lookalikeOk) || !buyOk}>{busy ?? (hold === 'sending' ? 'Uploading the image…' : `Launch ${symbol ? '$' + symbol : 'coin'}`)}</button>
-          {#if hold === 'failed'}<small class="hint">The picture did not upload. Try again or remove it, then launch.</small>{/if}
+          {#if hold === 'failed'}<small class="hint">The picture did not upload. Try again or remove it, then launch.</small>
+          {:else if launchProblem}<small class="hint">{launchProblem}</small>{/if}
         </div>
       {:else}
         <div class="connect"><WalletButton primary label="Connect wallet to launch" /></div>
       {/if}
-      {#if err}<p class="error">{err}</p>{/if}
+      {#if err}<p class="error" role="alert">{err}</p>{/if}
     </form>
 
     <aside class="preview">

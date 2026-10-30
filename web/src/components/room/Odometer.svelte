@@ -33,7 +33,8 @@
 {#if still}
   <span class="od mono">{text}</span>
 {:else}
-  <span class="od mono" aria-label={text}>
+  <!-- role="img" makes the aria-label real for AT; the rolling columns underneath are presentation -->
+  <span class="od mono" role="img" aria-label={text}>
     {#each chars as ch, i (i)}
       {#if /\d/.test(ch)}
         {@const s = springOf(i, Number(ch), (chars.length - i) * 55)}
