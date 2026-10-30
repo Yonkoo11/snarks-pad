@@ -1,6 +1,6 @@
 <script lang="ts">
   import { api, ApiError } from '../lib/api'
-  import type { Coin, PadMode, Stats } from '../lib/types'
+  import type { Coin, PadMode, PadPot, Stats } from '../lib/types'
   import type { CoinQuery, CoinSort, CoinStage } from '../lib/coins'
   import { filterCoins, sortCoins, pinFirst, serverSort, FEATURED } from '../lib/coins'
   import { zec } from '../lib/format'
@@ -12,6 +12,7 @@
   import CoinCard from '../components/CoinCard.svelte'
   import CoinImage from '../components/CoinImage.svelte'
   import DeskRow from '../components/DeskRow.svelte'
+  import Bells from '../components/Bells.svelte'
   import Pager from '../components/Pager.svelte'
   import { watched } from '../lib/looked'
   import { wallet } from '../lib/wallet.svelte'
@@ -83,6 +84,7 @@
   let total = $state(0)
   let fullList = $state<Coin[] | null>(null)
   let stats = $state<Stats | null>(null)
+  let padPot = $state<PadPot | null>(null)
   let err = $state<string | null>(null)
   let pollErr = $state(false)
   let now = $state(Date.now())
@@ -130,6 +132,7 @@
   $effect(() => { zecUsd.refresh() })
   $effect(() => poll(load, POLL_MS))
   $effect(() => poll(loadStats, POLL_MS))
+  $effect(() => poll(() => api.padPot().then((p) => (padPot = p), () => {}), 30_000))
   $effect(() => poll(loadSpot, POLL_MS))
   $effect(() => { const t = setInterval(() => (now = Date.now()), 1000); return () => clearInterval(t) })
 
@@ -200,6 +203,8 @@
     </button>
   </div>
   {#if pollErr}<p class="live error" role="alert">Lost the connection to the pad. Trying again every {POLL_MS / 1000}s.</p>{/if}
+
+  <Bells coins={shownCoins} {bag} {padPot} {now} />
 
   {#if shownCoins === null}
     {#if failed}
