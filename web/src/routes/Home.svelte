@@ -26,7 +26,7 @@
   const POLL_MS = 10_000
   const TAPE_ROWS = 8 // eight 44px rows sit level with the three lanes beside them at 1440
   // the pulse board's three lanes: newest first, nearest graduation first, biggest graduated first
-  const LANE_N = 4
+  const LANE_N = 3
   const FRESH: CoinQuery = { sort: 'new', limit: LANE_N, offset: 0 }
   const FILLING: CoinQuery = { sort: 'progress', stage: 'curve', limit: LANE_N, offset: 0 }
   const GRADUATED: CoinQuery = { sort: 'mcap', stage: 'graduated', limit: LANE_N, offset: 0 }
@@ -172,6 +172,16 @@
     }, () => {})
   })
   function toMarket() { document.getElementById('market-h')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }
+  // The scene's entrance plays once per session: the first arrival gets the drop and the till roll,
+  // every later visit (navigating back, theme flips) finds the door already settled. "It replays
+  // for no reason" is the bug this kills.
+  const firstScene: boolean = (() => {
+    try {
+      if (sessionStorage.getItem('snarks-scene') === '1') return false
+      sessionStorage.setItem('snarks-scene', '1')
+      return true
+    } catch { return true }
+  })()
   // the return hook: a connected wallet sees its own bag above the market, read in the browser like the Holdings tab
   let bag = $state<Holding[] | null>(null)
   $effect(() => {
@@ -186,50 +196,72 @@
   const offerLaunch = $derived(!!coins && coins.length > 0 && coins.length < 4 && !filtering && page === 1)
 </script>
 
-<!-- The fridge door at the moment the till rings: the paid total as the biggest thing on the page, rolling
-     up like a mechanical counter, and beside it the pile of real round receipts dropping onto the spindle.
-     One lamp lights the scene, and its warmth is the real payout clock. -->
-<section class="wrap hero">
-  <Lamp lastAt={treasury?.lastEpochAt ?? null} nextAt={treasury?.nextEpochAt ?? null} {now} />
-  <div class="copy">
-    <h1 class="display">Coins on Meteora that pay holders in ZEC, <em>shielded</em> if you opt in.</h1>
-    <p class="lede">Every trade pays its fee in ZEC, and holders are paid from it each round. Opt in and your share arrives as native ZEC in your own Zcash wallet.</p>
-    <!-- the proof, the biggest thing on the page: what this pad has already paid, rolled up on the till -->
-    {#if paidAll !== null && paidAll > 0n}
-      <a class="meter" href="#/treasury" aria-label="Every payout round, with its transactions">
-        <span class="label">Paid to holders so far</span>
-        <span class="m-big"><Odometer text={zec(paidAll)} delay={450} /><span class="m-unit">ZEC</span></span>
-        <span class="m-sub">
-          {#if usdOfZats(paidAll, zecUsd.rate)}<span class="mono">{usdOfZats(paidAll, zecUsd.rate)}</span><span class="dot" aria-hidden="true">&middot;</span>{/if}
-          {#if nPayments !== null}<span><span class="mono">{nPayments.toLocaleString('en-US')}</span> payments</span><span class="dot" aria-hidden="true">&middot;</span>{/if}
-          <span class="m-shd"><span class="key hatch" aria-hidden="true"></span><span class="mono">{zec(paidShd ?? 0n)} ZEC</span>&nbsp;shielded</span>
-        </span>
-      </a>
-    {:else if paidAll === 0n}
-      <p class="muted">No round has paid yet. The first payout lands after the first round closes.</p>
-    {/if}
-    <div class="actions">
-      <button class="btn primary" type="button" onclick={toMarket}>See the coins</button>
-      <a class="btn shd" href="#/shielded"><span class="key hatch" aria-hidden="true"></span>Get my rewards shielded</a>
-    </div>
-  </div>
-  <div class="art"><Spindle {epochs} {now} {newSince} paidLine={youWerePaid} /></div>
-</section>
+<!-- The fridge door, drawn as a thing: one enamel panel the whole first screen is pinned to. The theme
+     changes the room (the door, the light), never the paper: every slip and note inside .onpaper keeps
+     its daylight ink, lit by the one lamp whose warmth is the real payout clock. On it: the headline in
+     the house hand, the till rolled up on a taped note, the pile of real round receipts, and the pot
+     note filling toward the next round. -->
+<!-- SNARKS 2: the door is the workstation. One enamel panel fills the first screen; everything the
+     pad does is pinned to it and working. Left, the money rail: the till note, the pot filling, the
+     clock. Center, the market as shelves. Right, the proof pile and the live tape. The theme changes
+     the room, never the paper (.onpaper); the catalog with its controls scrolls below the door. -->
+<section class="wrap doorwrap">
+  <div class="door">
+    <Lamp lastAt={treasury?.lastEpochAt ?? null} nextAt={treasury?.nextEpochAt ?? null} {now} />
+    <header class="d-head">
+      <h1 class="display">Coins on Meteora that pay holders in ZEC, <em>shielded</em> if you opt in.</h1>
+      <p class="lede">Every trade pays its fee in ZEC; holders are paid from it each round, to their wallet or their Zcash shield.</p>
+    </header>
 
-<!-- the pot that is filling for the next round; the latest receipt lives on the hero's spindle -->
-{#if stripClock}
-  <section class="wrap roundstrip" aria-label="The pot for the next round">
-    {#if stripClock}
-      <div class="potcard panel">
-        <p class="label">In the pot for the next round</p>
-        <p class="pot-line"><span class="mono pot-big">{padPot ? `${zec(padPot.accruedZats)} ZEC` : '–'}</span>{#if padPot && usdOfZats(padPot.accruedZats, zecUsd.rate)}<span class="pot-usd">{usdOfZats(padPot.accruedZats, zecUsd.rate)}</span>{/if}</p>
-        {#if padPot}<p class="muted pot-sub">Trading fees accruing across {padPot.coins} {padPot.coins === 1 ? 'coin' : 'coins'}, waiting for the round to claim them.</p>{/if}
-        <FillBar fromIso={treasury?.lastEpochAt ?? null} toIso={treasury?.nextEpochAt ?? null} {now} />
-        <p class="pot-clock">{#if treasury}<NextPayout at={treasury.nextEpochAt} {now} everyMs={treasury.cadence?.roundEveryMs ?? null} />{:else}<span class="mono">–</span>{/if}</p>
+    <aside class="d-money">
+      {#if paidAll !== null && paidAll > 0n}
+        <a class="meter note onpaper" href="#/treasury" aria-label="Every payout round, with its transactions">
+          <span class="tape nt1" aria-hidden="true"></span>
+          <span class="label">Paid to holders so far</span>
+          <span class="m-big"><Odometer text={zec(paidAll)} delay={450} roll={firstScene} /><span class="m-unit">ZEC</span></span>
+          <span class="m-sub">
+            {#if usdOfZats(paidAll, zecUsd.rate)}<span class="mono">{usdOfZats(paidAll, zecUsd.rate)}</span><span class="dot" aria-hidden="true">&middot;</span>{/if}
+            {#if nPayments !== null}<span><span class="mono">{nPayments.toLocaleString('en-US')}</span> payments</span>{/if}
+          </span>
+          <span class="m-sub m-shd"><span class="key hatch" aria-hidden="true"></span><span class="mono">{zec(paidShd ?? 0n)} ZEC</span>&nbsp;of it shielded</span>
+        </a>
+      {:else if paidAll === 0n}
+        <p class="muted onpaper note">No round has paid yet. The first payout lands after the first round closes.</p>
+      {/if}
+      {#if stripClock}
+        <div class="pot note onpaper">
+          <span class="tape nt2" aria-hidden="true"></span>
+          <p class="label">In the pot for the next round</p>
+          <p class="pot-line"><span class="mono pot-big">{padPot ? `${zec(padPot.accruedZats)} ZEC` : '–'}</span>{#if padPot && usdOfZats(padPot.accruedZats, zecUsd.rate)}<span class="pot-usd">{usdOfZats(padPot.accruedZats, zecUsd.rate)}</span>{/if}</p>
+          <FillBar fromIso={treasury?.lastEpochAt ?? null} toIso={treasury?.nextEpochAt ?? null} {now} />
+          <p class="pot-clock">{#if treasury}<NextPayout at={treasury.nextEpochAt} {now} everyMs={treasury.cadence?.roundEveryMs ?? null} />{:else}<span class="mono">–</span>{/if}</p>
+        </div>
+      {/if}
+      <div class="actions">
+        <button class="btn primary" type="button" onclick={toMarket}>See every coin</button>
+        <a class="btn shd" href="#/shielded"><span class="key hatch" aria-hidden="true"></span>Get my rewards shielded</a>
       </div>
-    {/if}
-  </section>
-{/if}
+    </aside>
+
+    <div class="d-shelves">
+      <h2 class="d-shelf-h" id="pulse-h">On the pad right now</h2>
+      {#if pollErr}<p class="live error">Lost the connection to the pad. Trying again every {POLL_MS / 1000}s.</p>{/if}
+      {#if failed && laneFresh === null}
+        <p class="muted">Not loaded.</p>
+      {:else}
+        <PulseBoard fresh={laneFresh} filling={laneFilling} graduated={laneGraduated} {now} />
+      {/if}
+    </div>
+
+    <aside class="d-proof">
+      <div class="art onpaper"><Spindle {epochs} {now} {newSince} paidLine={youWerePaid} animate={firstScene} /></div>
+      <section class="d-tape" aria-labelledby="tape-h" hidden={tapeState === 'absent'}>
+        <h2 class="d-shelf-h" id="tape-h">Live trades</h2>
+        <TradesTape compact limit={TAPE_ROWS} everyMs={POLL_MS} {creators} {mode} {now} onstate={(s) => (tapeState = s)} />
+      </section>
+    </aside>
+  </div>
+</section>
 
 <!-- a connected wallet's own line: what it holds here and when the next payout runs -->
 {#if wallet.address && bag && bag.length > 0}
@@ -242,25 +274,7 @@
   </section>
 {/if}
 
-<div class="wrap band" class:with-tape={tapeState !== 'absent'}>
-  <section class="strip" aria-labelledby="pulse-h">
-    <div class="sec-head">
-      <h2 class="h3" id="pulse-h">On the pad right now</h2>
-      {#if pollErr}<p class="live error">Lost the connection to the pad. Trying again every {POLL_MS / 1000}s.</p>
-      {/if}
-    </div>
-    {#if failed && laneFresh === null}
-      <p class="muted">Not loaded.</p>
-    {:else}
-      <PulseBoard fresh={laneFresh} filling={laneFilling} graduated={laneGraduated} {now} />
-    {/if}
-  </section>
-  <!-- the pad-wide tape; an engine without GET /trades (v2.5) answers 404 and the block is not shown -->
-  <section class="tape-sec" aria-labelledby="tape-h" hidden={tapeState === 'absent'}>
-    <h2 class="h3" id="tape-h">Live trades</h2>
-    <TradesTape compact limit={TAPE_ROWS} everyMs={POLL_MS} {creators} {mode} {now} onstate={(s) => (tapeState = s)} />
-  </section>
-</div>
+<!-- the pulse shelves and the live tape live on the door above; the catalog starts here -->
 
 <section class="wrap market" aria-labelledby="market-h">
   <h2 class="h3" id="market-h">Coins</h2>
@@ -337,37 +351,68 @@
 </section>
 
 <style>
-  .hero { position: relative; display: grid; grid-template-columns: 1.5fr 1fr; gap: var(--s-7); align-items: center; padding-top: var(--s-6); padding-bottom: var(--s-5); }
-  /* the door's paper tooth: one tiled noise, rasterized once by the browser, under everything */
-  .hero::before {
-    content: ''; position: absolute; inset: 0; pointer-events: none; opacity: .5;
+  /* ---- the door: one enamel panel, the workstation the first screen is pinned to ---- */
+  .doorwrap { padding-top: var(--s-4); }
+  .door {
+    position: relative; overflow: hidden;
+    display: grid; gap: var(--s-5) var(--s-6);
+    grid-template-columns: minmax(280px, 340px) minmax(0, 1fr) minmax(320px, 400px);
+    grid-template-areas: 'head head proof' 'money shelves proof';
+    grid-template-rows: auto 1fr;
+    align-items: start;
+    min-height: min(78vh, 860px);
+    padding: clamp(20px, 3vw, 44px);
+    border-radius: 18px;
+    /* enamel, not page paper: a shade deeper by day, a green-grey kitchen at night */
+    background: light-dark(#ebdfc6, #252b27);
+    box-shadow: inset 0 2px 0 light-dark(rgba(255, 255, 255, .55), rgba(239, 231, 218, .06)),
+      inset 0 -3px 0 light-dark(rgba(43, 36, 32, .08), rgba(0, 0, 0, .3)), var(--sh-2);
+  }
+  /* the door's tooth: one tiled noise, rasterized once by the browser, under everything on it */
+  .door::before {
+    content: ''; position: absolute; inset: 0; pointer-events: none; opacity: .6; z-index: 0;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='linear' slope='0.045'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
   }
-  .hero .display { font-size: clamp(34px, 3.4vw, 48px); }
-  .copy { display: grid; gap: var(--s-5); max-width: 640px; }
-  .lede { font-size: var(--t-20); line-height: 1.45; color: var(--ink-2); max-width: 54ch; }
+  .door > * { position: relative; }
+  .d-head { grid-area: head; display: grid; gap: var(--s-2); max-width: 70ch; }
+  .d-head .display { font-size: clamp(26px, 2.4vw, 36px); }
+  .lede { font-size: var(--t-16); line-height: 1.45; color: var(--ink-2); max-width: 60ch; }
+  .d-money { grid-area: money; display: grid; gap: var(--s-5); align-content: start; }
+  .d-shelves { grid-area: shelves; display: grid; gap: var(--s-3); align-content: start; min-width: 0; }
+  .d-proof { grid-area: proof; display: grid; gap: var(--s-5); align-content: start; min-width: 0; }
+  .d-shelf-h { font-family: var(--f-display); font-size: var(--t-20); }
+  .d-tape[hidden] { display: none; }
+  .d-tape { display: grid; gap: var(--s-2); }
+  .live { font-size: var(--t-14); }
   .actions { display: flex; gap: var(--s-3); flex-wrap: wrap; }
   .shd { white-space: nowrap; }
-  .art { display: grid; place-items: center; }
+  /* room above the pile for the whole of the mascot's head */
+  .art { display: grid; justify-items: center; padding-top: 84px; }
   .key { display: inline-block; width: 12px; height: 12px; border-radius: var(--r-xs); flex: none; }
 
-  /* the till: the paid total is the biggest thing on the page, its digits rolled up like a counter */
-  .meter { display: grid; gap: var(--s-2); text-decoration: none; color: inherit; justify-items: start; }
-  .m-big { display: flex; align-items: baseline; gap: 0.18em; font-size: clamp(44px, 8.2vw, 96px); font-weight: 500; line-height: 1; letter-spacing: -0.01em; }
+  /* paper notes taped to the door: the till and the pot. .onpaper keeps them cream in both themes. */
+  .note {
+    position: relative; display: grid; gap: var(--s-2); justify-items: start;
+    background: var(--paper-2); border-radius: var(--r-xs); box-shadow: var(--sh-2);
+    padding: var(--s-4) var(--s-5); padding-top: calc(var(--s-4) + 6px);
+    text-decoration: none; color: var(--ink);
+  }
+  .note .label { color: var(--ink-3); }
+  .note .tape { position: absolute; width: 72px; height: 22px; top: -10px; background: rgba(236, 222, 190, .85); box-shadow: 0 1px 0 rgba(43, 36, 32, .12); }
+  .nt1 { left: 18%; transform: rotate(-6deg); }
+  .nt2 { right: 14%; transform: rotate(5deg); }
+  .meter { transform: rotate(-.8deg); }
+  .pot { transform: rotate(.6deg); width: 100%; }
+  .m-big { display: flex; align-items: baseline; gap: 0.16em; font-size: clamp(40px, 3.4vw, 58px); font-weight: 500; line-height: 1; letter-spacing: -0.01em; }
   .m-unit { font-family: var(--f-mono); font-size: 0.42em; color: var(--ink-2); }
-  .m-sub { display: flex; align-items: baseline; gap: var(--s-2); flex-wrap: wrap; font-size: var(--t-16); color: var(--ink-2); }
+  .m-sub { display: flex; align-items: baseline; gap: var(--s-2); flex-wrap: wrap; font-size: var(--t-14); color: var(--ink-2); }
   .m-sub .mono { color: var(--ink); }
   .m-sub .dot { color: var(--ink-3); }
   .m-shd { display: inline-flex; align-items: center; gap: var(--s-1); }
   @media (hover: hover) { .meter:hover .m-big { color: var(--pink); transition: color var(--d-fn) var(--ease); } }
-
-  /* the pot card under the hero: one slab, the clock the market trades against */
-  .roundstrip { display: grid; grid-template-columns: minmax(0, 560px); }
-  .potcard { display: grid; gap: var(--s-2); align-content: start; padding: var(--s-4) var(--s-5); }
   .pot-line { display: flex; align-items: baseline; gap: var(--s-2); flex-wrap: wrap; }
   .pot-big { font-size: var(--t-20); font-weight: 500; }
   .pot-usd { font-size: var(--t-14); color: var(--ink-3); }
-  .pot-sub { font-size: var(--t-14); }
   .pot-clock { font-size: var(--t-14); font-weight: 700; }
   .r-go { margin-left: auto; font-weight: 700; font-size: var(--t-14); }
   .r-go::after { content: ' \2192'; }
@@ -379,14 +424,6 @@
   }
   @media (hover: hover) { .bagline:hover { transform: translateY(-2px); box-shadow: var(--sh-3); } }
 
-  /* one band: the strip, and beside it at 1100px and above the live tape (320px); the tape drops under the strip below that */
-  .band { padding-top: var(--s-7); display: grid; gap: var(--s-5); align-items: start; }
-  .band.with-tape { grid-template-columns: minmax(0, 1fr) 320px; }
-  .strip { display: grid; gap: var(--s-3); min-width: 0; }
-  .tape-sec { display: grid; gap: var(--s-3); min-width: 0; }
-  .tape-sec[hidden] { display: none; }
-  .sec-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s-4); flex-wrap: wrap; }
-  .live { font-size: var(--t-14); }
   .market { padding-top: var(--s-8); display: grid; gap: var(--s-4); }
   .controls { display: flex; flex-wrap: wrap; gap: var(--s-3); align-items: center; }
   /* the tabs and the view toggle are the shared .seg control (app.css); only their layout lives here */
@@ -419,33 +456,30 @@
   .pages { display: flex; gap: var(--s-3); justify-content: center; align-items: center; padding-top: var(--s-5); }
   .pages p { font-size: var(--t-14); }
 
-  @media (max-width: 900px) {
-    /* the drawing sits small beside the headline, as on the Fridge door phone layout */
-    /* one column on a phone: headline, lede, the till, the spindle, the actions; the mascot peeks over the pile */
-    .hero { grid-template-columns: 1fr; grid-template-areas: 'title' 'lede' 'meter' 'art' 'actions'; gap: var(--s-4); padding-top: var(--s-4); padding-bottom: var(--s-3); }
-    .copy { display: contents; }
-    .copy > h1 { grid-area: title; }
-    .lede { grid-area: lede; }
-    .meter, .copy > .muted { grid-area: meter; }
-    .actions { grid-area: actions; }
-    .art { grid-area: art; padding-top: var(--s-7); }
-    .band { padding-top: var(--s-6); }
-    .market { padding-top: var(--s-7); }
-    .roundstrip { grid-template-columns: 1fr; }
+  /* the door folds in two steps: the proof column drops under the shelves first, then everything stacks */
+  @media (max-width: 1240px) {
+    .door { grid-template-columns: minmax(280px, 340px) minmax(0, 1fr); grid-template-areas: 'head head' 'money shelves' 'money proof'; min-height: 0; }
+    .d-proof { grid-template-columns: minmax(0, 420px) minmax(0, 1fr); display: grid; gap: var(--s-5); align-items: start; }
   }
-  @media (max-width: 1100px) {
-    .band.with-tape { grid-template-columns: 1fr; }
+  @media (max-width: 900px) {
+    /* one column: the head, the money, the pile, the shelves, the tape; the catalog below */
+    .door { grid-template-columns: 1fr; grid-template-areas: 'head' 'money' 'proof' 'shelves'; gap: var(--s-5); }
+    .d-proof { grid-template-columns: 1fr; }
+    .art { justify-items: stretch; }
+    .art :global(.pile) { width: 100%; }
+    .market { padding-top: var(--s-7); }
   }
   @media (max-width: 800px) {
     .lhead { grid-template-columns: minmax(0, 2fr) 1fr 1.2fr; }
     .hide-md { display: none; }
   }
   @media (max-width: 640px) {
-    .hero .display { font-size: 34px; }
+    .door { padding: var(--s-4); border-radius: 12px; }
+    .d-head .display { font-size: 26px; }
     .lede { font-size: var(--t-16); line-height: 1.4; }
     .actions .btn { flex: 1 1 auto; }
-    /* the slip sits flat on a phone: the paid total takes the first row whole, the counts share the second */
-    .m-big { font-size: clamp(40px, 13vw, 56px); }
+    .m-big { font-size: clamp(38px, 11.5vw, 52px); }
+    .meter { width: 100%; }
     .r-go { margin-left: 0; flex: 1 1 100%; }
     /* three rows: the tabs; sort beside Grid or List; the search box */
     .tabs { width: 100%; display: grid; grid-template-columns: repeat(4, 1fr); }

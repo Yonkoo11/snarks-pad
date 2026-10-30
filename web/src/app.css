@@ -147,6 +147,19 @@ textarea.input { resize: vertical; min-height: 96px; }
 /* The device: crayon hatching marks what is shielded, and nothing else */
 .hatch { background: repeating-linear-gradient(-55deg, var(--pink) 0 3px, transparent 3px 6px), var(--pink-soft); }
 
+/* Paper objects: anything inside .onpaper is a physical piece of paper and keeps its daylight
+   colors in BOTH themes. The dark theme darkens the room (the door, the page), never the paper:
+   a receipt does not turn black at night, the kitchen does. The subtree re-pins the tokens, so
+   components written against var(--paper)/var(--ink) need no changes to sit on the door. */
+.onpaper {
+  --paper: #f5efe2; --paper-2: #fbf7ee; --paper-3: #ece4d2;
+  --ink: #2b2420; --ink-2: #5e544c; --ink-3: #6f6457;
+  --pink: #c42f6c; --pink-ink: #fbf7ee; --pink-soft: rgba(196, 47, 108, .12);
+  --line: rgba(43, 36, 32, .14);
+  --sh-2: 3px 4px 0 rgba(20, 16, 12, .25); --sh-3: 6px 8px 0 rgba(20, 16, 12, .28);
+  color: var(--ink);
+}
+
 /* Segmented control: the tabs and view toggles of Explore, the coin page and the buy box share one track. A switch animates nothing. */
 .seg { display: flex; gap: var(--s-1); background: var(--paper-3); padding: var(--s-1); border-radius: var(--r-md); }
 .seg > button {

@@ -5,9 +5,11 @@
   // with a spring and a slight overshoot, staggered from the right like a mechanical counter.
   // Non-digit characters (the dot, the unit) sit still. Rolls once on entrance from zero, then
   // only the digits that change roll again. Reduced motion renders the plain final string.
-  let { text, delay = 0 }: { text: string; delay?: number } = $props()
+  // `roll` off renders the plain final string: the page passes it false after the session's first
+  // arrival, so the till does not re-ring on every navigation back.
+  let { text, delay = 0, roll = true }: { text: string; delay?: number; roll?: boolean } = $props()
 
-  const still = reducedMotion()
+  const still = $derived(reducedMotion() || !roll)
   const chars = $derived([...text])
   let started = $state(false)
   $effect(() => {

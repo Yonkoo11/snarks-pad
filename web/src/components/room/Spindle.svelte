@@ -9,12 +9,14 @@
   // round. The stack is real (one slip per round the engine reports, capped at 13 visible), the
   // numbers are the round's own, and the drop choreography plays once on entrance. The mascot
   // peeks from behind the pile, whole object, pixels untouched.
-  let { epochs, now, newSince = false, paidLine = null }: {
+  let { epochs, now, newSince = false, paidLine = null, animate = true }: {
     epochs: Epoch[] | null
     now: number
     newSince?: boolean
     /** R3, payout-as-event: "You were paid N ZEC this round", set by the page when the connected wallet is in the newest round. */
     paidLine?: string | null
+    /** The drop plays on the session's first arrival only; later visits find the pile settled. */
+    animate?: boolean
   } = $props()
 
   const MAX = 13
@@ -29,15 +31,19 @@
   function seat(id: string, i: number, n: number): { r: number; x: number; y: number } {
     let h = 7
     for (const c of id) h = (h * 31 + c.charCodeAt(0)) >>> 0
-    const r = ((h % 100) / 100 - 0.5) * 7 // -3.5deg to 3.5deg
+    const r = ((h % 100) / 100 - 0.5) * 4 // -2deg to 2deg: enough to read as a pile, not enough to spill corners
     const back = n - 1 - i // 0 = top
-    return { r: i === n - 1 ? -1.2 : r, x: (((h >> 3) % 100) / 100 - 0.5) * 26, y: -back * 7 }
+    return { r: i === n - 1 ? -1.2 : r, x: (((h >> 3) % 100) / 100 - 0.5) * 12, y: -back * 6 }
   }
 
-  // the drop: each slip falls in once, oldest first, newest last; the stamp pops after the top slip lands
-  const still = reducedMotion()
+  // the drop: each slip falls in once, oldest first, newest last; the stamp pops after the top slip lands.
+  // A slip created later (a round landing mid-session) still drops: `animate` only gates the opening scene,
+  // and a mid-session slip is new by definition.
+  const still = $derived(reducedMotion() || !animate)
+  let opened = false
+  $effect(() => { if (stack) opened = true })
   function drop(el: HTMLElement, p: { i: number; n: number; r: number }) {
-    if (still) return
+    if (reducedMotion() || (!animate && !opened)) return
     el.animate(
       [
         { transform: `translateY(-54vh) rotate(${p.r - 7}deg)`, opacity: '0' },
@@ -87,14 +93,16 @@
 
 <style>
   .scene { position: relative; display: grid; gap: var(--s-3); justify-items: center; }
-  .pile { position: relative; width: min(400px, 86vw); }
+  .pile { position: relative; width: min(380px, 100%); }
   /* the slips behind: torn-edged paper showing above the top slip, each at its seeded angle */
   .slip {
     background: var(--paper-2); border-radius: var(--r-xs);
     box-shadow: var(--sh-2), inset 0 1px 0 light-dark(transparent, rgba(239, 231, 218, .07));
   }
   .under {
-    position: absolute; inset: 0; z-index: 0;
+    /* a touch narrower and shorter than the top slip, so a rotated corner can peek at the top
+       and sides but never hang below it like debris */
+    position: absolute; inset: 2px 6px 10px; z-index: 0;
     translate: var(--x) var(--y);
     transition: translate var(--d-fn) var(--ease);
     /* a torn top edge where it peeks out over the slip above it on the pile */
@@ -112,8 +120,8 @@
     .pile:hover .under { translate: calc(var(--x) * 1.8) calc(var(--y) * 1.25); }
   }
   .tape { position: absolute; width: 76px; height: 24px; top: -11px; background: rgba(236, 222, 190, .82); box-shadow: 0 1px 0 rgba(43, 36, 32, .12); z-index: 3; }
-  .ta { left: 10%; transform: rotate(-7deg); }
-  .tb { right: 26%; transform: rotate(5deg); }
+  .ta { left: 38%; transform: rotate(-7deg); }
+  .tb { right: 10%; transform: rotate(5deg); }
   .s-head { display: flex; align-items: baseline; gap: var(--s-3); flex-wrap: wrap; }
   .rnd { font-family: var(--f-display); font-size: clamp(26px, 2.2vw, 32px); line-height: 1; }
   .s-ago { font-size: var(--t-14); }
@@ -123,16 +131,17 @@
   .shd.none .key { background: var(--line); }
   .you { font-weight: 700; font-size: var(--t-14); background: var(--paper-3); border-radius: var(--r-sm); padding: var(--s-1) var(--s-2); justify-self: start; }
   .s-go { font-weight: 700; font-size: var(--t-14); margin-top: var(--s-1); }
-  .stamp { position: absolute; right: -6px; top: 10px; z-index: 3; pointer-events: none; }
+  .stamp { position: absolute; right: 4px; top: 8px; z-index: 3; pointer-events: none; }
   .stamp.pop { animation: pop 300ms var(--ease) 1.05s backwards; }
   @keyframes pop { from { transform: rotate(-9deg) scale(1.5); opacity: 0; } }
-  /* the mascot peeks from behind the pile, pixels untouched, a slow whole-object sway */
+  /* the mascot genuinely peeks: its body sits BEHIND the top slip (z 1 under the slip's 2), only the
+     head and horns rise over the paper's edge. Pixels untouched, whole-object transforms only. */
   .mascot {
-    position: absolute; z-index: 1; width: 120px; left: -36px; top: -78px;
-    transform: rotate(-8deg); border-radius: var(--r-xs);
+    position: absolute; z-index: 1; width: 118px; left: 16px; top: -92px;
+    transform: rotate(-7deg); border-radius: var(--r-xs);
     animation: peek 900ms var(--ease) both, sway 14s ease-in-out 1.4s infinite;
   }
-  @keyframes peek { from { transform: translateY(40px) rotate(-2deg); opacity: 0; } to { transform: translateY(0) rotate(-8deg); opacity: 1; } }
+  @keyframes peek { from { transform: translateY(44px) rotate(-2deg); opacity: 0; } to { transform: translateY(0) rotate(-7deg); opacity: 1; } }
   @keyframes sway { 0%, 100% { rotate: 0deg; } 50% { rotate: -2.5deg; } }
   .mascot.still, :global(html) .mascot.still { animation: none; }
   @media (prefers-reduced-motion: reduce) { .mascot { animation: none; } .stamp.pop { animation: none; } }
@@ -141,6 +150,6 @@
     .topslip { padding-right: var(--s-5); padding-top: calc(var(--s-5) + 26px); }
     .stamp { top: -12px; right: 6px; }
     .stamp :global(.pm) { width: 64px; height: 64px; }
-    .mascot { width: 88px; left: -12px; top: -62px; }
+    .mascot { width: 88px; left: 12px; top: -70px; }
   }
 </style>

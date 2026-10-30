@@ -28,6 +28,7 @@
   ])
 </script>
 
+<div class="pwrap">
 <div class="pulse">
   {#each lanes as lane (lane.id)}
     <section class="lane" aria-labelledby="lane-{lane.id}">
@@ -58,9 +59,17 @@
     </section>
   {/each}
 </div>
+</div>
 
 <style>
+  /* the board measures its own box: three lanes side by side when it is wide, stacked when its
+     column is narrow (the door's center, a phone). A container query, so the same board works
+     wherever it is pinned. */
+  .pwrap { container-type: inline-size; min-width: 0; }
   .pulse { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-4); align-items: start; }
+  @container (max-width: 720px) {
+    .pulse { grid-template-columns: 1fr; gap: var(--s-4); }
+  }
   .lane { display: grid; gap: var(--s-2); min-width: 0; }
   .lane-sk { height: 168px; border-radius: var(--r-md); }
   .none { font-size: var(--t-14); }
@@ -86,8 +95,4 @@
   .pm .mono { white-space: nowrap; }
   .bar-line .bar { flex: 1; min-width: 0; }
   .pc { color: var(--ink-2); min-width: 4ch; text-align: right; }
-  @media (max-width: 1100px) {
-    /* three lanes become one column of short stacks; rows stay full-width touch targets */
-    .pulse { grid-template-columns: 1fr; gap: var(--s-5); }
-  }
 </style>
