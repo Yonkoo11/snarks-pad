@@ -68,6 +68,15 @@
   const when = (iso: string) => new Date(iso).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })
   // One load feeds the page: a failure is said once, under the heading, and each block says only that it was not loaded.
   const failed = $derived(!!err && !t)
+
+  // The passport: which rounds THIS browser has re-hashed itself. A per-viewer convenience in
+  // localStorage; it proves nothing to anyone else and the copy says "you", never more.
+  let checked = $state<string[]>((() => { try { return JSON.parse(localStorage.getItem('snarks-verified') ?? '[]') } catch { return [] } })())
+  function markChecked(id: string) {
+    if (checked.includes(id)) return
+    checked = [...checked, id]
+    try { localStorage.setItem('snarks-verified', JSON.stringify(checked)) } catch { /* private window */ }
+  }
 </script>
 
 <section class="wrap pad">
@@ -106,7 +115,7 @@
         {#if latestShielded.shielded.swap.provider === 'simulated'}<p class="muted small">The swap into native ZEC was simulated in this test setup.</p>{/if}
         {#if latestShielded.snapshot}
           <p class="muted small">Holder snapshot <span class="mono">{short(latestShielded.snapshot.sha256, 10, 8)}</span>, <a href={apiUrl(latestShielded.snapshot.url)} target="_blank" rel="noreferrer">open the file</a>{#if latestShielded.snapshot.memoSig}, hash written to Solana in memo <Addr value={latestShielded.snapshot.memoSig} head={6} tail={4} href={solUrl(latestShielded.snapshot.memoSig)} label="memo signature" />{/if}. To check that your own note arrived, look for it in your wallet.</p>
-          <VerifyRound sha256={latestShielded.snapshot.sha256} url={latestShielded.snapshot.url} />
+          <VerifyRound sha256={latestShielded.snapshot.sha256} url={latestShielded.snapshot.url} onverified={() => markChecked(latestShielded.id)} />
         {/if}
       </article>
     {:else}
@@ -200,7 +209,7 @@
             {#if e.snapshot}
               <div class="check">
                 <span class="muted small">Holder snapshot <span class="mono">{short(e.snapshot.sha256, 8, 6)}</span>{#if e.snapshot.memoSig}, its hash in memo <Addr value={e.snapshot.memoSig} head={6} tail={4} href={solUrl(e.snapshot.memoSig)} label="memo signature" />{/if}</span>
-                <VerifyRound sha256={e.snapshot.sha256} url={e.snapshot.url} compact />
+                <VerifyRound sha256={e.snapshot.sha256} url={e.snapshot.url} compact onverified={() => markChecked(e.id)} />
               </div>
             {/if}
           </article>
@@ -217,7 +226,7 @@
         </nav>
       {/if}
     {/if}
-    <p class="muted small">What you can check here: every transaction above, and each round's holder list file, re-hashed by your own browser against the hash written to Solana. What you cannot see is the operator's server; <a href="#/how">the How page</a> says what you have to trust.</p>
+    <p class="muted small">{#if checked.length > 0}<strong>You have checked {checked.length} {checked.length === 1 ? 'round' : 'rounds'} in this browser yourself.</strong>{' '}{/if}What you can check here: every transaction above, and each round's holder list file, re-hashed by your own browser against the hash written to Solana. What you cannot see is the operator's server; <a href="#/how">the How page</a> says what you have to trust.</p>
   </section>
   {/if}
 </section>

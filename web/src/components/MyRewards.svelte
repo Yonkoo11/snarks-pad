@@ -40,6 +40,19 @@
     api.verifyMemo({ memo: 'SNARKS pad reward, epoch none' }).then(() => {}, (e) => { if (routeAbsent(e)) verifierGone = true })
   })
   const numberOf = (id: string): string => { const i = epochs?.findIndex((e) => e.id === id) ?? -1; return i >= 0 && epochs ? `#${epochs.length - i}` : id }
+  // The streak: rounds in a row this wallet was paid, counted against the pad's own round order from
+  // the newest round that paid it. Public rail only (the fallback rows stay out, as everywhere, so the
+  // streak can never reveal an opt-in).
+  const streak = $derived.by(() => {
+    if (!view || view === null || !epochs) return 0
+    const mine = new Set(view.solana.payouts.map((p) => p.epochId))
+    const paidRounds = epochs.filter((e) => e.solanaPayouts.count + e.shielded.count > 0)
+    const start = paidRounds.findIndex((e) => mine.has(e.id))
+    if (start < 0) return 0
+    let n = 0
+    for (let i = start; i < paidRounds.length && mine.has(paidRounds[i].id); i++) n++
+    return n
+  })
   const symbolOf = (mint: string): string => coins.find((c) => c.mint === mint)?.symbol ?? short(mint)
   const when = (iso: string) => new Date(iso).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })
   // the shielded part, once the owner has signed (shared with the Shielded page and the profile's tabs: one signature serves them all)
@@ -105,6 +118,7 @@
       <dl class="pass" aria-label="What this wallet has been paid">
         <div><dt class="label">Paid to <span class="mono">{short(wallet)}</span> as Solana ZEC</dt><dd class="pass-big"><CountUp value={Number(view.solana.totalZats)} format={(v) => `${zec(BigInt(Math.round(v)))} ZEC`} /></dd></div>
         <div><dt class="label">Rounds</dt><dd class="mono pass-n">{view.solana.count}</dd></div>
+        {#if streak >= 2}<div><dt class="label">Streak</dt><dd class="mono pass-n">{streak} in a row</dd></div>{/if}
       </dl>
       {#if view.solana.payouts.length === 0}
         <p class="muted">No Solana ZEC payout to this wallet yet. A wallet is paid from the round after it bought, by the least it held at random checks during that round.</p>
@@ -114,6 +128,8 @@
       {/if}
       <div class="shd"><span class="key hatch" aria-hidden="true"></span>
         <div class="shd-body">
+          <!-- the strip that never opens: where a shielded amount would print, the hatch stays. That IS the product. -->
+          <p class="sealed" aria-label="Shielded amounts are never shown here"><span class="label">Shielded amounts</span><span class="bar hatch" aria-hidden="true"></span><span class="muted small">this strip never opens here, not even for you. Your Zcash wallet shows the notes.</span></p>
           {#if details === null}
             <p>Shielded rewards are private: the pad shows them only to you, after you sign.</p>
             <button class="btn ghost" type="button" onclick={() => wallet && shieldedView.read(wallet)} disabled={shieldedView.busy}>{shieldedView.busy ? 'Waiting for your wallet…' : 'Show shielded details'}</button>
@@ -188,6 +204,8 @@
   .coins { display: flex; flex-wrap: wrap; gap: var(--s-1) var(--s-2); }
   .num { text-align: right; }
   .small { font-size: var(--t-14); }
+  .sealed { display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap; }
+  .sealed .bar { display: inline-block; width: 92px; height: 1em; border-radius: var(--r-xs); }
   .shd { display: flex; gap: var(--s-2); align-items: flex-start; font-size: var(--t-16); max-width: 66ch; }
   .shd-body { display: grid; gap: var(--s-2); justify-items: start; min-width: 0; }
   .key { width: 12px; height: 12px; border-radius: var(--r-xs); flex: none; margin-top: 0.4em; }

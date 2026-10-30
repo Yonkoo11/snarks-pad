@@ -5,7 +5,7 @@
   // its SHA-256 with WebCrypto, then holds the result against the hash the pad published. A match is proof made
   // on the visitor's machine; the pad is never asked to vouch for itself. compact drops the explainer line for
   // the rounds list, where the row around it already says what the file is.
-  let { sha256, url, compact = false }: { sha256: string; url: string; compact?: boolean } = $props()
+  let { sha256, url, compact = false, onverified }: { sha256: string; url: string; compact?: boolean; onverified?: () => void } = $props()
   type St = 'idle' | 'working' | 'match' | 'mismatch' | 'failed'
   let st = $state<St>('idle')
   let got = $state<string | null>(null)
@@ -22,6 +22,7 @@
       got = hex
       at = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
       st = hex.toLowerCase() === sha256.toLowerCase() ? 'match' : 'mismatch'
+      if (st === 'match') onverified?.()
     } catch { st = 'failed' }
   }
 </script>

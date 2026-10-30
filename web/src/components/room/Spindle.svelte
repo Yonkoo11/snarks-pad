@@ -96,6 +96,7 @@
   .under {
     position: absolute; inset: 0; z-index: 0;
     translate: var(--x) var(--y);
+    transition: translate var(--d-fn) var(--ease);
     /* a torn top edge where it peeks out over the slip above it on the pile */
     clip-path: polygon(0 0, 4% 1.2%, 9% 0.3%, 15% 1.6%, 22% 0.5%, 30% 1.4%, 38% 0.2%, 47% 1.5%, 55% 0.4%, 63% 1.3%, 71% 0.3%, 79% 1.5%, 86% 0.5%, 93% 1.3%, 100% 0, 100% 100%, 0 100%);
   }
@@ -105,7 +106,11 @@
     text-decoration: none; color: inherit;
     transition: transform var(--d-fn) var(--ease), box-shadow var(--d-fn) var(--ease);
   }
-  @media (hover: hover) { .topslip:hover { transform: rotate(-1.2deg) translateY(-3px) !important; box-shadow: var(--sh-3); } }
+  /* a hand over the pile: the top slip lifts and the slips beneath fan out a little, like paper would */
+  @media (hover: hover) {
+    .topslip:hover { transform: rotate(-1.2deg) translateY(-3px) !important; box-shadow: var(--sh-3); }
+    .pile:hover .under { translate: calc(var(--x) * 1.8) calc(var(--y) * 1.25); }
+  }
   .tape { position: absolute; width: 76px; height: 24px; top: -11px; background: rgba(236, 222, 190, .82); box-shadow: 0 1px 0 rgba(43, 36, 32, .12); z-index: 3; }
   .ta { left: 10%; transform: rotate(-7deg); }
   .tb { right: 26%; transform: rotate(5deg); }
