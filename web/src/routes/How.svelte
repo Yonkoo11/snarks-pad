@@ -38,9 +38,11 @@
   </section>
   </div>
 
+  <div class="door hdoor2">
+  <div class="colL">
   <!-- the fee split lives in one place; this page points at it instead of repeating it -->
   <section class="part">
-    <p class="prose">Where the rest of the fee goes, share by share, is on the <a href="#/treasury">Payouts page</a>, beside the rounds that prove it.{#if manyTiers}{' '}On the higher fee levels the extra goes to the coin's creator; holders still get 0.10% of every trade (0.102% on the 6% level).{/if}</p>
+    <p class="pline">Where the rest of the fee goes, share by share, is on the <a href="#/treasury">Payouts page</a>, beside the rounds that prove it.{#if manyTiers}{' '}On the higher fee levels the extra goes to the coin's creator; holders still get 0.10% of every trade (0.102% on the 6% level).{/if}</p>
   </section>
 
   <section class="part" aria-labelledby="why-h">
@@ -57,10 +59,12 @@
   <!-- the opt-in steps and the hidden/not-hidden lists live on the Shielded page, where you act on them -->
   <section class="part" aria-labelledby="steps-h">
     <h2 class="h2" id="steps-h">Shielded delivery</h2>
-    <p class="prose">One signature, no transaction, no fee: the <a href="#/shielded">Shielded page</a> walks the three steps and says exactly what is hidden from the public and what is not.</p>
+    <p class="pline">One signature, no transaction, no fee: the <a href="#/shielded">Shielded page</a> walks the three steps and says exactly what is hidden from the public and what is not.</p>
     <a class="btn shd" href="#/shielded"><span class="key hatch" aria-hidden="true"></span>Get my rewards shielded</a>
   </section>
 
+  </div>
+  <div class="colR">
   <section class="part" aria-labelledby="meteora-h">
     <details class="fold">
     <summary><h2 class="h2" id="meteora-h">Launch, curve and graduation</h2></summary>
@@ -99,6 +103,8 @@
     </div>
     <div class="draw"><Taped size="sm" /></div>
   </section>
+  </div>
+  </div>
 </section>
 
 <style>
@@ -106,6 +112,11 @@
   /* the page name outranks the prose under it */
   .top .display { font-size: clamp(30px, 2.6vw, 36px); }
   .hdoor { display: grid; gap: var(--s-6); padding: clamp(20px, 3vw, 40px); }
+  .hdoor2 { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: var(--s-6) var(--s-7); padding: clamp(20px, 3vw, 40px); align-items: start; }
+  .colL, .colR { display: grid; gap: var(--s-6); min-width: 0; align-content: start; }
+  .pline { max-width: 66ch; }
+  .pline a { color: var(--ink); text-underline-offset: 3px; text-decoration-color: var(--ink-3); }
+  @media (max-width: 900px) { .hdoor2 { grid-template-columns: 1fr; } }
   .top { display: grid; gap: var(--s-4); }
   .lede { font-size: var(--t-20); line-height: 1.45; max-width: 60ch; }
   .part { display: grid; gap: var(--s-4); }

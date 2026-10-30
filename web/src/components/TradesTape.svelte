@@ -70,8 +70,8 @@
         {/if}
       {/each}
     </div>
-    {#if !compact && shown.length >= limit}
-      <p class="cap muted">The newest {limit} trades the engine serves; older ones are not kept. The chart above holds up to 300 price points.</p>
+    {#if !compact && shown.length > 0}
+      <p class="cap muted">Trades 1 to {shown.length}{shown.length >= limit ? `, the newest ${limit} the engine serves (older ones are not kept)` : ''}. The chart above holds up to 300 price points.</p>
     {/if}
   {/if}
 </div>

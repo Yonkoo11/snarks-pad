@@ -42,7 +42,7 @@
     <div class="row">
       <dt class="label">To holders</dt>
       <dd>
-        {#if facts}<span class="mono">{facts.holdersShare}</span> of every fee, in ZEC
+        {#if facts}<span class="mono">{facts.holdersOfTrade}</span> of every trade, in ZEC ({facts.holdersShare} of the fee)
         {:else if loading}<span class="skel sk" aria-busy="true" aria-label="Loading"></span>{:else}–{/if}
       </dd>
     </div>

@@ -61,6 +61,7 @@ export function liquidityText(l: Tier['liquidity']): string | null {
 export interface TierFacts {
   fee: string // the curve fee, flat
   holdersShare: string // the holders' part of the fee
+  holdersOfTrade: string // the same share on the trade basis, the figure every page leads with
   creatorShare: string | null // the creator's part of the fee, null on the tier that has none
 }
 
@@ -69,6 +70,7 @@ export function factsOfTier(t: Tier): TierFacts {
   return {
     fee: feeLabel({ feeBps: t.feeBps, stage: 'curve' }),
     holdersShare: shareText(t.holderShareBps),
+    holdersOfTrade: `${Math.round((t.feeBps * t.holderShareBps) / 10_000) / 100}%`,
     creatorShare: t.creatorShareBps > 0 ? shareText(t.creatorShareBps) : null,
   }
 }

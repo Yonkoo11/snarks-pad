@@ -146,7 +146,8 @@
   @keyframes sway { 0%, 100% { rotate: 0deg; } 50% { rotate: -2.5deg; } }
   .mascot.still, :global(html) .mascot.still { animation: none; }
   @media (prefers-reduced-motion: reduce) { .mascot { animation: none; } .stamp.pop { animation: none; } }
-  .count { font-size: var(--t-14); }
+  /* this line sits on the enamel, inside a paper-pinned subtree: it takes the door's ink, not the paper's */
+  .count { font-size: var(--t-14); color: light-dark(#564e46, #bdb2a4); }
   @media (max-width: 640px) {
     .topslip { padding-right: var(--s-5); padding-top: calc(var(--s-5) + 26px); }
     .stamp { top: -12px; right: 6px; }

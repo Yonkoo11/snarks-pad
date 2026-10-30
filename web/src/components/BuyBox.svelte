@@ -268,7 +268,7 @@
   .slip-r { margin-top: 0; align-items: center; }
   .custom { width: 7ch; min-height: 44px; padding: 0 var(--s-2); font-size: var(--t-16); text-align: center; }
   .warn, .window { margin: 0; padding: var(--s-2) var(--s-3); border-radius: var(--r-sm); background: var(--warn-bg); color: var(--warn-ink); font-size: var(--t-14); }
-  .quote { display: grid; gap: var(--s-1); min-height: 72px; font-size: var(--t-14); }
+  .quote { display: grid; gap: var(--s-1); font-size: var(--t-14); }
   .qrow { display: flex; justify-content: space-between; gap: var(--s-3); }
   .qrow.big { color: var(--ink); font-weight: 700; }
   .get { font-size: var(--t-14); }

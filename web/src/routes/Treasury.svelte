@@ -143,8 +143,9 @@
   </div>
 
   {#if !failed}
+  <div class="door door2">
   <section class="policy">
-    <FeeSplit split={t ? sharesFromPolicy(t.policy) : undefined} />
+    <FeeSplit split={t ? sharesFromPolicy(t.policy) : undefined} line="Every tier pays holders the same 0.1% of each trade; the higher fees go to the coin's creator. A coin's own split, creator included, is on its page." />
     <details class="how">
       <summary>How payouts work</summary>
       <div class="how-body">
@@ -167,7 +168,7 @@
     {:else if epochs.length === 0}
       <p class="muted">No payout rounds yet.</p>
     {:else}
-      <div class="rows">
+      <div class="rows onpaper">
         {#each shownEpochs as e (e.id)}
           <article class="row" class:stamped={e.solanaPayouts.sigs.length > 0 && e.shielded.zcashTxids.length > 0}>
             {#if e.solanaPayouts.sigs.length > 0 && e.shielded.zcashTxids.length > 0}
@@ -226,6 +227,7 @@
     {/if}
     <p class="muted small">{#if checked.length > 0}<strong>You have checked {checked.length} {checked.length === 1 ? 'round' : 'rounds'} in this browser yourself.</strong>{' '}{/if}What you can check here: every transaction above, and each round's holder list file, re-hashed by your own browser against the hash written to Solana. What you cannot see is the operator's server; <a href="#/how">the How page</a> says what you have to trust.</p>
   </section>
+  </div>
   {/if}
 </section>
 
@@ -241,6 +243,8 @@
   .d-right { display: grid; gap: var(--s-3); align-content: start; min-width: 0; }
   .d-lead-h { font-family: var(--f-display); font-size: var(--t-20); }
   .all.note { transform: rotate(-.5deg); width: auto; }
+  .door2 { display: grid; gap: var(--s-6); padding: clamp(20px, 3vw, 40px); }
+  .rows.onpaper { background: var(--paper-2); border-radius: var(--r-xs); box-shadow: var(--sh-2); padding: var(--s-2) var(--s-5); }
   @media (max-width: 1000px) { .door { grid-template-columns: 1fr; } }
 
   .display { font-size: clamp(30px, 2.6vw, 36px); }
@@ -283,7 +287,7 @@
   .ep { display: grid; gap: var(--s-4); padding-top: var(--s-6); }
   .ep-head { display: grid; gap: var(--s-2); justify-items: start; }
   .csv { margin-top: var(--s-2); }
-  .rows { border-top: 2px solid var(--ink); }
+  .rows { border-top: 0; }
   .row { padding: var(--s-4) 0; border-bottom: 1px solid var(--line); display: grid; gap: var(--s-3); }
   .r-head { display: flex; gap: var(--s-4); align-items: baseline; flex-wrap: wrap; font-size: var(--t-14); }
   .eid { font-size: var(--t-20); font-weight: 500; }

@@ -285,10 +285,7 @@
 
     <aside class="side-col onpaper">
       <div class="trade-slot"><BuyBox {coin} {mint} thresholdZats={fixed?.migration.thresholdZats ?? null} {windowLeft} feeNowBps={coin.feeNowBps ?? null} ontraded={load} /></div>
-      <!-- the payout rule a buyer needs before buying, in the Payouts page's own words -->
-      <p class="timing muted">Your share of payouts follows the least you held at random checks during the round, so buying just before a payout earns nothing for that round.</p>
-
-      <!-- the reason to hold, visible without a click: this coin's own pot and its clock -->
+      <!-- the reason to hold, visible without a click: this coin's own pot, its clock, and the rule -->
       <div class="pot-slot"><PotSlip {coin} {pot} {treasury} {now} rate={zecUsd.rate} yourCut={yourCutZats} /></div>
 
       {#if isCreator}
@@ -326,7 +323,7 @@
       <a class="cta panel" href="#/shielded">
         <span class="band hatch" aria-hidden="true"></span>
         <span class="h3">Get your rewards <em>shielded.</em></span>
-        <span class="muted">Your share of the holders' {coin.holderShareBps / 100}% of the trading fee, as native ZEC in your own Zcash wallet. One signature.</span>
+        <span class="muted">Your share of the {String(Math.round(coin.feeBps * coin.holderShareBps / 10_000) / 100)}% of every trade that goes to holders, as native ZEC in your own Zcash wallet. One signature.</span>
         <span class="go">Set it up →</span>
       </a>
     </aside>
@@ -344,8 +341,6 @@
   /* the coin is the subject: its name is the biggest text on the page */
   .big-name { font-size: clamp(30px, 2.6vw, 40px); }
   .title { display: grid; gap: var(--s-2); min-width: 0; }
-  /* bare text on the door inside the paper-pinned column: it takes the door's own muted ink, not the paper's */
-  .timing { font-size: var(--t-14); max-width: 48ch; color: light-dark(#5e544c, #bdb2a4); }
   .trow { display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap; }
   .meta { font-size: var(--t-14); }
   .desc { font-size: var(--t-16); }
@@ -419,7 +414,7 @@
     .stats { grid-template-columns: repeat(2, auto); gap: var(--s-4) var(--s-6); }
     .stats dd { font-size: var(--t-16); }
     .main, .side-col { display: contents; }
-    .head { order: 1; } .trade-slot { order: 2; } .timing { order: 3; } .pot-slot { order: 3; } .main > :global(.chart) { order: 3; } .stats { order: 4; } .fixedline { order: 5; } .tabs-sec { order: 6; } .main > :global(.fs) { order: 7; } .creator, .ref { order: 8; } .cta { order: 9; }
+    .head { order: 1; } .trade-slot { order: 2; } .pot-slot { order: 3; } .main > :global(.chart) { order: 3; } .stats { order: 4; } .fixedline { order: 5; } .tabs-sec { order: 6; } .main > :global(.fs) { order: 7; } .creator, .ref { order: 8; } .cta { order: 9; }
   }
   @media (max-width: 640px) {
     /* the buy box sits inside the first screen: a tighter top, the description on two lines (the full text sits under the box in the tabs' pages anyway) */

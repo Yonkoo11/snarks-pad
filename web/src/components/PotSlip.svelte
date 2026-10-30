@@ -40,6 +40,7 @@
     {#if pot.lastPayout}
       <p class="muted last">Last round paid this coin's holders <span class="mono">{zec(pot.lastPayout.totalZats)} ZEC</span> {ago(pot.lastPayout.at, now)}.</p>
     {/if}
+    <p class="muted rule">Your share follows the least you held at random checks during the round, so buying just before a payout earns nothing for that round.</p>
   </aside>
 {/if}
 
@@ -59,6 +60,7 @@
   .clock { font-size: var(--t-14); font-weight: 700; }
   .cut { font-size: var(--t-14); padding: var(--s-2) var(--s-3); background: var(--paper-3); border-radius: var(--r-sm); max-width: 44ch; }
   .last { font-size: var(--t-14); }
+  .rule { font-size: var(--t-14); border-top: 1px dashed var(--line); padding-top: var(--s-2); max-width: 44ch; }
   /* the slip sits flat on a phone, like the hero's proof strip */
   @media (max-width: 640px) { .slip { transform: none; } }
 </style>

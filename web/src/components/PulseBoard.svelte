@@ -100,7 +100,8 @@
   .pt { display: flex; align-items: baseline; gap: var(--s-2); min-width: 0; flex-wrap: wrap; }
   .name { font-size: var(--t-16); line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
   .sym { font-size: var(--t-12); color: var(--ink-2); }
-  .pm { grid-column: 2; display: flex; align-items: center; gap: var(--s-2); font-size: var(--t-14); min-width: 0; }
+  .pm { grid-column: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 2px var(--s-2); font-size: var(--t-14); min-width: 0; }
+  .pm > * { white-space: nowrap; }
   .pm .mono { white-space: nowrap; }
   .bar-line .bar { flex: 1; min-width: 0; }
   .pc { color: var(--ink-2); min-width: 4ch; text-align: right; }

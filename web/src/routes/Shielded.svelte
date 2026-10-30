@@ -221,6 +221,7 @@
   .was { font-size: var(--t-14); }
   .was a { color: var(--ink); text-underline-offset: 3px; text-decoration-color: var(--ink-3); }
   .sdoor { display: grid; gap: var(--s-5); padding: clamp(20px, 3vw, 40px); }
+  .grid > :first-child { position: sticky; top: var(--s-4); }
   .grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: var(--s-7); align-items: start; margin-top: var(--s-4); }
   .steps { position: relative; overflow: hidden; padding: var(--s-6); display: grid; gap: var(--s-4); }
   .band { position: absolute; inset: 0 0 auto 0; height: 6px; }
