@@ -155,6 +155,28 @@
     return null
   })
   const offerLaunch = $derived(!!coins && coins.length > 0 && coins.length < 4 && !filtering && page === 1)
+
+  // ledger keyboard: j/k walks the rows, Enter opens the coin. Inputs and the palette keep their keys.
+  let cursor = $state(-1)
+  $effect(() => { void shownCoins; cursor = -1 })
+  function onKeys(e: KeyboardEvent) {
+    if (view !== 'list' || !shownCoins?.length) return
+    if (e.metaKey || e.ctrlKey || e.altKey) return
+    const t = e.target
+    if (t instanceof HTMLElement && t.closest('input, select, textarea, [contenteditable]')) return
+    if (e.key === 'j' || e.key === 'k') {
+      e.preventDefault()
+      cursor = e.key === 'j' ? Math.min(cursor + 1, shownCoins.length - 1) : Math.max(cursor - 1, 0)
+      document.querySelector(`.list [data-row="${cursor}"]`)?.scrollIntoView({ block: 'nearest' })
+    } else if (e.key === 'Enter' && cursor >= 0) {
+      e.preventDefault()
+      location.hash = `#/coin/${shownCoins[cursor].mint}`
+    }
+  }
+  $effect(() => {
+    addEventListener('keydown', onKeys)
+    return () => removeEventListener('keydown', onKeys)
+  })
 </script>
 
 <section class="wrap pad" aria-labelledby="coins-h">
@@ -239,12 +261,12 @@
         <span role="columnheader" class="label num">Trades</span>
         <span role="columnheader" class="label num hide-md">Age</span>
       </div>
-      {#each shownCoins as c (c.mint)}
-        <div animate:flip={dataTween()}>
+      {#each shownCoins as c, i (c.mint)}
+        <div animate:flip={dataTween()} data-row={i} class="rowcell" class:cur={cursor === i}>
           <DeskRow coin={c} {now} bagZats={bag?.get(c.mint) ?? null} deltaBase={watchingOnly ? 'star' : 'look'} onstarchange={rereadWatch} />
         </div>
       {/each}
-      <p class="lnote muted small">Supply: the tick is the ten largest wallets, the notch the dev, the block the pool. Next / holder: what the round would pay each holder if it closed now. Trade lines cover each coin's last recorded trades; a dashed stretch is time with no trades.</p>
+      <p class="lnote muted small">Supply: the tick is the ten largest wallets, the notch the dev, the block the pool. Next / holder: what the round would pay each holder if it closed now. Trade lines cover each coin's last recorded trades; a dashed stretch is time with no trades. Keys: <kbd>j</kbd>/<kbd>k</kbd> walk the rows, <kbd>Enter</kbd> opens, <kbd>/</kbd> finds anything.</p>
     </div>
   {:else}
     <div class="grid">
@@ -309,6 +331,8 @@
     padding: 0 var(--s-2) var(--s-2); border-bottom: 1.5px solid var(--ink-3); }
   .dhead .label { font-size: var(--t-11); }
   .lnote { padding-top: var(--s-2); max-width: 86ch; }
+  .lnote kbd { font-family: var(--f-mono); font-size: var(--t-11); border: 1px solid var(--line); border-radius: var(--r-xs); padding: 0 4px; }
+  .rowcell.cur { background: var(--hover-strong); outline: 1.5px solid var(--ink-3); outline-offset: -1.5px; }
   .key.star { width: auto; height: auto; color: var(--pink); font-size: var(--t-12); line-height: 1; }
   .num { text-align: right; }
   .fail, .none { display: grid; gap: var(--s-3); justify-items: start; padding: var(--s-4) 0; }
