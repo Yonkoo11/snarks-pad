@@ -21,6 +21,7 @@
 </script>
 
 <section class="wrap pad">
+  <div class="door hdoor">
   <div class="top">
     <h1 class="display">How the pad works.</h1>
     <p class="lede muted">Every coin here trades against ZEC. Every trade pays a fee, and 10% of it goes to the coin's holders each round: as Solana ZEC, or as native ZEC in your own shielded Zcash wallet if you opt in.</p>
@@ -35,6 +36,7 @@
       <li class="stop s4"><span class="r-n mono" aria-hidden="true">4</span><strong>You are paid</strong><span class="r-p">As Solana ZEC, or <em class="shd">shielded</em> into your own Zcash wallet.</span>{#if nRounds}<a class="chip r-chip" href="#/treasury">{nRounds} rounds so far</a>{/if}</li>
     </ol>
   </section>
+  </div>
 
   <!-- the fee split lives in one place; this page points at it instead of repeating it -->
   <section class="part">
@@ -103,6 +105,7 @@
   .pad { padding-top: var(--s-6); padding-bottom: var(--s-6); display: grid; gap: var(--s-7); }
   /* the page name outranks the prose under it */
   .top .display { font-size: clamp(30px, 2.6vw, 36px); }
+  .hdoor { display: grid; gap: var(--s-6); padding: clamp(20px, 3vw, 40px); }
   .top { display: grid; gap: var(--s-4); }
   .lede { font-size: var(--t-20); line-height: 1.45; max-width: 60ch; }
   .part { display: grid; gap: var(--s-4); }

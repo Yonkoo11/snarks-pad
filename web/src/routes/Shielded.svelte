@@ -88,6 +88,7 @@
 </script>
 
 <section class="wrap pad">
+  <div class="door sdoor">
   <div class="top">
     <div class="intro">
       <h1 class="display">Get your rewards <em>shielded.</em></h1>
@@ -100,7 +101,7 @@
   </div>
 
   <div class="grid">
-    <div class="steps panel">
+    <div class="steps panel onpaper">
       <span class="band hatch" aria-hidden="true"></span>
       {#if isOn}
         <div class="on">
@@ -206,6 +207,7 @@
   </div>
 
   <div class="mine-wrap"><MyRewards wallet={wallet.address} /></div>
+</div>
 </section>
 
 <style>
@@ -218,6 +220,7 @@
   .lede { font-size: var(--t-20); line-height: 1.45; }
   .was { font-size: var(--t-14); }
   .was a { color: var(--ink); text-underline-offset: 3px; text-decoration-color: var(--ink-3); }
+  .sdoor { display: grid; gap: var(--s-5); padding: clamp(20px, 3vw, 40px); }
   .grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: var(--s-7); align-items: start; margin-top: var(--s-4); }
   .steps { position: relative; overflow: hidden; padding: var(--s-6); display: grid; gap: var(--s-4); }
   .band { position: absolute; inset: 0 0 auto 0; height: 6px; }

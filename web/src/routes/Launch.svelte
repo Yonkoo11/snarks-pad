@@ -203,10 +203,11 @@
 </script>
 
 <section class="wrap pad">
+  <div class="door ldoor">
   <h1 class="display">Launch a coin that pays in ZEC.</h1>
 
   {#if launched}
-    <div class="panel done">
+    <div class="panel done onpaper">
       {#if launchNote === 'sent'}
       <h2 class="h2">${symbol} was sent to Solana.</h2>
       <p class="muted">Solana has not confirmed it yet. If it lands, the pad records it within a few minutes and its page opens below.{#if launchSig && solanaTxUrl(launchSig, mode)} <a href={solanaTxUrl(launchSig, mode)} target="_blank" rel="noopener noreferrer">Check it on the explorer</a>.{/if}</p>
@@ -224,7 +225,7 @@
     </div>
   {:else}
   <div class="grid">
-    <form class="form panel" onsubmit={submit} novalidate>
+    <form class="form panel onpaper" onsubmit={submit} novalidate>
       <div class="two">
         <label class="field">
           <span>Name</span>
@@ -360,12 +361,14 @@
     </aside>
   </div>
   {/if}
+</div>
 </section>
 
 <style>
   .pad { padding-top: var(--s-6); display: grid; gap: var(--s-6); }
   /* the page name outranks the form under it */
-  .pad > .display { font-size: clamp(30px, 2.6vw, 36px); }
+  .ldoor > .display { font-size: clamp(30px, 2.6vw, 36px); }
+  .ldoor { display: grid; gap: var(--s-5); padding: clamp(20px, 3vw, 40px); }
   .grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: var(--s-7); align-items: start; }
   .form { display: grid; gap: var(--s-5); padding: var(--s-6); }
   .two { display: grid; grid-template-columns: 1.4fr 1fr; gap: var(--s-4); }
