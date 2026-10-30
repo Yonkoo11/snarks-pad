@@ -1,14 +1,28 @@
 <script lang="ts">
-  // A coin's image at a fixed size, or (`fill`) filling its box as a square; a coin without an image, or whose image fails,
-  // gets a letter tile whose hue comes from the symbol, so the same coin always looks the same.
+  import { crayonTile, hueOf } from '../lib/crayon'
+  // A coin's image at a fixed size, or (`fill`) filling its box as a square; a coin without an image, or whose
+  // image fails, gets a crayon-drawn disc in the coin's own hue (lib/crayon, deterministic per symbol), with the
+  // flat letter tile underneath until the drawing is ready, so nothing flashes and nothing jumps.
   let { src, symbol, size = 48, fill = false }: { src: string; symbol: string; size?: number; fill?: boolean } = $props()
   let broken = $state(false)
-  const hue = $derived([...symbol].reduce((a, c) => a + c.charCodeAt(0), 0) % 360)
+  const hue = $derived(hueOf(symbol))
+  // the drawn disc follows the theme the page renders in; data-theme is set pre-paint, the media query covers "system"
+  let drawn = $state<string | null>(null)
+  $effect(() => {
+    if (src && !broken) return
+    const dark = document.documentElement.dataset.theme === 'dark' || (document.documentElement.dataset.theme !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches)
+    let live = true
+    crayonTile(symbol, dark, fill || size > 96 ? 512 : 256).then((u) => { if (live && u) drawn = u }, () => {})
+    return () => { live = false }
+  })
 </script>
 
 {#if src && !broken}
   <img class="ci" class:fill {src} alt="" width={fill ? undefined : size} height={fill ? undefined : size}
     style:width={fill ? undefined : `${size}px`} style:height={fill ? undefined : `${size}px`} onerror={() => (broken = true)} />
+{:else if drawn}
+  <img class="ci" class:fill src={drawn} alt="" aria-hidden="true" width={fill ? undefined : size} height={fill ? undefined : size}
+    style:width={fill ? undefined : `${size}px`} style:height={fill ? undefined : `${size}px`} />
 {:else}
   <span class="ci tile" class:fill aria-hidden="true" style:width={fill ? undefined : `${size}px`} style:height={fill ? undefined : `${size}px`}
     style:--h={hue} style:font-size={fill ? undefined : `${size * 0.5}px`}>{symbol.slice(0, 1)}</span>

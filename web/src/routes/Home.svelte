@@ -10,9 +10,10 @@
   import { wallet } from '../lib/wallet.svelte'
   import { readHoldings } from '../lib/holdings'
   import type { Holding } from '../lib/profile'
-  import Taped from '../components/Taped.svelte'
-  import CountUp from '../components/CountUp.svelte'
   import FillBar from '../components/FillBar.svelte'
+  import Lamp from '../components/room/Lamp.svelte'
+  import Odometer from '../components/room/Odometer.svelte'
+  import Spindle from '../components/room/Spindle.svelte'
   import CoinCard from '../components/CoinCard.svelte'
   import PulseBoard from '../components/PulseBoard.svelte'
   import NextPayout from '../components/NextPayout.svelte'
@@ -151,18 +152,24 @@
   const newSince = $derived(!!lastPaid && prevVisit !== null && Date.parse(lastPaid.at) > prevVisit)
   // The round strip under the hero carries the pot and the clock, so the stats row near the grid does not repeat them.
   const stripClock = $derived(!!treasury || !!padPot)
-  // A round landing while the page is open: the new receipt announces itself once, then sits still.
+  // Payout as an event: a round landing while the page is open drops its slip onto the spindle (the
+  // slip's own entrance), and the connected wallet is checked against the new round's payouts. The
+  // "you were paid" line appears only when the engine lists this wallet in that round: never a guess.
   let seenRound: string | null = null
-  let landed = $state(false)
+  let youWerePaid = $state<string | null>(null)
   $effect(() => {
     const id = lastPaid?.id ?? null
     if (id === null) return
     if (seenRound === null) { seenRound = id; return }
-    if (id !== seenRound) {
-      seenRound = id; landed = true
-      const t = setTimeout(() => (landed = false), 1400)
-      return () => clearTimeout(t)
-    }
+    if (id === seenRound) return
+    seenRound = id
+    youWerePaid = null
+    const w = wallet.address
+    if (!w) return
+    api.rewards(w).then((r) => {
+      const mine = r.solana.payouts.find((p) => p.epochId === id)
+      if (mine && lastPaid?.id === id) youWerePaid = `You were paid ${zec(mine.zats, 6)} ZEC this round.`
+    }, () => {})
   })
   function toMarket() { document.getElementById('market-h')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }
   // the return hook: a connected wallet sees its own bag above the market, read in the browser like the Holdings tab
@@ -179,18 +186,24 @@
   const offerLaunch = $derived(!!coins && coins.length > 0 && coins.length < 4 && !filtering && page === 1)
 </script>
 
-<!-- the Fridge door hero: the headline with air around it, the taped drawing big on the right, nothing behind it (the owner dropped the hatched shadow, 2026-10-07) -->
+<!-- The fridge door at the moment the till rings: the paid total as the biggest thing on the page, rolling
+     up like a mechanical counter, and beside it the pile of real round receipts dropping onto the spindle.
+     One lamp lights the scene, and its warmth is the real payout clock. -->
 <section class="wrap hero">
+  <Lamp lastAt={treasury?.lastEpochAt ?? null} nextAt={treasury?.nextEpochAt ?? null} {now} />
   <div class="copy">
     <h1 class="display">Coins on Meteora that pay holders in ZEC, <em>shielded</em> if you opt in.</h1>
     <p class="lede">Every trade pays its fee in ZEC, and holders are paid from it each round. Opt in and your share arrives as native ZEC in your own Zcash wallet.</p>
-    <!-- the proof, biggest thing after the headline: what this pad has already paid, linked to the rounds that prove it -->
+    <!-- the proof, the biggest thing on the page: what this pad has already paid, rolled up on the till -->
     {#if paidAll !== null && paidAll > 0n}
-      <a class="proof" href="#/treasury" aria-label="Every payout round, with its transactions">
-        <span class="p-item"><span class="label">Paid to holders</span><span class="p-big"><CountUp value={Number(paidAll)} format={(v) => `${zec(BigInt(Math.round(v)))} ZEC`} /></span>{#if usdOfZats(paidAll, zecUsd.rate)}<span class="p-usd">{usdOfZats(paidAll, zecUsd.rate)}</span>{/if}</span>
-        {#if nPayments !== null}<span class="p-item"><span class="label">Payments</span><span class="p-big"><CountUp value={nPayments} ms={700} format={(v) => Math.round(v).toLocaleString('en-US')} /></span></span>{/if}
-        {#if nRounds !== null}<span class="p-item"><span class="label">Rounds</span><span class="mono p-big">{nRounds}</span></span>{/if}
-        <span class="p-item"><span class="label"><span class="key hatch" aria-hidden="true"></span>Shielded</span><span class="mono p-big">{zec(paidShd ?? 0n)} ZEC</span></span>
+      <a class="meter" href="#/treasury" aria-label="Every payout round, with its transactions">
+        <span class="label">Paid to holders so far</span>
+        <span class="m-big"><Odometer text={zec(paidAll)} delay={450} /><span class="m-unit">ZEC</span></span>
+        <span class="m-sub">
+          {#if usdOfZats(paidAll, zecUsd.rate)}<span class="mono">{usdOfZats(paidAll, zecUsd.rate)}</span><span class="dot" aria-hidden="true">&middot;</span>{/if}
+          {#if nPayments !== null}<span><span class="mono">{nPayments.toLocaleString('en-US')}</span> payments</span><span class="dot" aria-hidden="true">&middot;</span>{/if}
+          <span class="m-shd"><span class="key hatch" aria-hidden="true"></span><span class="mono">{zec(paidShd ?? 0n)} ZEC</span>&nbsp;shielded</span>
+        </span>
       </a>
     {:else if paidAll === 0n}
       <p class="muted">No round has paid yet. The first payout lands after the first round closes.</p>
@@ -200,22 +213,12 @@
       <a class="btn shd" href="#/shielded"><span class="key hatch" aria-hidden="true"></span>Get my rewards shielded</a>
     </div>
   </div>
-  <div class="art"><Taped settle /></div>
+  <div class="art"><Spindle {epochs} {now} {newSince} paidLine={youWerePaid} /></div>
 </section>
 
-<!-- the round strip: the latest receipt beside the pot that is filling for the next one. The pad's heartbeat, pinned under the hero. -->
-{#if lastPaid || stripClock}
-  <section class="wrap roundstrip" aria-label="The latest payout and the pot for the next">
-    {#if lastPaid}
-      {@const n = lastPaid.shielded.count + lastPaid.solanaPayouts.count}
-      <a class="receipt panel" class:landed href="#/treasury">
-        <span class="r-head"><span class="mono r-id" title={lastPaid.id}>Round #{epochs ? epochs.length - epochs.findIndex((e) => e.id === lastPaid.id) : ''}</span><span class="muted">{ago(lastPaid.at, now)}</span>{#if newSince}<span class="chip">New since your last visit</span>{/if}</span>
-        <span class="r-line"><span class="label">Claimed</span><span class="mono">{zec(lastPaid.harvestedZats)} ZEC</span></span>
-        <span class="r-line"><span class="label">Paid</span><span class="mono">{n.toLocaleString('en-US')} {n === 1 ? 'wallet' : 'wallets'}</span></span>
-        {#if lastPaid.shielded.count > 0}<span class="r-line"><span class="label"><span class="key hatch" aria-hidden="true"></span>Shielded leg</span><span class="mono">{zec(lastPaid.shielded.totalZats)} ZEC to {lastPaid.shielded.count} {lastPaid.shielded.count === 1 ? 'wallet' : 'wallets'}</span></span>{/if}
-        <span class="r-go">Every round, with its transactions</span>
-      </a>
-    {/if}
+<!-- the pot that is filling for the next round; the latest receipt lives on the hero's spindle -->
+{#if stripClock}
+  <section class="wrap roundstrip" aria-label="The pot for the next round">
     {#if stripClock}
       <div class="potcard panel">
         <p class="label">In the pot for the next round</p>
@@ -334,7 +337,12 @@
 </section>
 
 <style>
-  .hero { display: grid; grid-template-columns: 1.5fr 1fr; gap: var(--s-7); align-items: center; padding-top: var(--s-6); padding-bottom: var(--s-5); }
+  .hero { position: relative; display: grid; grid-template-columns: 1.5fr 1fr; gap: var(--s-7); align-items: center; padding-top: var(--s-6); padding-bottom: var(--s-5); }
+  /* the door's paper tooth: one tiled noise, rasterized once by the browser, under everything */
+  .hero::before {
+    content: ''; position: absolute; inset: 0; pointer-events: none; opacity: .5;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='linear' slope='0.045'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
   .hero .display { font-size: clamp(34px, 3.4vw, 48px); }
   .copy { display: grid; gap: var(--s-5); max-width: 640px; }
   .lede { font-size: var(--t-20); line-height: 1.45; color: var(--ink-2); max-width: 54ch; }
@@ -343,52 +351,24 @@
   .art { display: grid; place-items: center; }
   .key { display: inline-block; width: 12px; height: 12px; border-radius: var(--r-xs); flex: none; }
 
-  /* the proof strip: a paper slip, barely tilted, with the paid total as the biggest number on the page */
-  .proof {
-    display: flex; flex-wrap: wrap; gap: var(--s-3) var(--s-6); align-items: end;
-    background: var(--paper-2); border-radius: var(--r-xs);
-    box-shadow: var(--sh-2), inset 0 1px 0 light-dark(transparent, rgba(239, 231, 218, .07));
-    padding: var(--s-4) var(--s-5); transform: rotate(-.4deg);
-    text-decoration: none; color: inherit; max-width: max-content;
-    transition: transform var(--d-fn) var(--ease), box-shadow var(--d-fn) var(--ease);
-  }
-  @media (hover: hover) { .proof:hover { transform: rotate(-.4deg) translateY(-2px); box-shadow: var(--sh-3); } }
-  .p-item { display: grid; gap: 2px; }
-  .p-item .label { display: flex; align-items: center; gap: var(--s-1); }
-  .p-big { font-size: var(--t-20); }
-  .p-item:first-child .p-big { font-size: clamp(26px, 2.2vw, 32px); line-height: 1.1; }
-  .p-usd { font-size: var(--t-14); color: var(--ink-3); }
+  /* the till: the paid total is the biggest thing on the page, its digits rolled up like a counter */
+  .meter { display: grid; gap: var(--s-2); text-decoration: none; color: inherit; justify-items: start; }
+  .m-big { display: flex; align-items: baseline; gap: 0.18em; font-size: clamp(44px, 8.2vw, 96px); font-weight: 500; line-height: 1; letter-spacing: -0.01em; }
+  .m-unit { font-family: var(--f-mono); font-size: 0.42em; color: var(--ink-2); }
+  .m-sub { display: flex; align-items: baseline; gap: var(--s-2); flex-wrap: wrap; font-size: var(--t-16); color: var(--ink-2); }
+  .m-sub .mono { color: var(--ink); }
+  .m-sub .dot { color: var(--ink-3); }
+  .m-shd { display: inline-flex; align-items: center; gap: var(--s-1); }
+  @media (hover: hover) { .meter:hover .m-big { color: var(--pink); transition: color var(--d-fn) var(--ease); } }
 
-  /* the round strip: the receipt takes the width it needs, the pot card holds the clock beside it */
-  .roundstrip { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: var(--s-4); align-items: stretch; }
-  .roundstrip:not(:has(.receipt)) { grid-template-columns: minmax(0, 560px); }
+  /* the pot card under the hero: one slab, the clock the market trades against */
+  .roundstrip { display: grid; grid-template-columns: minmax(0, 560px); }
   .potcard { display: grid; gap: var(--s-2); align-content: start; padding: var(--s-4) var(--s-5); }
   .pot-line { display: flex; align-items: baseline; gap: var(--s-2); flex-wrap: wrap; }
   .pot-big { font-size: var(--t-20); font-weight: 500; }
   .pot-usd { font-size: var(--t-14); color: var(--ink-3); }
   .pot-sub { font-size: var(--t-14); }
   .pot-clock { font-size: var(--t-14); font-weight: 700; }
-  /* a round that lands while the page is open: the receipt drops in once, then sits still (entrance-only) */
-  .receipt.landed { animation: land 600ms var(--ease) backwards; }
-  @keyframes land {
-    from { transform: translateY(-10px) rotate(-.8deg); box-shadow: var(--sh-3); opacity: 0; }
-    to { transform: none; box-shadow: var(--sh-1); opacity: 1; }
-  }
-  @media (prefers-reduced-motion: reduce) { .receipt.landed { animation: none; } }
-
-  /* the latest round: one receipt row under the hero, every number mono, the shielded leg hatched */
-  .receipt {
-    display: flex; flex-wrap: wrap; gap: var(--s-3) var(--s-6); align-items: end; justify-content: space-between;
-    text-decoration: none; color: inherit; padding: var(--s-4) var(--s-5);
-    transition: transform var(--d-fn) var(--ease), box-shadow var(--d-fn) var(--ease);
-  }
-  .r-head { align-self: center; }
-  @media (hover: hover) { .receipt:hover { transform: translateY(-2px); box-shadow: var(--sh-3); } }
-  .receipt:active { transform: translateY(1px); box-shadow: var(--sh-1); transition-duration: var(--d-press); }
-  .r-head { display: flex; align-items: center; gap: var(--s-3); }
-  .r-id { font-weight: 500; font-size: var(--t-20); }
-  .r-line { display: grid; gap: 2px; }
-  .r-line .label { display: flex; align-items: center; gap: var(--s-1); }
   .r-go { margin-left: auto; font-weight: 700; font-size: var(--t-14); }
   .r-go::after { content: ' \2192'; }
   .bagline {
@@ -441,15 +421,14 @@
 
   @media (max-width: 900px) {
     /* the drawing sits small beside the headline, as on the Fridge door phone layout */
-    .hero { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'title art' 'lede lede' 'proof proof' 'actions actions'; gap: var(--s-4); padding-top: var(--s-4); padding-bottom: var(--s-3); }
+    /* one column on a phone: headline, lede, the till, the spindle, the actions; the mascot peeks over the pile */
+    .hero { grid-template-columns: 1fr; grid-template-areas: 'title' 'lede' 'meter' 'art' 'actions'; gap: var(--s-4); padding-top: var(--s-4); padding-bottom: var(--s-3); }
     .copy { display: contents; }
-    .copy > h1 { grid-area: title; align-self: center; }
+    .copy > h1 { grid-area: title; }
     .lede { grid-area: lede; }
-    .proof, .copy > .muted { grid-area: proof; }
+    .meter, .copy > .muted { grid-area: meter; }
     .actions { grid-area: actions; }
-    .art { grid-area: art; }
-    .art :global(.taped) { width: 124px; padding: 6px; }
-    .art :global(.tape) { width: 44px; height: 14px; top: -7px; }
+    .art { grid-area: art; padding-top: var(--s-7); }
     .band { padding-top: var(--s-6); }
     .market { padding-top: var(--s-7); }
     .roundstrip { grid-template-columns: 1fr; }
@@ -466,9 +445,7 @@
     .lede { font-size: var(--t-16); line-height: 1.4; }
     .actions .btn { flex: 1 1 auto; }
     /* the slip sits flat on a phone: the paid total takes the first row whole, the counts share the second */
-    .proof { transform: none; max-width: none; display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-3) var(--s-4); }
-    .proof .p-item:first-child, .proof .p-item:last-child { grid-column: 1 / -1; }
-    .receipt { gap: var(--s-3) var(--s-4); }
+    .m-big { font-size: clamp(40px, 13vw, 56px); }
     .r-go { margin-left: 0; flex: 1 1 100%; }
     /* three rows: the tabs; sort beside Grid or List; the search box */
     .tabs { width: 100%; display: grid; grid-template-columns: repeat(4, 1fr); }
