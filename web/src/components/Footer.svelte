@@ -1,7 +1,7 @@
 <script lang="ts">
   import { X_HANDLE } from '../lib/site'
   const product = [
-    ['#/', 'Explore'], ['#/launch', 'Launch'], ['#/shielded', 'Shielded'], ['#/treasury', 'Payouts'], ['#/how', 'How it works'],
+    ['#/', 'Pad'], ['#/coins', 'Coins'], ['#/launch', 'Launch a coin'], ['#/shielded', 'Shielded delivery'], ['#/payouts', 'Payouts'], ['#/how', 'How it works'],
   ] as const
   const legal = [['#/terms', 'Terms of use'], ['#/privacy', 'Privacy'], ['#/risk', 'Risk notice']] as const
 </script>

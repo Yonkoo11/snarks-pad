@@ -3,24 +3,24 @@
   // The phone bottom bar (shown at 640px and below, app.css gives the page room for it): Explore, Launch, Shielded,
   // Payouts and Me, each a 44px-plus target, the current page in full ink. Shielded carries the hatched key, the one device.
   const items = [
-    { href: '#/', name: 'home', label: 'Explore' },
+    { href: '#/', name: 'home', label: 'Pad' },
+    { href: '#/coins', name: 'coins', label: 'Coins' },
     { href: '#/launch', name: 'launch', label: 'Launch' },
-    { href: '#/shielded', name: 'shielded', label: 'Shielded' },
-    { href: '#/treasury', name: 'treasury', label: 'Payouts' },
+    { href: '#/payouts', name: 'treasury', label: 'Payouts' },
     { href: '#/me', name: 'me', label: 'Me' },
   ] as const
-  const current = $derived(router.route.name === 'coin' ? 'home' : router.route.name)
+  const current = $derived(router.route.name === 'coin' ? 'coins' : router.route.name)
 </script>
 
 <nav class="bar" aria-label="Primary">
   {#each items as it (it.name)}
     <a href={it.href} aria-current={current === it.name ? 'page' : undefined}>
-      {#if it.name === 'home'}
+      {#if it.name === 'coins'}
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5" /><circle cx="15.5" cy="15.5" r="5" /></svg>
+      {:else if it.name === 'home'}
         <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5" /><rect x="13.5" y="3.5" width="7" height="7" rx="1.5" /><rect x="3.5" y="13.5" width="7" height="7" rx="1.5" /><rect x="13.5" y="13.5" width="7" height="7" rx="1.5" /></svg>
       {:else if it.name === 'launch'}
         <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="12" cy="12" r="8.5" /><path d="M12 8v8M8 12h8" /></svg>
-      {:else if it.name === 'shielded'}
-        <span class="key hatch" aria-hidden="true"></span>
       {:else if it.name === 'me'}
         <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="12" cy="8.5" r="4" /><path d="M4.5 20.5c1.6-3.6 4.2-5.5 7.5-5.5s5.9 1.9 7.5 5.5" /></svg>
       {:else}
@@ -43,6 +43,5 @@
   }
   a[aria-current='page'] { color: var(--ink); }
   svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; display: block; }
-  .key { display: block; width: 22px; height: 22px; border-radius: var(--r-xs); }
   @media (max-width: 640px) { .bar { display: grid; } }
 </style>

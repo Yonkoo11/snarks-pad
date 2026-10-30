@@ -2,15 +2,15 @@
   import { router } from '../lib/router.svelte'
   import ThemeToggle from './ThemeToggle.svelte'
   import WalletButton from './WalletButton.svelte'
+  // four destinations and the wallet; launching is an act, so it is the button, not a place in the nav
   const links = [
-    { href: '#/', name: 'home', label: 'Explore' },
-    { href: '#/launch', name: 'launch', label: 'Launch' },
-    { href: '#/shielded', name: 'shielded', label: 'Shielded' },
-    { href: '#/treasury', name: 'treasury', label: 'Payouts' },
-    { href: '#/how', name: 'how', label: 'How it works' },
+    { href: '#/', name: 'home', label: 'Pad' },
+    { href: '#/coins', name: 'coins', label: 'Coins' },
+    { href: '#/payouts', name: 'treasury', label: 'Payouts' },
+    { href: '#/me', name: 'me', label: 'Me' },
   ] as const
-  // the coin page lights Explore; the legal pages and the 404 light nothing
-  const current = $derived(router.route.name === 'coin' ? 'home' : router.route.name)
+  // a coin's page lights Coins; the legal pages and the 404 light nothing
+  const current = $derived(router.route.name === 'coin' ? 'coins' : router.route.name)
 </script>
 
 <header class="wrap nav">

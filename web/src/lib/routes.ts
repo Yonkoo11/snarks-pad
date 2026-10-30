@@ -1,8 +1,8 @@
-// The hash routes and how a page address maps to one: #/ (Explore), #/coin/:mint[?ref=<wallet>], #/u/:wallet[?tab=holdings|launched|trades|rewards|shielded],
-// #/me[?tab=...], #/launch, #/shielded, #/treasury, #/how, #/terms, #/privacy, #/risk. Pure, so a test can read it; router.svelte.ts holds the live state.
+// The hash routes and how a page address maps to one: #/ (the Pad door), #/coins (the catalog), #/coin/:mint[?ref=<wallet>],
+// #/u/:wallet[?tab=...], #/me[?tab=...], #/launch, #/shielded, #/payouts (alias #/treasury), #/how, #/terms, #/privacy, #/risk. Pure, so a test can read it; router.svelte.ts holds the live state.
 import { isProfileTab, type ProfileTab } from './profile'
 
-export type PageName = 'launch' | 'shielded' | 'treasury' | 'how' | 'terms' | 'privacy' | 'risk'
+export type PageName = 'coins' | 'launch' | 'shielded' | 'treasury' | 'how' | 'terms' | 'privacy' | 'risk'
 export type Route =
   | { name: 'home' }
   | { name: 'coin'; mint: string }
@@ -11,7 +11,7 @@ export type Route =
   | { name: PageName }
   | { name: 'missing' }
 
-const PAGES: readonly PageName[] = ['launch', 'shielded', 'treasury', 'how', 'terms', 'privacy', 'risk']
+const PAGES: readonly PageName[] = ['coins', 'launch', 'shielded', 'treasury', 'how', 'terms', 'privacy', 'risk']
 
 /** A path part as typed, or null when it is not valid percent-encoding (a mistyped link is "no page here", never an error). */
 function decode(part: string): string | null {
@@ -41,6 +41,7 @@ export function parseRoute(hash: string): Route {
     return wallet === null ? { name: 'missing' } : { name: 'profile', wallet, tab: tabOf(hash) }
   }
   if (parts[0] === 'me' && parts.length === 1) return { name: 'me', tab: tabOf(hash) }
+  if (parts[0] === 'payouts' && parts.length === 1) return { name: 'treasury' } // the spoken name; treasury stays for old links
   const page = PAGES.find((p) => p === parts[0])
   if (page && parts.length === 1) return { name: page }
   return { name: 'missing' }

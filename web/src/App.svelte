@@ -9,6 +9,7 @@
   import CoinPage from './routes/Coin.svelte'
   // Home and the coin page paint eagerly (the first screen and the first click); every other page is its own chunk,
   // fetched on first visit. import() caches, so a return to a page mounts it at once.
+  const Coins = () => import('./routes/Coins.svelte')
   const Launch = () => import('./routes/Launch.svelte')
   const Shielded = () => import('./routes/Shielded.svelte')
   const Profile = () => import('./routes/Profile.svelte')
@@ -19,7 +20,7 @@
   const r = $derived(router.route)
   // One title per page; the coin page writes its own once the coin is known, and the profile page always writes its own (a tab click must not put the generic one back).
   const titles = {
-    home: 'SNARKS pad', coin: 'Coin, SNARKS pad', me: 'Your profile, SNARKS pad', launch: 'Launch a coin, SNARKS pad', shielded: 'Shielded delivery, SNARKS pad', treasury: 'Payouts, SNARKS pad',
+    home: 'SNARKS pad', coins: 'Every coin, SNARKS pad', coin: 'Coin, SNARKS pad', me: 'Your profile, SNARKS pad', launch: 'Launch a coin, SNARKS pad', shielded: 'Shielded delivery, SNARKS pad', treasury: 'Payouts, SNARKS pad',
     how: 'How it works, SNARKS pad', terms: 'Terms of use, SNARKS pad', privacy: 'Privacy, SNARKS pad', risk: 'Risk notice, SNARKS pad', missing: 'Page not found, SNARKS pad',
   } as const
   $effect(() => { if (r.name !== 'profile') document.title = titles[r.name] })
@@ -42,6 +43,7 @@
   {:else if r.name === 'coin'}{#key r.mint}<CoinPage mint={r.mint} />{/key}
   {:else if r.name === 'profile'}{#key r.wallet}{#await Profile() then M}<M.default address={r.wallet} tab={r.tab} />{/await}{/key}
   {:else if r.name === 'me'}{#await Me() then M}<M.default tab={r.tab} />{/await}
+  {:else if r.name === 'coins'}{#await Coins() then M}<M.default />{/await}
   {:else if r.name === 'launch'}{#await Launch() then M}<M.default />{/await}
   {:else if r.name === 'shielded'}{#await Shielded() then M}<M.default />{/await}
   {:else if r.name === 'treasury'}{#await Treasury() then M}<M.default />{/await}

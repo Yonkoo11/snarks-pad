@@ -1,9 +1,9 @@
 <script lang="ts">
   import { api, ApiError, onMode } from '../lib/api'
   import type { Coin, Epoch, PadMode, PadPot, Stats, Treasury } from '../lib/types'
-  import type { CoinQuery, CoinSort, CoinStage } from '../lib/coins'
-  import { filterCoins, sortCoins, pinFirst, serverSort, FEATURED } from '../lib/coins'
-  import { zec, pct, ago, usdOfZats } from '../lib/format'
+  import type { CoinQuery } from '../lib/coins'
+  import { filterCoins, sortCoins } from '../lib/coins'
+  import { zec, usdOfZats } from '../lib/format'
   import type { FeedState } from '../lib/tape'
   import { zecUsd } from '../lib/usd.svelte'
   import { poll } from '../lib/poll'
@@ -15,18 +15,13 @@
   import Lamp from '../components/room/Lamp.svelte'
   import Odometer from '../components/room/Odometer.svelte'
   import Spindle from '../components/room/Spindle.svelte'
-  import CoinCard from '../components/CoinCard.svelte'
   import PulseBoard from '../components/PulseBoard.svelte'
-  import Pager from '../components/Pager.svelte'
-  import { flip } from 'svelte/animate'
-  import { dataTween } from '../lib/motion'
   import NextPayout from '../components/NextPayout.svelte'
   import TradesTape from '../components/TradesTape.svelte'
 
-  // Explore: the market itself. A compact banner, then one band with the coins closest to graduation and the live trades
-  // tape, then the stats row, the tabs, sort, search and the grid or list of every coin, with pages. Everything refreshes
-  // every 10 s while the tab is visible; the tape also takes the engine's stream when it has one.
-  const PAGE = 12
+  // The Pad: the door, one screen. The till, the pot and the clock on the money rail; the market as
+  // shelves; the proof pile and the live tape. The catalog is its own page now (#/coins); the door
+  // sends people there. Everything refreshes every 10 s while the tab is visible.
   const POLL_MS = 10_000
   const TAPE_ROWS = 8 // eight 44px rows sit level with the three lanes beside them at 1440
   // the pulse board's three lanes: newest first, nearest graduation first, biggest graduated first
@@ -37,84 +32,37 @@
   let mode = $state<PadMode | null>(null)
   $effect(() => onMode((m) => (mode = m)))
   let tapeState = $state<FeedState>('loading')
-  type Tab = 'new' | 'rising' | 'graduated' | 'all'
-  const TABS: { id: Tab; label: string }[] = [{ id: 'new', label: 'New' }, { id: 'rising', label: 'Rising' }, { id: 'graduated', label: 'Graduated' }, { id: 'all', label: 'All' }]
-  // "Featured" is the default: coin #1 first, then market cap; every other order is strict.
-  const SORTS: { id: CoinSort; label: string }[] = [{ id: 'featured', label: 'Featured' }, { id: 'mcap', label: 'Market cap' }, { id: 'volume', label: '24h volume' }, { id: 'new', label: 'Newest' }, { id: 'progress', label: 'Curve progress' }]
-
-  // A tab is a preset of stage and sort, and the lit tab is derived from them, so the controls can never contradict each other.
-  let sort = $state<CoinSort>('featured')
-  let stage = $state<CoinStage | ''>('')
-  let search = $state('')
-  let q = $state('')
-  // the catalog page lives in the address (#/?page=2), per the house list standard
-  let page = $state(Math.max(1, Number(new URLSearchParams(location.hash.split('?')[1] || '').get('page')) || 1))
-  function goCatalogPage(p: number) {
-    page = Math.min(Math.max(1, p), pages)
-    history.replaceState(null, '', page > 1 ? `#/?page=${page}` : '#/')
-    document.getElementById('market-h')?.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'start' })
-  }
-  let view = $state<'grid' | 'list'>('grid')
-  const tab = $derived<Tab>(stage === 'graduated' ? 'graduated' : sort === 'new' ? 'new' : sort === 'volume' ? 'rising' : 'all')
-  function pickTab(t: Tab) {
-    if (t === 'graduated') stage = 'graduated'
-    else {
-      stage = ''
-      if (t === 'new') sort = 'new'
-      else if (t === 'rising') sort = 'volume'
-      else if (sort === 'new' || sort === 'volume') sort = 'featured'
-    }
-    page = 1
-    history.replaceState(null, '', '#/')
-  }
-  function pickSort(e: Event) { sort = (e.currentTarget as HTMLSelectElement).value as CoinSort; page = 1; history.replaceState(null, '', '#/') }
-  function showAll() { stage = ''; sort = 'featured'; search = ''; q = ''; page = 1; history.replaceState(null, '', '#/') }
-  // the search box filters 200 ms after the last keystroke
-  $effect(() => {
-    const s = search.trim()
-    const t = setTimeout(() => { if (s !== q) { q = s; page = 1 } }, 200)
-    return () => clearTimeout(t)
-  })
 
   let laneFresh = $state<Coin[] | null>(null)
   let laneFilling = $state<Coin[] | null>(null)
   let laneGraduated = $state<Coin[] | null>(null)
-  let coins = $state<Coin[] | null>(null)
-  let total = $state(0)
-  let fullList = $state<Coin[] | null>(null) // every coin, when the engine answered without paging (v2.4); null when it paged for us
   let stats = $state<Stats | null>(null)
   let treasury = $state<Treasury | null>(null)
   let epochs = $state<Epoch[] | null>(null)
   let padPot = $state<PadPot | null>(null) // GET /pot (v2.10): what every listed coin has accrued for the next round; null = not known, shown as a dash
   let err = $state<string | null>(null)
   let pollErr = $state(false)
-  let lastRead = $state<number | null>(null)
   let now = $state(Date.now())
   let reqId = 0
 
-  /** A v2.5 engine answers with `total` and has already filtered, sorted and sliced; a v2.4 engine returns every coin and the web does it here. */
-  function pageOf(r: { coins: Coin[]; total?: number }, query: CoinQuery, pin: boolean): { coins: Coin[]; total: number; full: Coin[] | null } {
-    if (r.total !== undefined) return { coins: pin ? pinFirst(r.coins, FEATURED) : r.coins, total: r.total, full: null }
-    const all = sortCoins(filterCoins(r.coins, query), pin ? 'featured' : (query.sort ?? 'mcap'))
-    const offset = query.offset ?? 0
-    return { coins: all.slice(offset, offset + (query.limit ?? all.length)), total: all.length, full: r.coins }
+  /** A v2.4 engine returns every coin unsliced; the lanes slice here. */
+  function laneOf(r: { coins: Coin[]; total?: number }, query: CoinQuery): Coin[] {
+    if (r.total !== undefined) return r.coins
+    const all = sortCoins(filterCoins(r.coins, query), query.sort ?? 'mcap')
+    return all.slice(0, query.limit ?? all.length)
   }
   async function load() {
     const id = ++reqId
-    const query: CoinQuery = { sort: serverSort(sort), stage: stage || undefined, q: q || undefined, limit: PAGE, offset: (page - 1) * PAGE }
-    const pin = sort === 'featured'
     try {
-      const [f, n, g, l] = await Promise.all([api.coins(FRESH), api.coins(FILLING), api.coins(GRADUATED), api.coins(query)])
+      const [f, n, g] = await Promise.all([api.coins(FRESH), api.coins(FILLING), api.coins(GRADUATED)])
       if (id !== reqId) return // a newer request is in flight
-      laneFresh = pageOf(f, FRESH, false).coins
-      laneFilling = pageOf(n, FILLING, false).coins
-      laneGraduated = pageOf(g, GRADUATED, false).coins
-      const pg = pageOf(l, query, pin)
-      coins = pg.coins; total = pg.total; fullList = pg.full
-      err = null; pollErr = false; lastRead = Date.now()
+      laneFresh = laneOf(f, FRESH)
+      laneFilling = laneOf(n, FILLING)
+      laneGraduated = laneOf(g, GRADUATED)
+      err = null; pollErr = false
     } catch (e) {
       if (id !== reqId) return
-      if (coins) pollErr = true
+      if (laneFresh) pollErr = true
       else err = e instanceof ApiError && e.code === 'unreachable' ? 'Could not reach the pad. Check your connection and try again.' : 'Could not load the coins from the pad.'
     }
   }
@@ -133,16 +81,10 @@
   $effect(() => poll(loadSide, POLL_MS))
   $effect(() => { const t = setInterval(() => (now = Date.now()), 1000); return () => clearInterval(t) })
 
-  const pages = $derived(Math.max(1, Math.ceil(total / PAGE)))
-  const failed = $derived(!!err && !coins)
-  const filtering = $derived(!!q || stage !== '')
-  const nCoins = $derived(stats?.coins ?? fullList?.length ?? null)
-  const nGrad = $derived(stats?.graduated ?? (fullList ? fullList.filter((c) => c.stage === 'graduated').length : null))
-  const vol = $derived.by(() => {
-    if (stats?.volume24hZats !== undefined) return zec(stats.volume24hZats, 2)
-    if (fullList && fullList.length > 0 && fullList.every((c) => c.volume24hZats !== undefined)) return zec(fullList.reduce((a, c) => a + BigInt(c.volume24hZats ?? '0'), 0n), 2)
-    return null
-  })
+  const failed = $derived(!!err && laneFresh === null)
+  const nCoins = $derived(stats?.coins ?? null)
+  const nGrad = $derived(stats?.graduated ?? null)
+  const vol = $derived(stats?.volume24hZats !== undefined ? zec(stats.volume24hZats, 2) : null)
   const paidSol = $derived(stats?.paidSolanaZats !== undefined ? BigInt(stats.paidSolanaZats) : epochs ? epochs.reduce((a, e) => a + BigInt(e.solanaPayouts.totalZats), 0n) : null)
   const paidShd = $derived(stats?.paidShieldedZats !== undefined ? BigInt(stats.paidShieldedZats) : epochs ? epochs.reduce((a, e) => a + BigInt(e.shielded.totalZats), 0n) : null)
   const paidAll = $derived(paidSol !== null && paidShd !== null ? paidSol + paidShd : null)
@@ -181,7 +123,6 @@
       if (mine && lastPaid?.id === id) youWerePaid = `You were paid ${zec(mine.zats, 6)} ZEC this round.`
     }, () => {})
   })
-  function toMarket() { document.getElementById('market-h')?.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'start' }) }
   // The scene's entrance plays once per session: the first arrival gets the drop and the till roll,
   // every later visit (navigating back, theme flips) finds the door already settled. "It replays
   // for no reason" is the bug this kills.
@@ -200,10 +141,8 @@
     if (!w) return
     readHoldings(w).then((r) => { if (wallet.address === w) bag = r }, () => {})
   })
-  // the tape tags a row "dev" when its wallet created that coin; the creators are read off the coins the page already holds
-  const creators = $derived(Object.fromEntries([...(coins ?? []), ...(laneFresh ?? []), ...(laneFilling ?? []), ...(laneGraduated ?? []), ...(fullList ?? [])].map((c) => [c.mint, c.creator])))
-  // a board with fewer coins than a row holds offers the next slot to the visitor instead of an empty cell
-  const offerLaunch = $derived(!!coins && coins.length > 0 && coins.length < 4 && !filtering && page === 1)
+  // the tape tags a row "dev" when its wallet created that coin; the creators are read off the lanes the door holds
+  const creators = $derived(Object.fromEntries([...(laneFresh ?? []), ...(laneFilling ?? []), ...(laneGraduated ?? [])].map((c) => [c.mint, c.creator])))
 </script>
 
 <!-- The fridge door, drawn as a thing: one enamel panel the whole first screen is pinned to. The theme
@@ -248,7 +187,7 @@
         </div>
       {/if}
       <div class="actions">
-        <button class="btn primary" type="button" onclick={toMarket}>See every coin</button>
+        <a class="btn primary" href="#/coins">See every coin</a>
         <a class="btn shd" href="#/shielded"><span class="key hatch" aria-hidden="true"></span>Get my rewards shielded</a>
       </div>
       <!-- the pad's day, the rail's third note; the catalog below no longer repeats it -->
@@ -295,58 +234,7 @@
 
 <!-- the pulse shelves and the live tape live on the door above; the catalog starts here -->
 
-<section class="wrap market" aria-labelledby="market-h">
-  <h2 class="h3" id="market-h">Coins</h2>
-  <div class="controls">
-    <div class="seg tabs" role="group" aria-label="Coin lists">
-      {#each TABS as t (t.id)}<button type="button" aria-pressed={tab === t.id} onclick={() => pickTab(t.id)}>{t.label}</button>{/each}
-    </div>
-    <label class="ctl"><span class="label">Sort</span><select class="input sel" value={sort} onchange={pickSort}>{#each SORTS as s (s.id)}<option value={s.id}>{s.label}</option>{/each}</select></label>
-    <div class="seg view" role="group" aria-label="View">
-      <button type="button" aria-pressed={view === 'grid'} class:on={view === 'grid'} onclick={() => (view = 'grid')}>Grid</button>
-      <button type="button" aria-pressed={view === 'list'} class:on={view === 'list'} onclick={() => (view = 'list')}>List</button>
-    </div>
-    <input class="input search" type="search" placeholder="Search coins" aria-label="Search coins by name or ticker" autocomplete="off" bind:value={search} />
-  </div>
-
-  <!-- the pad's numbers live on the door's money rail; the catalog is just the catalog -->
-  {#if coins === null}
-    {#if failed}
-      <div class="fail"><p class="error" role="alert">{err}</p><button class="btn" type="button" onclick={load}>Try again</button></div>
-    {:else}
-      <div class="grid" aria-busy="true" aria-label="Loading the coins">{#each [0, 1, 2, 3, 4, 5, 6, 7] as i (i)}<div class="skel card-sk"></div>{/each}</div>
-    {/if}
-  {:else if coins.length === 0}
-    {#if filtering}
-      <div class="none"><p class="muted">No coins match.</p><button class="btn ghost" type="button" onclick={showAll}>Show all coins</button></div>
-    {:else}
-      <div class="panel empty"><p>No coins yet. Launch the first.</p><a class="btn primary" href="#/launch">Launch a coin</a></div>
-    {/if}
-  {:else if view === 'list'}
-    <div class="list" role="table" aria-label="Coins">
-      <div class="lhead" role="row">
-        <span role="columnheader" class="label">Coin</span><span role="columnheader" class="label num">Market cap</span>
-        <span role="columnheader" class="label num hide-md">24h volume</span><span role="columnheader" class="label num hide-md">24h</span>
-        <span role="columnheader" class="label num hide-md">Holders</span><span role="columnheader" class="label">Bonded</span>
-        <span role="columnheader" class="label num hide-md">Fee</span><span role="columnheader" class="label num hide-md">Age</span>
-      </div>
-      {#each coins as c (c.mint)}<CoinCard coin={c} view="list" rate={zecUsd.rate} {now} />{/each}
-    </div>
-  {:else}
-    <div class="grid">
-      {#each coins as c (c.mint)}<div class="cardcell" animate:flip={dataTween()}><CoinCard coin={c} rate={zecUsd.rate} {now} /></div>{/each}
-      {#if offerLaunch}
-        <a class="card launch panel" href="#/launch">
-          <span class="h3">Your coin here.</span>
-          <span class="muted">A name, a ticker, a drawing. It pays its holders in ZEC from its first trade.</span>
-          <span class="btn primary">Launch a coin</span>
-        </a>
-      {/if}
-    </div>
-  {/if}
-
-  <Pager {page} {pages} {total} per={PAGE} label="Catalog pages" unit="Coins" onpage={goCatalogPage} />
-</section>
+<!-- the catalog lives at #/coins; the door stays one screen -->
 
 <style>
   /* ---- the door: one enamel panel, the workstation the first screen is pinned to ---- */
@@ -401,38 +289,10 @@
     transition: transform var(--d-fn) var(--ease), box-shadow var(--d-fn) var(--ease);
   }
   @media (hover: hover) { .bagline:hover { transform: translateY(-2px); box-shadow: var(--sh-3); } }
-
-  .market { padding-top: var(--s-8); display: grid; gap: var(--s-4); }
-  .controls { display: flex; flex-wrap: wrap; gap: var(--s-3); align-items: center; }
-  /* the tabs and the view toggle are the shared .seg control (app.css); only their layout lives here */
-  .ctl { display: flex; align-items: center; gap: var(--s-2); position: relative; }
-  /* the sort menu wears the same clothes as every other control: paper fill, no border, its own drawn chevron */
-  .sel {
-    width: 180px; min-height: 44px; padding: 0 var(--s-6) 0 var(--s-3);
-    appearance: none; border: 0; background: var(--paper-3); border-radius: var(--r-md); font-weight: 700; cursor: pointer;
-  }
-  .ctl::after { content: '\25BE'; position: absolute; right: var(--s-3); pointer-events: none; color: var(--ink-2); }
-  .search { width: 220px; min-height: 44px; order: 3; }
-  .view { margin-left: auto; order: 4; }
-  /* the stats row: label over number, as many tiles as the row holds */
   /* the rail's third note: the pad's day in three figures */
   .today { display: flex; gap: var(--s-2) var(--s-5); flex-wrap: wrap; margin: 0; transform: rotate(-.4deg); width: 100%; }
   .today div { display: grid; gap: 2px; }
   .today dd { margin: 0; font-size: var(--t-20); font-weight: 500; }
-  /* as many cards as fit at 225px and up (five across at 1440, so a five-coin pad closes one row);
-     with fewer coins than a row the cards grow to fill it, up to 440px each */
-  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(225px, 1fr)); gap: var(--s-4); }
-  .grid > .cardcell { min-width: 0; display: grid; }
-  .grid :global(.card) { max-width: 440px; width: 100%; }
-  .launch { display: grid; gap: var(--s-3); align-content: center; justify-items: start; text-decoration: none; color: inherit; box-shadow: inset 0 0 0 2px var(--line); background: transparent; min-height: 320px; padding: var(--s-5); border-radius: var(--r-md); transition: transform var(--d-fn) var(--ease), box-shadow var(--d-fn) var(--ease); }
-  @media (hover: hover) { .launch:hover { transform: translateY(-2px); box-shadow: inset 0 0 0 2px var(--ink-3); } .launch:hover :global(.btn) { transform: none; box-shadow: var(--sh-2); } }
-  .launch:active { transform: translateY(1px); transition-duration: var(--d-press); }
-  .card-sk { height: 490px; border-radius: var(--r-md); }
-  .list { display: grid; }
-  .lhead { display: grid; grid-template-columns: minmax(0, 2.2fr) 1.1fr 1fr .7fr .7fr 1.3fr .6fr .7fr; gap: var(--s-4); padding: 0 var(--s-3) var(--s-2); }
-  .num { text-align: right; }
-  .fail, .none { display: grid; gap: var(--s-3); justify-items: start; padding: var(--s-4) 0; }
-  .empty { display: grid; gap: var(--s-4); justify-items: center; align-content: center; min-height: 160px; text-align: center; font-size: var(--t-20); font-weight: 700; }
 
   /* the door folds in two steps: the proof column drops under the shelves first, then everything stacks */
   @media (max-width: 1240px) {
@@ -454,11 +314,6 @@
     .d-tape { order: 7; }
     .art { justify-items: stretch; }
     .art :global(.pile) { width: 100%; }
-    .market { padding-top: var(--s-7); }
-  }
-  @media (max-width: 800px) {
-    .lhead { grid-template-columns: minmax(0, 2fr) 1fr 1.2fr; }
-    .hide-md { display: none; }
   }
   @media (max-width: 640px) {
     .door { padding: var(--s-4); border-radius: 12px; }
@@ -468,18 +323,6 @@
     .m-big { font-size: clamp(38px, 11.5vw, 52px); }
     .meter { width: 100%; }
     .r-go { margin-left: 0; flex: 1 1 100%; }
-    /* three rows: the tabs; sort beside Grid or List; the search box */
-    .tabs { width: 100%; display: grid; grid-template-columns: repeat(4, 1fr); }
-    .tabs button { padding: 0 var(--s-2); }
-    .ctl { flex: 1 1 auto; }
-    .sel { flex: 1; width: auto; }
-    .view { margin-left: 0; order: 2; }
-    .search { flex: 1 1 100%; width: auto; }
     .today dd { font-size: var(--t-16); }
-    /* one row-shaped card per line on a phone (CoinCard lays itself out as a row at this width) */
-    .grid { grid-template-columns: 1fr; gap: var(--s-3); }
-    .grid > :global(.card) { max-width: none; }
-    .launch { min-height: 0; padding: var(--s-4); }
-    .card-sk { height: 196px; }
   }
 </style>
