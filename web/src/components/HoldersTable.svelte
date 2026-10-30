@@ -5,6 +5,7 @@
   import { wallet } from '../lib/wallet.svelte'
   import { solanaAccountUrl } from '../lib/explorer'
   import Addr from './Addr.svelte'
+  import Pager from './Pager.svelte'
 
   // The Holders tab (contract v2.6 GET /coins/:mint/holders): the largest wallets with their share of the total supply, the pool
   // vaults listed so the shares add up and marked as never paid, the creator tagged, the connected wallet "you". Since v2.9 nothing
@@ -12,12 +13,21 @@
   let { mint, coin, mode, now }: { mint: string; coin: Coin; mode: PadMode | null; now: number } = $props()
   let view = $state<Holders | null | undefined>(undefined) // undefined loading, null = this engine has no holder list
   let err = $state(false)
+  // the house list standard: 20 rows a page, numbered, the page in the address (#/coin/:mint?hpage=N)
+  const PER = 20
+  let page = $state(Math.max(1, Number(new URLSearchParams(location.hash.split('?')[1] || '').get('hpage')) || 1))
+  const pages = $derived(view ? Math.max(1, Math.ceil(view.total / PER)) : 1)
+  function goPage(p: number) {
+    page = Math.min(Math.max(1, p), pages)
+    const base = location.hash.split('?')[0]
+    history.replaceState(null, '', page > 1 ? `${base}?hpage=${page}` : base)
+  }
   async function load() {
     err = false
-    try { view = await api.holders(mint) }
+    try { view = await api.holders(mint, { limit: PER, offset: (page - 1) * PER }) }
     catch (e) { if (routeAbsent(e)) view = null; else err = true }
   }
-  $effect(() => { view = undefined; load() })
+  $effect(() => { mint; page; view = undefined; load() })
 
   const pct = (p: number) => `${p >= 10 ? p.toFixed(1) : p.toFixed(2)}%`
   const n = (v: number) => v.toLocaleString('en-US')
@@ -52,7 +62,8 @@
         </div>
       {/each}
     </div>
-    <p class="note muted">Shares are of the total supply. A pool row is a Meteora vault, not a person: it holds what the curve has not sold (or the graduated pool's side) and is never paid. Which wallets get shielded rewards is not shown on any page.{#if view.total > view.holders.length}{' '}Showing the largest {view.holders.length} of {n(view.total)} rows.{/if}</p>
+    <Pager {page} {pages} total={view.total} per={PER} label="Holder pages" unit="Rows" note="largest first" onpage={goPage} />
+    <p class="note muted">Shares are of the total supply. A pool row is a Meteora vault, not a person: it holds what the curve has not sold (or the graduated pool's side) and is never paid. Which wallets get shielded rewards is not shown on any page.</p>
   {/if}
 </div>
 

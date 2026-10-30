@@ -10,6 +10,7 @@
   import NextPayout from '../components/NextPayout.svelte'
   import Addr from '../components/Addr.svelte'
   import Postmark from '../components/Postmark.svelte'
+  import Pager from '../components/Pager.svelte'
   import CountUp from '../components/CountUp.svelte'
   import VerifyRound from '../components/VerifyRound.svelte'
   import Lamp from '../components/room/Lamp.svelte'
@@ -221,16 +222,7 @@
           </article>
         {/each}
       </div>
-      {#if pages > 1}
-        <nav class="pager" aria-label="Pages of rounds">
-          <button class="btn" type="button" disabled={page <= 1} onclick={() => goPage(page - 1)}>Previous</button>
-          {#each Array.from({ length: pages }, (_, i) => i + 1) as p (p)}
-            <button class="btn pnum" class:primary={p === page} type="button" aria-current={p === page ? 'page' : undefined} onclick={() => goPage(p)}>{p}</button>
-          {/each}
-          <button class="btn" type="button" disabled={page >= pages} onclick={() => goPage(page + 1)}>Next</button>
-          <p class="mono range">Rounds {Math.min((page - 1) * PAGE + 1, epochs.length)} to {Math.min(page * PAGE, epochs.length)} of {epochs.length}, newest first</p>
-        </nav>
-      {/if}
+      <Pager {page} {pages} total={epochs.length} per={PAGE} label="Pages of rounds" unit="Rounds" note="newest first" onpage={goPage} />
     {/if}
     <p class="muted small">{#if checked.length > 0}<strong>You have checked {checked.length} {checked.length === 1 ? 'round' : 'rounds'} in this browser yourself.</strong>{' '}{/if}What you can check here: every transaction above, and each round's holder list file, re-hashed by your own browser against the hash written to Solana. What you cannot see is the operator's server; <a href="#/how">the How page</a> says what you have to trust.</p>
   </section>
@@ -282,9 +274,6 @@
   .row.stamped { padding-right: 108px; }
   .stamp { position: absolute; right: var(--s-2); top: var(--s-3); pointer-events: none; }
 
-  .pager { display: flex; gap: var(--s-2); justify-content: center; align-items: center; flex-wrap: wrap; padding-top: var(--s-5); }
-  .pager .pnum { min-width: 48px; padding: 0 var(--s-3); }
-  .pager .range { flex: 1 1 100%; text-align: center; font-size: var(--t-14); color: var(--ink-2); margin: var(--s-2) 0 0; }
 
   .policy { display: grid; gap: var(--s-4); }
   .how summary { cursor: pointer; font-weight: 700; padding: var(--s-3) 0; width: max-content; border-radius: var(--r-sm); }

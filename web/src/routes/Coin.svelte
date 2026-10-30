@@ -39,7 +39,7 @@
   const POLL_MS = 6_000
   // While a launch window is open the coin is read every second: the engine's word that the window has closed is what opens Buy (lib/window.ts), so the page asks often.
   const WINDOW_POLL_MS = 1_000
-  const MAX_TRADES = 10
+  const MAX_TRADES = 25 // the engine keeps no older trades to page to; the cap is said under the list
   let now = $state(Date.now())
   let pollErr = $state(false)
   let mode = $state<PadMode | null>(null)

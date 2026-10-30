@@ -24,6 +24,20 @@
   $effect(() => { void address; load() })
   $effect(() => { zecUsd.refresh() })
   const amountOf = (h: Holding): string => tokens(h.amount, h.amount < 1_000_000n ? 4 : 0)
+  import Pager from './Pager.svelte'
+  // the house list standard: 20 a page, numbered, the page in the address
+  const PER = 20
+  let page = $state(Math.max(1, Number(new URLSearchParams(location.hash.split('?')[1] || '').get('hpage')) || 1))
+  const pages = $derived(rows ? Math.max(1, Math.ceil(rows.length / PER)) : 1)
+  const shown = $derived(rows ? rows.slice((page - 1) * PER, page * PER) : [])
+  function goPage(p: number) {
+    page = Math.min(Math.max(1, p), pages)
+    const [base, q] = location.hash.split('?')
+    const params = new URLSearchParams(q || '')
+    if (page > 1) params.set('hpage', String(page)); else params.delete('hpage')
+    const qs = params.toString()
+    history.replaceState(null, '', qs ? `${base}?${qs}` : base)
+  }
 </script>
 
 {#if err}
@@ -37,7 +51,7 @@
   </div>
 {:else}
   <div class="list" aria-label="Coins in this wallet">
-    {#each rows as h (h.coin.mint)}
+    {#each shown as h (h.coin.mint)}
       <a class="row" href="#/coin/{h.coin.mint}">
         <CoinImage src={h.coin.imageUrl} symbol={h.coin.symbol} size={36} />
         <span class="names"><strong>{h.coin.name}</strong><span class="mono sub">{amountOf(h)} ${h.coin.symbol}</span></span>
@@ -48,6 +62,7 @@
       </a>
     {/each}
   </div>
+  <Pager {page} {pages} total={rows.length} per={PER} label="Holding pages" unit="Coins" note="largest value first" onpage={goPage} />
 {/if}
 
 <style>

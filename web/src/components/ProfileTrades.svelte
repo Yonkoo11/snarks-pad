@@ -6,6 +6,20 @@
   // The Trades tab: the wallet's newest recorded trades on this pad (GET /wallets/:wallet, at most 50). Only trades made through this pad's own page are recorded, so the tab
   // says so: a trade made anywhere else is not here. Each row links to its coin and, where an explorer shows the chain, to the transaction.
   let { trades, you, mode }: { trades: WalletTrade[]; you: boolean; mode: PadMode | null } = $props()
+  import Pager from './Pager.svelte'
+  // the house list standard: 20 a page, numbered, the page in the address
+  const PER = 20
+  let page = $state(Math.max(1, Number(new URLSearchParams(location.hash.split('?')[1] || '').get('tpage')) || 1))
+  const pages = $derived(Math.max(1, Math.ceil(trades.length / PER)))
+  const shown = $derived(trades.slice((page - 1) * PER, page * PER))
+  function goPage(p: number) {
+    page = Math.min(Math.max(1, p), pages)
+    const [base, q] = location.hash.split('?')
+    const params = new URLSearchParams(q || '')
+    if (page > 1) params.set('tpage', String(page)); else params.delete('tpage')
+    const qs = params.toString()
+    history.replaceState(null, '', qs ? `${base}?${qs}` : base)
+  }
 </script>
 
 {#if trades.length === 0}
@@ -15,7 +29,7 @@
   </div>
 {:else}
   <div class="rows">
-    {#each trades as t (t.sig)}
+    {#each shown as t (t.sig)}
       <div class="row">
         <span class="side caps {t.side}">{t.side}</span>
         <span class="mono amt">{zec(t.amountZec)} ZEC</span>
@@ -25,7 +39,8 @@
       </div>
     {/each}
   </div>
-  <p class="muted note">{you ? 'Your' : "This wallet's"} trades made through this pad's page{trades.length === 50 ? ', the newest 50' : ''}. A trade made anywhere else is not listed.</p>
+  <Pager {page} {pages} total={trades.length} per={PER} label="Trade pages" unit="Trades" note="newest first" onpage={goPage} />
+  <p class="muted note">{you ? 'Your' : "This wallet's"} trades made through this pad's page{trades.length === 50 ? ', the newest 50 the engine records' : ''}. A trade made anywhere else is not listed.</p>
 {/if}
 
 <style>

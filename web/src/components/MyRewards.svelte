@@ -1,12 +1,13 @@
 <script lang="ts">
   import { api, ApiError, onMode, receiptMessage, routeAbsent } from '../lib/api'
-  import type { Coin, Epoch, MemoCheck, PadMode, Rewards, SolanaPayout } from '../lib/types'
+  import type { Epoch, MemoCheck, PadMode, Rewards, SolanaPayout } from '../lib/types'
   import { zec, ago, short } from '../lib/format'
   import { solanaTxUrl, zcashTxUrl } from '../lib/explorer'
   import { wallet as walletStore, friendly } from '../lib/wallet.svelte'
   import { shieldedView } from '../lib/shielded.svelte'
   import Addr from './Addr.svelte'
   import CountUp from './CountUp.svelte'
+  import Pager from './Pager.svelte'
 
   // "My rewards" (contract v2.6 GET /rewards/:wallet): with a wallet connected, every round that paid it Solana ZEC, with the
   // batch signature and the coins it came from. The shielded rail is the wallet's own business (v2.9): the public answer holds
@@ -22,17 +23,29 @@
   let view = $state<Rewards | null | undefined>(undefined)
   let err = $state(false)
   let epochs = $state<Epoch[] | null>(null)
-  let coins = $state<Coin[]>([])
+  let coins = $state<{ mint: string; symbol: string }[]>([])
   let zNet = $state<'regtest' | 'test' | 'main' | null>(null)
+  // the house list standard: 10 payouts a page, numbered, the page in the address (?rpage=N)
+  const PER = 10
+  let page = $state(Math.max(1, Number(new URLSearchParams(location.hash.split('?')[1] || '').get('rpage')) || 1))
+  const pages = $derived(view ? Math.max(1, Math.ceil(view.solana.count / PER)) : 1)
+  function goPage(p: number) {
+    page = Math.min(Math.max(1, p), pages)
+    const [base, q] = location.hash.split('?')
+    const params = new URLSearchParams(q || '')
+    if (page > 1) params.set('rpage', String(page)); else params.delete('rpage')
+    const qs = params.toString()
+    history.replaceState(null, '', qs ? `${base}?${qs}` : base)
+  }
   async function load(w: string) {
     err = false
-    try { view = await api.rewards(w) }
+    try { view = await api.rewards(w, { limit: PER, offset: (page - 1) * PER }) }
     catch (e) { if (routeAbsent(e)) view = null; else err = true }
   }
-  $effect(() => { const w = wallet; view = undefined; if (w) load(w) })
+  $effect(() => { const w = wallet; page; view = undefined; if (w) load(w) })
   $effect(() => {
     api.epochs().then((r) => (epochs = r.epochs), () => (epochs = null))
-    api.coins({ limit: 100 }).then((r) => (coins = r.coins), () => (coins = []))
+    api.coinIndex().then((r) => (coins = r.coins), () => (coins = [])) // every pad coin, one cheap request: no silent cut at 100
     if (!verify) return
     api.treasury().then((t) => (zNet = t.zcashNetwork), () => (zNet = null))
     // an engine without the verifier route answers 404 to any memo: ask once with a well-formed memo that names no round (a v2.6 engine
@@ -124,7 +137,7 @@
         <p class="muted">No Solana ZEC payout to this wallet yet. A wallet is paid from the round after it bought, by the least it held at random checks during that round.</p>
       {:else}
         {@render payoutRows(view.solana.payouts, 'Your Solana ZEC payouts')}
-        {#if view.solana.count > view.solana.payouts.length}<p class="muted small">Showing the newest {view.solana.payouts.length} of {view.solana.count} rounds.</p>{/if}
+        <Pager {page} {pages} total={view.solana.count} per={PER} label="Payout pages" unit="Payouts" note="newest first" onpage={goPage} />
       {/if}
       <div class="shd"><span class="key hatch" aria-hidden="true"></span>
         <div class="shd-body">

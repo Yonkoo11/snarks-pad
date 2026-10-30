@@ -600,7 +600,7 @@ export const mock: Api = {
   async fixed(mint): Promise<Fixed> { await wait(); if (v25()) gone(); return fixedOf(findCoin(mint)) },
   async trades(q) { await wait(120); if (v25()) gone(); return { trades: tape(q.limit ?? 30, q.mint) } },
   tradeStreamUrl: () => null,
-  async rewards(wallet): Promise<Rewards> {
+  async rewards(wallet, q): Promise<Rewards> {
     await wait()
     if (v25()) gone()
     const memoFormat = 'SNARKS pad reward, epoch <epochId>'
@@ -614,7 +614,10 @@ export const mock: Api = {
       return { epochId: e.id, at: e.at, sig: sig(`reward:${e.id}:batch`), zats: String(zats), coins }
     })
     const total = payouts.reduce((a, p) => a + Number(p.zats), 0)
-    return { wallet, solana: { count: payouts.length, totalZats: String(total), payouts }, memoFormat }
+    // the mock pages like the engine: count and total are the whole history, payouts the asked-for slice
+    const offset = q?.offset ?? 0
+    const slice = payouts.slice(offset, offset + (q?.limit ?? payouts.length))
+    return { wallet, solana: { count: payouts.length, totalZats: String(total), payouts: slice }, memoFormat }
   },
   // A memo that is not the pad's, or names no published round, is 200 with matches false, never an error (contract v2.6).
   async verifyMemo(body): Promise<MemoCheck> {

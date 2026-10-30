@@ -70,12 +70,16 @@
         {/if}
       {/each}
     </div>
+    {#if !compact && shown.length >= limit}
+      <p class="cap muted">The newest {limit} trades the engine serves; older ones are not kept. The chart above holds up to 300 price points.</p>
+    {/if}
   {/if}
 </div>
 
 <style>
   .tape { display: grid; gap: var(--s-2); }
   .live { font-size: var(--t-14); }
+  .cap { font-size: var(--t-14); margin-top: var(--s-2); }
   .sk { height: 160px; }
   .compact .sk { height: 136px; }
   .rows { display: grid; }

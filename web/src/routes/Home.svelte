@@ -17,6 +17,7 @@
   import Spindle from '../components/room/Spindle.svelte'
   import CoinCard from '../components/CoinCard.svelte'
   import PulseBoard from '../components/PulseBoard.svelte'
+  import Pager from '../components/Pager.svelte'
   import NextPayout from '../components/NextPayout.svelte'
   import TradesTape from '../components/TradesTape.svelte'
 
@@ -44,7 +45,13 @@
   let stage = $state<CoinStage | ''>('')
   let search = $state('')
   let q = $state('')
-  let page = $state(1)
+  // the catalog page lives in the address (#/?page=2), per the house list standard
+  let page = $state(Math.max(1, Number(new URLSearchParams(location.hash.split('?')[1] || '').get('page')) || 1))
+  function goCatalogPage(p: number) {
+    page = Math.min(Math.max(1, p), pages)
+    history.replaceState(null, '', page > 1 ? `#/?page=${page}` : '#/')
+    document.getElementById('market-h')?.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'start' })
+  }
   let view = $state<'grid' | 'list'>('grid')
   const tab = $derived<Tab>(stage === 'graduated' ? 'graduated' : sort === 'new' ? 'new' : sort === 'volume' ? 'rising' : 'all')
   function pickTab(t: Tab) {
@@ -56,9 +63,10 @@
       else if (sort === 'new' || sort === 'volume') sort = 'featured'
     }
     page = 1
+    history.replaceState(null, '', '#/')
   }
-  function pickSort(e: Event) { sort = (e.currentTarget as HTMLSelectElement).value as CoinSort; page = 1 }
-  function showAll() { stage = ''; sort = 'featured'; search = ''; q = ''; page = 1 }
+  function pickSort(e: Event) { sort = (e.currentTarget as HTMLSelectElement).value as CoinSort; page = 1; history.replaceState(null, '', '#/') }
+  function showAll() { stage = ''; sort = 'featured'; search = ''; q = ''; page = 1; history.replaceState(null, '', '#/') }
   // the search box filters 200 ms after the last keystroke
   $effect(() => {
     const s = search.trim()
@@ -335,13 +343,7 @@
     </div>
   {/if}
 
-  {#if total > PAGE}
-    <nav class="pages" aria-label="Catalog pages">
-      <button class="btn" type="button" disabled={page <= 1} onclick={() => (page -= 1)}>Previous</button>
-      <p class="mono">Page {page} of {pages}</p>
-      <button class="btn" type="button" disabled={page >= pages} onclick={() => (page += 1)}>Next</button>
-    </nav>
-  {/if}
+  <Pager {page} {pages} {total} per={PAGE} label="Catalog pages" unit="Coins" onpage={goCatalogPage} />
 </section>
 
 <style>
@@ -427,8 +429,6 @@
   .num { text-align: right; }
   .fail, .none { display: grid; gap: var(--s-3); justify-items: start; padding: var(--s-4) 0; }
   .empty { display: grid; gap: var(--s-4); justify-items: center; align-content: center; min-height: 160px; text-align: center; font-size: var(--t-20); font-weight: 700; }
-  .pages { display: flex; gap: var(--s-3); justify-content: center; align-items: center; padding-top: var(--s-5); }
-  .pages p { font-size: var(--t-14); }
 
   /* the door folds in two steps: the proof column drops under the shelves first, then everything stacks */
   @media (max-width: 1240px) {

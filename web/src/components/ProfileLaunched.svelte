@@ -6,7 +6,20 @@
   // named this one to receive the creator fees of: a name typed by the launcher, not this wallet's doing, so it is never listed as "launched" here
   // (audit S6, product decision 3). `you` = the wallet connected is the one whose profile this is.
   let { coins, address, you }: { coins: WalletCoin[]; address: string; you: boolean } = $props()
+  import Pager from './Pager.svelte'
+  const PER = 20
+  let page = $state(Math.max(1, Number(new URLSearchParams(location.hash.split('?')[1] || '').get('lpage')) || 1))
+  function goPage(p: number) {
+    page = Math.min(Math.max(1, p), lpages)
+    const [base, qq] = location.hash.split('?')
+    const params = new URLSearchParams(qq || '')
+    if (page > 1) params.set('lpage', String(page)); else params.delete('lpage')
+    const qs = params.toString()
+    history.replaceState(null, '', qs ? `${base}?${qs}` : base)
+  }
   const launched = $derived(coins.filter((c) => c.creator === address))
+  const lpages = $derived(Math.max(1, Math.ceil(launched.length / PER)))
+  const shownLaunched = $derived(launched.slice((page - 1) * PER, page * PER))
   const named = $derived(coins.filter((c) => c.creator !== address && c.creatorWallet === address))
 </script>
 
@@ -17,7 +30,8 @@
   </div>
 {:else}
   <div class="list">
-    {#each launched as c (c.mint)}<LaunchedRow coin={c} {address} {you} />{/each}
+    {#each shownLaunched as c (c.mint)}<LaunchedRow coin={c} {address} {you} />{/each}
+    <Pager {page} pages={lpages} total={launched.length} per={PER} label="Launched pages" unit="Coins" onpage={goPage} />
   </div>
 {/if}
 
