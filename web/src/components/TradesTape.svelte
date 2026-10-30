@@ -52,7 +52,7 @@
     <div class="rows">
       {#each shown as t (t.sig)}
         {#if compact}
-          <a class="row" class:new={fresh.has(t.sig)} href="#/coin/{t.mint}" title="{t.side} of {t.symbol} by {t.wallet}">
+          <a class="row" class:new={fresh.has(t.sig)} href="#/coin/{t.mint}">
             <span class="side caps {t.side}">{t.side}</span>
             <span class="mono sym">${t.symbol}</span>
             <span class="mono amt">{zec(t.amountZec)} ZEC{#if tag(t)}<span class="tg">{tag(t)}</span>{/if}</span>
@@ -98,7 +98,8 @@
   .when { text-align: right; white-space: nowrap; }
   /* a 44px square target on the row's own height */
   .tx { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; margin: -12px 0; color: var(--ink-2); text-decoration: none; border-radius: var(--r-xs); }
-  @media (hover: hover) { .compact .row:hover { background: var(--paper-2); } a.tx:hover { color: var(--ink); } }
+  /* the hover is a tint of the same paper, never a white strip */
+  @media (hover: hover) { .compact .row:hover { background: light-dark(rgba(43, 36, 32, .05), rgba(239, 231, 218, .06)); } a.tx:hover { color: var(--ink); } }
   /* on a phone a coin-page row takes two lines: side, amount and age on the first, the wallet with its tag on the second; the link spans both */
   @media (max-width: 640px) {
     .tape:not(.compact) .row { grid-template-columns: 40px 1fr auto 44px; grid-template-areas: 'side amt when tx' 'side who who tx'; row-gap: 2px; }

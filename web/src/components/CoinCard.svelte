@@ -57,9 +57,11 @@
   </a>
 {:else}
   <a class="card panel" class:preview href={preview ? undefined : `#/coin/${coin.mint}`} aria-label={preview ? 'Preview of your coin\'s card' : undefined}>
-    <span class="img"><CoinImage src={coin.imageUrl} symbol={coin.symbol} fill /></span>
-    <strong class="name">{coin.name}</strong>
-    <span class="row2"><span class="mono">${coin.symbol}</span><span>{age}</span></span>
+    <!-- the art is a tile beside the name, not a poster over the card: the information is the card -->
+    <span class="head">
+      <CoinImage src={coin.imageUrl} symbol={coin.symbol} size={56} />
+      <span class="title"><strong class="name">{coin.name}</strong><span class="row2"><span class="mono">${coin.symbol}</span><span>{age}</span></span></span>
+    </span>
     <dl class="nums">
       <div><dt class="label">Market cap</dt><dd class="mono v">{mcap}</dd>{#if usd}<dd class="mono usd">{usd}</dd>{/if}</div>
       <div><dt class="label">24h volume</dt><dd class="mono v">{vol ?? '–'}</dd></div>
@@ -89,13 +91,15 @@
   }
   @media (hover: hover) {
     .card:not(.preview):hover { transform: translateY(-2px); box-shadow: var(--sh-3); }
-    .lrow:hover { background: var(--paper-2); transform: translateX(2px); }
+    /* a list row tints, it does not slide */
+    .lrow:hover { background: light-dark(rgba(43, 36, 32, .05), rgba(239, 231, 218, .06)); }
   }
   .card:not(.preview):active { transform: translateY(1px); box-shadow: var(--sh-1); transition-duration: var(--d-press); }
   .card.preview { cursor: default; }
-  .img { display: block; aspect-ratio: 1; border-radius: var(--r-sm); overflow: hidden; }
+  .head { display: flex; align-items: center; gap: var(--s-3); min-width: 0; }
+  .title { display: grid; gap: 2px; min-width: 0; }
   .name { font-size: var(--t-16); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .row2 { display: flex; justify-content: space-between; gap: var(--s-2); font-size: var(--t-14); color: var(--ink-2); }
+  .row2 { display: flex; gap: var(--s-2); font-size: var(--t-14); color: var(--ink-2); }
   .nums { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-2); margin: 0; }
   .nums dd { margin: 0; }
   .v { font-size: var(--t-16); font-weight: 500; }
@@ -130,12 +134,8 @@
     .hide-md { display: none; }
   }
   @media (max-width: 640px) {
-    /* on a phone the card is a row: the image at the left, the data beside it, so every label and chip keeps its full words */
-    .card { grid-template-columns: 96px minmax(0, 1fr); gap: var(--s-1) var(--s-3); padding: var(--s-3); align-items: start; }
-    .img { grid-row: 1 / span 3; width: 96px; }
+    /* the same card, a touch tighter; the head row already reads as a list row on a phone */
     .nums { gap: var(--s-1) var(--s-3); }
     .v { font-size: var(--t-14); }
-    .name, .row2, .nums, .bond, .togo, .badges { grid-column: 2; }
-    .bond { margin-top: var(--s-1); }
   }
 </style>
