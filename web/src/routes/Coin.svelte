@@ -364,7 +364,7 @@
     transition: box-shadow var(--d-fn) var(--ease);
   }
   .lk .host { font-weight: 500; color: var(--ink-2); }
-  @media (hover: hover) { .lk:hover::before { box-shadow: inset 0 0 0 2px var(--ink-3); } }
+  @media (hover: hover) { .lk:hover::before { background: var(--hover); } }
   .lk:active::before { box-shadow: inset 0 0 0 2px var(--ink-2); transition-duration: var(--d-press); }
   .lwarn { font-size: var(--t-14); max-width: 60ch; text-wrap: pretty; }
   .hiddenwarn { margin: 0; padding: var(--s-3) var(--s-4); border-radius: var(--r-md); background: var(--warn-bg); color: var(--warn-ink); font-size: var(--t-14); max-width: 60ch; }

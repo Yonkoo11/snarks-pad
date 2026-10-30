@@ -172,7 +172,7 @@
     padding: 0 var(--s-2); min-height: 44px; min-width: 44px; border-radius: var(--r-xs);
     transition: color var(--d-fn) var(--ease), transform var(--d-fn) var(--ease);
   }
-  @media (hover: hover) { .copy:hover { color: var(--ink); transform: translateY(-1px); } }
+  @media (hover: hover) { .copy:hover { color: var(--ink); background: var(--hover); } }
   /* said to a screen reader when Copy is used (the button's own word changes on screen only); nothing to see */
   .live { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .items { display: grid; gap: 2px; }
@@ -182,9 +182,9 @@
     font: inherit; font-weight: 700; color: var(--ink); text-align: left; text-decoration: none; cursor: pointer;
     transition: background-color var(--d-fn) var(--ease), transform var(--d-fn) var(--ease);
   }
-  @media (hover: hover) { .item:hover { background: var(--paper-3); transform: translateX(2px); } }
+  @media (hover: hover) { .item:hover { background: var(--hover); } }
   .item:focus-visible { background: var(--paper-3); }
-  .item:active { background: var(--paper-3); }
+  .item:active { background: var(--hover-strong); }
   .item.out { margin-top: var(--s-2); color: var(--ink-2); }
   .key { width: 12px; height: 12px; border-radius: var(--r-xs); flex: none; }
   .opt { justify-content: flex-start; }

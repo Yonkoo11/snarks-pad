@@ -253,8 +253,8 @@
     font-size: var(--t-14); font-weight: 500; cursor: pointer;
     transition: background-color var(--d-fn) var(--ease), color var(--d-fn) var(--ease), box-shadow var(--d-fn) var(--ease), transform var(--d-fn) var(--ease);
   }
-  @media (hover: hover) { .pre:hover:not(:disabled):not([aria-pressed='true']) { box-shadow: inset 0 0 0 2px var(--ink-3); transform: translateY(-1px); } }
-  .pre:active:not(:disabled) { transform: translateY(0); transition-duration: var(--d-press); }
+  @media (hover: hover) { .pre:hover:not(:disabled):not([aria-pressed='true']) { background: var(--hover); } }
+  .pre:active:not(:disabled) { background: var(--hover-strong); transition-duration: var(--d-press); }
   .pre[aria-pressed='true'] { background: var(--ink); color: var(--paper); }
   .pre:disabled { opacity: .5; cursor: not-allowed; }
   .hold { font-size: var(--t-14); margin-top: calc(-1 * var(--s-2)); }

@@ -42,7 +42,7 @@
           {#each lane.coins as c, i (c.mint)}
             <a class="prow panel" href="#/coin/{c.mint}" style:--i={i}>
               <CoinImage src={c.imageUrl} symbol={c.symbol} size={32} />
-              <span class="pt"><strong class="name">{c.name}</strong><span class="mono sym">${c.symbol}</span>{#if c.mint === busiest}<span class="busy">busiest today</span>{/if}</span>
+              <span class="pt"><strong class="name">{c.name}</strong><span class="mono sym">${c.symbol}</span>{#if c.mint === busiest}<span class="chip solid">busiest today</span>{/if}</span>
               {#if lane.id === 'fresh'}
                 <span class="pm"><span class="muted">{ago(c.createdAt, now)}</span><span class="muted">&middot;</span><span class="muted">cap</span><span class="mono">{c.marketCapZec === undefined ? '–' : `${zec(c.marketCapZec, 2)} ZEC`}</span></span>
               {:else if lane.id === 'filling'}
@@ -98,8 +98,6 @@
   .pt { display: flex; align-items: baseline; gap: var(--s-2); min-width: 0; flex-wrap: wrap; }
   .name { font-size: var(--t-16); line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
   .sym { font-size: var(--t-12); color: var(--ink-2); }
-  /* the one relative mark on the board: ink on paper, not a siren */
-  .busy { font-size: var(--t-12); font-weight: 700; background: var(--ink); color: var(--paper); border-radius: var(--r-full); padding: 1px 8px; white-space: nowrap; }
   .pm { grid-column: 2; display: flex; align-items: center; gap: var(--s-2); font-size: var(--t-14); min-width: 0; }
   .pm .mono { white-space: nowrap; }
   .bar-line .bar { flex: 1; min-width: 0; }

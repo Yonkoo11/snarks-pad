@@ -70,7 +70,7 @@
     display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: var(--s-3); align-items: center; min-height: 56px; color: inherit; text-decoration: none; border-radius: var(--r-sm);
     transition: transform var(--d-fn) var(--ease);
   }
-  @media (hover: hover) { .main:hover { transform: translateX(2px); } }
+  @media (hover: hover) { .main:hover { background: var(--hover); } }
   .names { display: grid; min-width: 0; }
   .names strong { font-size: var(--t-16); overflow-wrap: anywhere; }
   .meta { font-size: var(--t-14); }

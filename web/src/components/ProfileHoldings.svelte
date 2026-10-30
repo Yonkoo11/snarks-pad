@@ -59,8 +59,8 @@
     border-bottom: 1px solid var(--line); border-radius: var(--r-sm); font-size: var(--t-14); color: inherit; text-decoration: none; min-height: 56px;
   }
   a.row { transition: background-color var(--d-fn) var(--ease), transform var(--d-fn) var(--ease); }
-  @media (hover: hover) { a.row:hover { background: var(--paper-2); transform: translateX(2px); } }
-  a.row:active { background: var(--paper-3); transition-duration: var(--d-press); }
+  @media (hover: hover) { a.row:hover { background: var(--hover); } }
+  a.row:active { background: var(--hover-strong); transition-duration: var(--d-press); }
   .names { display: grid; min-width: 0; }
   .names strong { font-size: var(--t-16); overflow-wrap: anywhere; }
   .sub { color: var(--ink-2); overflow-wrap: anywhere; }

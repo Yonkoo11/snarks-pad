@@ -37,8 +37,8 @@
     min-height: 44px; display: inline-flex; align-items: center; white-space: nowrap;
     transition: color var(--d-fn) var(--ease), transform var(--d-fn) var(--ease);
   }
-  @media (hover: hover) { nav a:hover { color: var(--ink); transform: translateY(-1px); } }
-  nav a:active { transform: translateY(0); transition-duration: var(--d-press); }
+  @media (hover: hover) { nav a:hover { color: var(--ink); background: var(--hover); } }
+  nav a:active { background: var(--hover-strong); transition-duration: var(--d-press); }
   nav a[aria-current='page'] { color: var(--ink); text-decoration: underline; text-decoration-thickness: 3px; text-underline-offset: 6px; text-decoration-color: var(--ink-3); }
   .tools { display: flex; gap: var(--s-2); align-items: center; }
   .launch { white-space: nowrap; }

@@ -118,7 +118,7 @@
   .read { font-size: var(--t-16); font-weight: 500; }
   .c-ctl { margin-left: auto; display: flex; gap: var(--s-2); }
   /* the chart's two small switches share the seg track at a tighter size */
-  .seg.mini > button { min-height: 36px; padding: 0 var(--s-3); font-size: var(--t-14); }
+  .seg.mini > button { min-height: 44px; padding: 0 var(--s-3); font-size: var(--t-14); }
   .plot { position: relative; height: 220px; border-radius: var(--r-lg); background: var(--paper-2); box-shadow: var(--sh-2); padding: var(--s-4) var(--s-5); outline-offset: 3px; }
   .inner { position: relative; height: 100%; }
   .plot svg { width: 100%; height: 100%; display: block; overflow: visible; }

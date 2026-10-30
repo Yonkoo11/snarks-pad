@@ -92,7 +92,7 @@
   @media (hover: hover) {
     .card:not(.preview):hover { transform: translateY(-2px); box-shadow: var(--sh-3); }
     /* a list row tints, it does not slide */
-    .lrow:hover { background: light-dark(rgba(43, 36, 32, .05), rgba(239, 231, 218, .06)); }
+    .lrow:hover { background: var(--hover); }
   }
   .card:not(.preview):active { transform: translateY(1px); box-shadow: var(--sh-1); transition-duration: var(--d-press); }
   .card.preview { cursor: default; }

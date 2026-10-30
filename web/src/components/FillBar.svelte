@@ -28,6 +28,6 @@
     background: repeating-linear-gradient(90deg, transparent 0 calc(12.5% - 1px), var(--line) calc(12.5% - 1px) 12.5%);
     pointer-events: none;
   }
-  .fill { position: absolute; inset: 0 auto 0 0; background: var(--ink); border-radius: var(--r-xs); transition: width 1s linear; }
+  .fill { position: absolute; inset: 0 auto 0 0; background: var(--ink); border-radius: var(--r-xs); transition: width var(--d-fn) var(--ease); }
   @media (prefers-reduced-motion: reduce) { .fill { transition: none; } }
 </style>

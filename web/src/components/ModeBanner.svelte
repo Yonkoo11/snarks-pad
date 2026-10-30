@@ -59,7 +59,7 @@
   .chip { background: var(--pink); color: var(--pink-ink); }
   /* a 44px hit area on one underlined line; the negative margin keeps the banner's height */
   .faucet { font: inherit; font-weight: 700; text-decoration: underline; background: none; border: 0; color: inherit; cursor: pointer; padding: 0; min-height: 44px; margin: -10px 0; transition: transform var(--d-fn) var(--ease); }
-  @media (hover: hover) { .faucet:hover { text-decoration-thickness: 2px; transform: translateY(-1px); } }
-  .faucet:active { transform: translateY(0); transition-duration: var(--d-press); }
+  @media (hover: hover) { .faucet:hover { text-decoration-thickness: 2px; } }
+  .faucet:active { background: var(--hover-strong); transition-duration: var(--d-press); }
   @media (max-width: 640px) { .row { gap: var(--s-2); min-height: 0; padding-top: 6px; padding-bottom: 6px; } }
 </style>

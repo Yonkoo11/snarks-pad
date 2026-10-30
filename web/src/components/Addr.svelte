@@ -28,6 +28,6 @@
     background: none; border: 0; padding: 0 var(--s-1); min-height: 44px; min-width: 44px; margin: -12px 0; cursor: pointer; border-radius: var(--r-xs);
     transition: color var(--d-fn) var(--ease), transform var(--d-fn) var(--ease);
   }
-  @media (hover: hover) { .copy:hover { color: var(--ink); transform: translateY(-1px); } }
-  .copy:active { transform: translateY(0); transition-duration: var(--d-press); }
+  @media (hover: hover) { .copy:hover { color: var(--ink); background: var(--hover); } }
+  .copy:active { background: var(--hover-strong); transition-duration: var(--d-press); }
 </style>
