@@ -3,6 +3,8 @@
   import { zec, pct, ago } from '../lib/format'
   import CoinImage from './CoinImage.svelte'
   import CurveBar from './CurveBar.svelte'
+  import { flip } from 'svelte/animate'
+  import { dataTween } from '../lib/motion'
 
   // The pulse board: the market as three live lanes instead of one anonymous strip. Just launched
   // (newest first), filling the curve (nearest graduation first) and graduated (biggest first);
@@ -40,7 +42,7 @@
       {:else}
         <div class="rows">
           {#each lane.coins as c, i (c.mint)}
-            <a class="prow panel" href="#/coin/{c.mint}" style:--i={i}>
+            <a class="prow panel" href="#/coin/{c.mint}" style:--i={i} animate:flip={dataTween()}>
               <CoinImage src={c.imageUrl} symbol={c.symbol} size={32} />
               <span class="pt"><strong class="name">{c.name}</strong><span class="mono sym">${c.symbol}</span>{#if c.mint === busiest}<span class="chip solid">busiest today</span>{/if}</span>
               {#if lane.id === 'fresh'}

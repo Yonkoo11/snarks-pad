@@ -211,6 +211,8 @@
   <div class="quote" aria-live="polite">
     {#if quoting}
       <p class="muted">Getting a quote…</p>
+    {:else if !quote && !quoteGone}
+      <p class="muted">A quote appears here as soon as you type an amount.</p>
     {:else if quote}
       <div class="qrow"><span>You get about</span><span class="mono">{side === 'buy' ? `${tokens(quote.out)} ${sym}` : `${zec(quote.out, 6)} ZEC`}</span></div>
       <div class="qrow muted"><span>At least ({slippagePct(slippageBps)} slippage)</span><span class="mono">{side === 'buy' ? `${tokens(quote.minOut)} ${sym}` : `${zec(quote.minOut, 6)} ZEC`}</span></div>
@@ -234,7 +236,6 @@
     <button class="btn primary block" disabled={!canSend} onclick={submit}>
       {sending ? 'Confirm in your wallet…' : windowOpen ? waitLabel(windowLeft) : `${side === 'buy' ? 'Buy' : 'Sell'} $${sym}`}
     </button>
-    {#if !canSend && !sending && !windowOpen && !shortZec && !shortToken && !tx}<small class="why muted">Type an amount to get a quote first.</small>{/if}
   {:else}
     <WalletButton primary label="Connect wallet to buy" />
   {/if}
@@ -271,7 +272,6 @@
   .qrow { display: flex; justify-content: space-between; gap: var(--s-3); }
   .qrow.big { color: var(--ink); font-weight: 700; }
   .get { font-size: var(--t-14); }
-  .why { font-size: var(--t-14); }
   .get a { color: var(--ink); font-weight: 700; text-underline-offset: 3px; text-decoration-color: var(--ink-3); }
   .ok { font-size: var(--t-14); display: flex; gap: var(--s-1); align-items: center; flex-wrap: wrap; }
   .room { font-size: var(--t-14); margin-top: calc(-1 * var(--s-2)); }

@@ -18,6 +18,8 @@
   import CoinCard from '../components/CoinCard.svelte'
   import PulseBoard from '../components/PulseBoard.svelte'
   import Pager from '../components/Pager.svelte'
+  import { flip } from 'svelte/animate'
+  import { dataTween } from '../lib/motion'
   import NextPayout from '../components/NextPayout.svelte'
   import TradesTape from '../components/TradesTape.svelte'
 
@@ -332,7 +334,7 @@
     </div>
   {:else}
     <div class="grid">
-      {#each coins as c (c.mint)}<CoinCard coin={c} rate={zecUsd.rate} {now} />{/each}
+      {#each coins as c (c.mint)}<div class="cardcell" animate:flip={dataTween()}><CoinCard coin={c} rate={zecUsd.rate} {now} /></div>{/each}
       {#if offerLaunch}
         <a class="card launch panel" href="#/launch">
           <span class="h3">Your coin here.</span>
@@ -386,9 +388,10 @@
   .m-shd { display: inline-flex; align-items: center; gap: var(--s-1); }
   @media (hover: hover) { .meter:hover .m-big { color: var(--pink); transition: color var(--d-fn) var(--ease); } }
   .pot-line { display: flex; align-items: baseline; gap: var(--s-2); flex-wrap: wrap; }
-  .pot-big { font-size: var(--t-20); font-weight: 500; }
+  .pot-big { font-size: clamp(24px, 2vw, 30px); font-weight: 500; line-height: 1.1; }
   .pot-usd { font-size: var(--t-14); color: var(--ink-3); }
-  .pot-clock { font-size: var(--t-14); font-weight: 700; }
+  .pot-clock { font-size: var(--t-16); font-weight: 700; }
+  .pot-clock :global(.mono) { font-size: var(--t-20); font-weight: 500; }
   .r-go { margin-left: auto; font-weight: 700; font-size: var(--t-14); }
   .r-go::after { content: ' \2192'; }
   .bagline {
@@ -419,7 +422,8 @@
   /* as many cards as fit at 225px and up (five across at 1440, so a five-coin pad closes one row);
      with fewer coins than a row the cards grow to fill it, up to 440px each */
   .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(225px, 1fr)); gap: var(--s-4); }
-  .grid > :global(.card) { max-width: 440px; width: 100%; }
+  .grid > .cardcell { min-width: 0; display: grid; }
+  .grid :global(.card) { max-width: 440px; width: 100%; }
   .launch { display: grid; gap: var(--s-3); align-content: center; justify-items: start; text-decoration: none; color: inherit; box-shadow: inset 0 0 0 2px var(--line); background: transparent; min-height: 320px; padding: var(--s-5); border-radius: var(--r-md); transition: transform var(--d-fn) var(--ease), box-shadow var(--d-fn) var(--ease); }
   @media (hover: hover) { .launch:hover { transform: translateY(-2px); box-shadow: inset 0 0 0 2px var(--ink-3); } .launch:hover :global(.btn) { transform: none; box-shadow: var(--sh-2); } }
   .launch:active { transform: translateY(1px); transition-duration: var(--d-press); }
@@ -436,9 +440,18 @@
     .d-proof { grid-template-columns: minmax(0, 420px) minmax(0, 1fr); display: grid; gap: var(--s-5); align-items: start; }
   }
   @media (max-width: 900px) {
-    /* one column: the head, the money, the pile, the shelves, the tape; the catalog below */
-    .door { grid-template-columns: 1fr; grid-template-areas: 'head' 'money' 'proof' 'shelves'; gap: var(--s-5); }
-    .d-proof { grid-template-columns: 1fr; }
+    /* one column, the proof on the first screen: the head, the till, the pile, then the pot, the
+       actions, the day note, the shelves and the tape. The rails dissolve so their pieces can order. */
+    .door { display: flex; flex-direction: column; gap: var(--s-5); }
+    .d-money, .d-proof { display: contents; }
+    .d-head { order: 0; }
+    .meter { order: 1; }
+    .art { order: 2; }
+    .pot { order: 3; }
+    .actions { order: 4; }
+    .today { order: 5; }
+    .d-shelves { order: 6; }
+    .d-tape { order: 7; }
     .art { justify-items: stretch; }
     .art :global(.pile) { width: 100%; }
     .market { padding-top: var(--s-7); }

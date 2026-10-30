@@ -19,6 +19,11 @@
   const text = $derived(line ?? (split && split.creatorBps > 0
     ? 'Holders are paid in ZEC each round. The creator claims their share from the coin page.'
     : 'Holders are paid in ZEC each round.'))
+  // the one figure both bases agree on, said first: what holders get of every TRADE. The legend's
+  // percentages are shares of the fee; stating the trade share up front keeps every instance of
+  // this component telling the same story (a 1% fee with 10% to holders and a 10% fee with 1% to
+  // holders both read "0.1% of every trade").
+  const tradePct = $derived(split ? String(Math.round((split.feeBps * split.holdersBps) / 10_000) / 100) : '')
 </script>
 
 <section class="fs" aria-labelledby={title ? `${id}-h` : undefined}>
@@ -35,6 +40,7 @@
     </div>
   {:else}
     <div class="body">
+      <p class="hold-lead">Holders get <span class="mono">{tradePct}%</span> of every trade, in ZEC.</p>
       <div class="bar" aria-hidden="true">
         {#each rows as r (r.key)}<span class="seg {r.key}" style:flex-grow={r.bps}></span>{/each}
       </div>
@@ -60,7 +66,8 @@
   .fs { display: grid; gap: var(--s-4); container-type: inline-size; }
   .body { display: grid; gap: var(--s-4); }
   .bar { display: flex; gap: 2px; height: 12px; }
-  .seg { flex-basis: 0; min-width: 4px; border-radius: var(--r-xs); }
+  .seg { flex-basis: 0; min-width: 6px; border-radius: var(--r-xs); }
+  .seg.holders { min-width: 12px; }
   /* four steps of the one ink: on light paper dark greys, on night paper light ones */
   .holders { background: var(--ink); }
   .creator { background: color-mix(in srgb, var(--ink) 80%, transparent); }
@@ -71,6 +78,8 @@
   .legend dl { margin: 0; display: grid; gap: var(--s-2); }
   .hdr, .row { display: flex; justify-content: space-between; gap: var(--s-4); align-items: baseline; margin: 0; }
   .hdr { font-size: var(--t-14); color: var(--ink-2); }
+  .hold-lead { font-weight: 700; }
+  .hold-lead .mono { font-size: var(--t-20); }
   .row { font-size: var(--t-16); }
   .row dt { display: flex; align-items: center; gap: var(--s-2); }
   .row dd { margin: 0; }

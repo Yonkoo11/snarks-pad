@@ -3,8 +3,6 @@
   import type { FeePolicy, Tier } from '../lib/types'
   import { sharesFromPolicy } from '../lib/fees'
   import { HOW_EXAMPLE, bpsText, exampleSteps } from '../lib/window'
-  import FeeSplit from '../components/FeeSplit.svelte'
-  import HiddenList from '../components/HiddenList.svelte'
   import Taped from '../components/Taped.svelte'
 
   // How the pad works, in plain words (research/COPY-AUDIT.md, 2026-10-07): no other launchpad is named, and the mechanics stay at the level a holder
@@ -38,9 +36,9 @@
     </ol>
   </section>
 
+  <!-- the fee split lives in one place; this page points at it instead of repeating it -->
   <section class="part">
-    <FeeSplit {split} onretry={load} />
-    {#if manyTiers}<p class="prose">On the higher fee levels the extra goes to the coin's creator; holders still get 0.10% of every trade (0.102% on the 6% level).</p>{/if}
+    <p class="prose">Where the rest of the fee goes, share by share, is on the <a href="#/treasury">Payouts page</a>, beside the rounds that prove it.{#if manyTiers}{' '}On the higher fee levels the extra goes to the coin's creator; holders still get 0.10% of every trade (0.102% on the 6% level).{/if}</p>
   </section>
 
   <section class="part" aria-labelledby="why-h">
@@ -54,22 +52,11 @@
     </ul>
   </section>
 
+  <!-- the opt-in steps and the hidden/not-hidden lists live on the Shielded page, where you act on them -->
   <section class="part" aria-labelledby="steps-h">
-    <h2 class="h2" id="steps-h">Shielded delivery in three steps</h2>
-    <div class="panel steps">
-      <span class="band hatch" aria-hidden="true"></span>
-      <ol>
-        <li><span class="n" aria-hidden="true">1</span><p>Connect the Solana wallet that holds your coins.</p></li>
-        <li><span class="n" aria-hidden="true">2</span><p>Paste your Zcash unified address. It starts with u1; your wallet's Receive screen shows it.</p></li>
-        <li><span class="n" aria-hidden="true">3</span><p>Sign one message. No transaction, no fee. Rounds still run every 48 hours; your share is held and arrives as native ZEC in that wallet in the next weekly shielded batch.</p></li>
-      </ol>
-      <a class="btn primary" href="#/shielded">Get my rewards shielded</a>
-    </div>
-  </section>
-
-  <section class="part" aria-labelledby="hidden-h">
-    <h2 class="h2" id="hidden-h">What is hidden, and what is not</h2>
-    <HiddenList />
+    <h2 class="h2" id="steps-h">Shielded delivery</h2>
+    <p class="prose">One signature, no transaction, no fee: the <a href="#/shielded">Shielded page</a> walks the three steps and says exactly what is hidden from the public and what is not.</p>
+    <a class="btn shd" href="#/shielded"><span class="key hatch" aria-hidden="true"></span>Get my rewards shielded</a>
   </section>
 
   <section class="part" aria-labelledby="meteora-h">
@@ -151,16 +138,8 @@
   .prose { display: grid; gap: var(--s-3); max-width: 66ch; }
   .prose a { color: var(--ink); text-underline-offset: 3px; text-decoration-color: var(--ink-3); }
   .why { margin: 0; padding-left: var(--s-5); display: grid; gap: var(--s-3); }
-  .steps { position: relative; overflow: hidden; padding: var(--s-6); padding-top: calc(var(--s-6) + 6px); display: grid; gap: var(--s-5); justify-items: start; max-width: 720px; }
-  .band { position: absolute; inset: 0 0 auto 0; height: 6px; }
-  /* the numbered steps only: an unscoped li rule once squeezed every other list on the page into a 36px column */
-  .steps ol { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-4); }
-  .steps li { display: grid; grid-template-columns: 36px 1fr; gap: var(--s-4); align-items: start; }
-  .n {
-    width: 36px; height: 36px; display: grid; place-items: center; font-family: var(--f-mono); font-weight: 500; font-size: var(--t-16);
-    background: var(--paper-3); border-radius: var(--r-full);
-  }
-  .steps li p { padding-top: 6px; }
+  .shd { white-space: nowrap; }
+  .key { display: inline-block; width: 12px; height: 12px; border-radius: var(--r-xs); flex: none; }
   .story { grid-template-columns: minmax(0, 1fr) auto; gap: var(--s-6); align-items: start; }
   .story > div:first-child { display: grid; gap: var(--s-4); }
   .draw { padding-top: var(--s-3); padding-right: var(--s-3); }
@@ -173,7 +152,6 @@
     .lede { font-size: var(--t-16); }
     .route { grid-template-columns: 1fr; }
     .stop::after { content: none !important; }
-    .steps { padding: var(--s-5); padding-top: calc(var(--s-5) + 6px); }
     .story { grid-template-columns: 1fr; }
     .draw :global(.taped) { width: 84px; padding: 4px; }
   }

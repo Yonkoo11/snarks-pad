@@ -314,9 +314,12 @@
         {:else}
           <WalletButton label="Get my referral link" />
         {/if}
-        <!-- the drawn card: what only this pad can put in a feed, the coin with what it has paid -->
-        <ShareCard {coin} />
-        <p class="muted small-note">The post opens with your link; attach the saved card to it.</p>
+        <!-- the drawn card folds away: the rail stays short, the card one tap deep -->
+        <details class="cardfold">
+          <summary>The share card, drawn by the pad</summary>
+          <ShareCard {coin} />
+          <p class="muted small-note">The post opens with your link; attach the saved card to it.</p>
+        </details>
         <a class="btn ghost" href={xIntentUrl(coin.symbol, coinLink(coin.mint, wallet.address))} target="_blank" rel="noopener noreferrer">Post on X</a>
       </div>
 
@@ -398,6 +401,9 @@
   .ref { display: grid; gap: var(--s-3); padding: var(--s-5); }
   .ref p { font-size: var(--t-14); }
   .small-note { margin-top: calc(-1 * var(--s-1)); }
+  .cardfold { display: grid; gap: var(--s-3); }
+  .cardfold summary { cursor: pointer; font-weight: 700; font-size: var(--t-14); width: max-content; border-radius: var(--r-sm); }
+  .cardfold summary::marker { color: var(--ink-2); }
   .ref-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s-2); }
   .ref-row .input { font-size: var(--t-16); }
   .cta { position: relative; overflow: hidden; display: grid; gap: var(--s-2); padding: var(--s-5); padding-top: calc(var(--s-5) + 6px); text-decoration: none; transition: transform var(--d-fn) var(--ease); }
