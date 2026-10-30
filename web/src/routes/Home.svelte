@@ -135,7 +135,6 @@
   const paidSol = $derived(stats?.paidSolanaZats !== undefined ? BigInt(stats.paidSolanaZats) : epochs ? epochs.reduce((a, e) => a + BigInt(e.solanaPayouts.totalZats), 0n) : null)
   const paidShd = $derived(stats?.paidShieldedZats !== undefined ? BigInt(stats.paidShieldedZats) : epochs ? epochs.reduce((a, e) => a + BigInt(e.shielded.totalZats), 0n) : null)
   const paidAll = $derived(paidSol !== null && paidShd !== null ? paidSol + paidShd : null)
-  const sideLoading = $derived(nCoins === null && paidAll === null && !failed && coins === null)
   // the last round that paid anyone, as the Payouts page orders them (newest first); its wallet count is already public there
   const lastPaid = $derived(epochs?.find((e) => e.shielded.count + e.solanaPayouts.count > 0) ?? null)
   // the proof strip's two counts, from the rounds the page already holds; a wallet paid in several rounds counts once per payment, as the Payouts page counts
@@ -241,6 +240,15 @@
         <button class="btn primary" type="button" onclick={toMarket}>See every coin</button>
         <a class="btn shd" href="#/shielded"><span class="key hatch" aria-hidden="true"></span>Get my rewards shielded</a>
       </div>
+      <!-- the pad's day, the rail's third note; the catalog below no longer repeats it -->
+      {#if nCoins !== null || vol !== null}
+        <dl class="today note onpaper" aria-label="The pad today">
+          <span class="tape nt1" aria-hidden="true"></span>
+          <div><dt class="label">Coins</dt><dd class="mono">{nCoins ?? '–'}</dd></div>
+          <div><dt class="label">Graduated</dt><dd class="mono">{nGrad ?? '–'}</dd></div>
+          <div><dt class="label">24h volume</dt><dd class="mono">{vol === null ? '–' : `${vol} ZEC`}</dd></div>
+        </dl>
+      {/if}
     </aside>
 
     <div class="d-shelves">
@@ -290,22 +298,7 @@
     <input class="input search" type="search" placeholder="Search coins" aria-label="Search coins by name or ticker" autocomplete="off" bind:value={search} />
   </div>
 
-  <!-- the stats row: /stats when the engine has it (v2.5), else what /coins and /epochs allow; a number that is not known is a dash -->
-  {#if sideLoading}
-    <div class="skel stats-sk" aria-busy="true" aria-label="Loading the market numbers"></div>
-  {:else}
-    <dl class="stats" aria-label="Market numbers">
-      <div><dt class="label">Coins</dt><dd class="mono">{nCoins ?? '–'}</dd></div>
-      <div><dt class="label">Graduated</dt><dd class="mono">{nGrad ?? '–'}</dd></div>
-      <div><dt class="label">24h volume on this pad</dt><dd class="mono">{vol === null ? '–' : `${vol} ZEC`}</dd></div>
-      <!-- the pot and the clock live on the round strip under the hero; they return here only when that strip has nothing to show -->
-      {#if !stripClock}
-        <div><dt class="label">In the pot now</dt><dd class="mono">–</dd></div>
-        <div><dt class="label">Next payout</dt><dd class="mono">–</dd></div>
-      {/if}
-    </dl>
-  {/if}
-
+  <!-- the pad's numbers live on the door's money rail; the catalog is just the catalog -->
   {#if coins === null}
     {#if failed}
       <div class="fail"><p class="error">{err}</p><button class="btn" type="button" onclick={load}>Try again</button></div>
@@ -437,12 +430,13 @@
   .search { width: 220px; min-height: 44px; order: 3; }
   .view { margin-left: auto; order: 4; }
   /* the stats row: label over number, as many tiles as the row holds */
-  .stats { display: flex; flex-wrap: wrap; gap: var(--s-3) var(--s-6); margin: 0; }
-  .stats dd { margin: var(--s-1) 0 0; font-size: var(--t-20); font-weight: 500; }
-  .stats .label { display: flex; align-items: center; gap: var(--s-1); }
-  .stats-sk { height: 52px; max-width: 70ch; }
-  /* as many cards as fit at 250px and up; with fewer coins than a row the cards grow to fill it, up to 440px each */
-  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: var(--s-4); }
+  /* the rail's third note: the pad's day in three figures */
+  .today { display: flex; gap: var(--s-2) var(--s-5); flex-wrap: wrap; margin: 0; transform: rotate(-.4deg); width: 100%; }
+  .today div { display: grid; gap: 2px; }
+  .today dd { margin: 0; font-size: var(--t-20); font-weight: 500; }
+  /* as many cards as fit at 225px and up (five across at 1440, so a five-coin pad closes one row);
+     with fewer coins than a row the cards grow to fill it, up to 440px each */
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(225px, 1fr)); gap: var(--s-4); }
   .grid > :global(.card) { max-width: 440px; width: 100%; }
   .launch { display: grid; gap: var(--s-3); align-content: center; justify-items: start; text-decoration: none; color: inherit; box-shadow: inset 0 0 0 2px var(--line); background: transparent; min-height: 320px; padding: var(--s-5); border-radius: var(--r-md); transition: transform var(--d-fn) var(--ease), box-shadow var(--d-fn) var(--ease); }
   @media (hover: hover) { .launch:hover { transform: translateY(-2px); box-shadow: inset 0 0 0 2px var(--ink-3); } }
@@ -488,8 +482,7 @@
     .sel { flex: 1; width: auto; }
     .view { margin-left: 0; order: 2; }
     .search { flex: 1 1 100%; width: auto; }
-    .stats { gap: var(--s-3) var(--s-5); }
-    .stats dd { font-size: var(--t-16); }
+    .today dd { font-size: var(--t-16); }
     /* one row-shaped card per line on a phone (CoinCard lays itself out as a row at this width) */
     .grid { grid-template-columns: 1fr; gap: var(--s-3); }
     .grid > :global(.card) { max-width: none; }

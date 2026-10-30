@@ -66,9 +66,18 @@
      column is narrow (the door's center, a phone). A container query, so the same board works
      wherever it is pinned. */
   .pwrap { container-type: inline-size; min-width: 0; }
-  .pulse { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-4); align-items: start; }
-  @container (max-width: 720px) {
-    .pulse { grid-template-columns: 1fr; gap: var(--s-4); }
+  /* narrow (a phone): one stack. Middling (the door's center): two columns, the graduated lane
+     lying across both so nothing dangles. Wide: three lanes side by side. */
+  .pulse { display: grid; grid-template-columns: 1fr; gap: var(--s-4); align-items: start; }
+  @container (min-width: 540px) {
+    .pulse { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .lane:nth-child(3) { grid-column: 1 / -1; }
+    .lane:nth-child(3) .rows { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+  }
+  @container (min-width: 980px) {
+    .pulse { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .lane:nth-child(3) { grid-column: auto; }
+    .lane:nth-child(3) .rows { grid-template-columns: 1fr; }
   }
   .lane { display: grid; gap: var(--s-2); min-width: 0; }
   .lane-sk { height: 168px; border-radius: var(--r-md); }
