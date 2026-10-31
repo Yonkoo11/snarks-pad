@@ -61,6 +61,7 @@ States: Away, Arriving, Perched, Wandering, Curious, Dozing, Sleeping, Carried, 
 | A coin graduated | coin list `graduatedAt` newer than this visit | Cheer | "$SYM graduated to Meteora." |
 | A followed coin gained holders | coin read against the follow snapshot | Hop to it | "$SYM: +12 holders since you followed it." |
 | The creator of a followed coin sold | the coin's trades, tagged creator, sell | Alert | "Creator sold on $SYM." |
+| You came back after 30 minutes or more | the coin that was open when you left, against the look this browser recorded then | Hops to it if it is on the page, waves | "$SYM: +12 holders since you last opened it, 3h ago." Only when something moved; otherwise silent |
 | You pressed it | you | Small hop | the nearest fact: the followed coin, the next round, the last round |
 | You dropped it on a coin | you | Follow, then hop onto it | "Following $SYM. I will say what changes." |
 | You re-hashed a round | the verify check | Lean, then settle | the real step, then the result |
@@ -82,7 +83,7 @@ Snarks is one character with a scene per job, so the app does not need a differe
 
 ## How it grows the product
 
-- **A card worth posting.** "Snarks followed $SYM: +12 holders, 0.4 ZEC paid, since 3 days ago" as a shareable image, generated from the real deltas and carrying its receipts. People post proof, not hype.
+- **A card worth posting (built).** Menu, "Save a card of $SYM": a paper card of the coin Snarks follows: holders and what it has paid its holders, before and after, since the day you followed it, the newest round and its holder file's hash, and Snarks. No price, no advice; a fall is printed as plainly as a rise; a test network says so on its face. Copied to the clipboard as an image, or saved as a file where the browser will not allow that.
 - **A reason to come back that is not a streak.** The companion is where followed coins and the round clock meet: open the pad and it tells you what moved.
 - **A brand you can screenshot.** One drawing, always in the pad's paper style, always standing on something real.
 

@@ -17,6 +17,8 @@
   import { planHop, pathFrames, bodyFrames, shadowFrames, waveFrames, cheerFrames, alertFrames, springStep, lookAngle } from '../../lib/palMove'
   import { newRound, newGraduations, holdersGained, creatorSell } from '../../lib/palEvents'
   import { ReactionQueue } from '../../lib/palQueue'
+  import { returning, touchSession } from '../../lib/returning'
+  import { cardModel, saveFollowCard } from '../../lib/followcard'
   import { poseSrc, type PoseName } from '../../lib/palPoses'
 
   const W = 70, H = Math.round((70 * 373) / 260) // the drawing's own proportions
@@ -267,6 +269,23 @@
     if (!reduced) breatheEl?.animate([{ transform: 'rotate(-4deg) scale(.97)' }, { transform: 'rotate(0deg) translateY(-4px) scale(1.02)', offset: 0.55 }, { transform: 'rotate(0deg) scale(1)' }], { duration: 260, easing: 'ease-out' })
   }
   const poke = () => { lastActive = Date.now(); wake() }
+  // coming back after a while: it says what moved on the coin that was open when you left, if anything did
+  let greeted = false
+  async function greet() {
+    if (greeted || !returning) return
+    greeted = true
+    const r = returning
+    const c = await api.coin(r.mint).catch(() => null)
+    if (!c) return
+    const d = lookDelta(r.base, snapOf(c))
+    if (d.length === 0) return // nothing moved: nothing to say
+    queue.push('return', async () => {
+      measureOrigin()
+      const el = document.querySelector(`[data-coin-mint="${CSS.escape(r.mint)}"]`)
+      if (el && pal.mode === 'roam' && !still) { const dx = Math.min(Math.max(20, el.getBoundingClientRect().width * 0.3), Math.max(20, el.getBoundingClientRect().width - W - 20)); const s = spotAt(el, dx); if (s) await hopTo({ el, dx, ...s }) }
+      say(`${note()}$${c.symbol}: ${d.join(', ')} since you last opened it, ${ago(new Date(r.at).toISOString())}.`); await play('wave')
+    }, Date.now())
+  }
   const hintKey = 'snarks-pal-hint'
   function place() { // where it stands when it does not travel: a clear spot on a computer, the foot of the screen on a phone
     cancelAll(); moving = false; measureOrigin()
@@ -292,7 +311,8 @@
           if (!first) { place(); shown = true }
           else { put({ x: innerWidth + 40, y: first.y }); shown = true; await hopTo(first) }
         }
-        if (!stillNow && !localStorage.getItem(hintKey) && !busy()) { try { localStorage.setItem(hintKey, '1') } catch { /* private window */ } say('Drag me onto a coin to follow it. Press and hold for my settings.') }
+        void greet()
+        if (!stillNow && !localStorage.getItem(hintKey) && !busy() && !returning) { try { localStorage.setItem(hintKey, '1') } catch { /* private window */ } say('Drag me onto a coin to follow it. Press and hold for my settings.') }
         while (!dead) {
           await wait(12_000 + Math.random() * 12_000)
           if (dead) return
@@ -322,10 +342,11 @@
       if (Math.hypot(s.x - cur.x, s.y - cur.y) > 8) await hop(s) // a small correction, allowed even in Stay
     }, 2000)
     const reactTimer = setInterval(() => { if (!document.hidden) void drain() }, 2500)
+    const beat = setInterval(() => { if (!document.hidden) touchSession() }, 60_000)
     const onResize = () => { measureOrigin(); if (stillNow) place() }
     addEventListener('resize', onResize)
     for (const ev of ['pointermove', 'keydown', 'scroll', 'pointerdown'] as const) addEventListener(ev, poke, { passive: true })
-    return () => { dead = true; clearTimeout(timer); clearInterval(foot); clearInterval(reactTimer); clearTimeout(sayTimer); removeEventListener('resize', onResize); for (const ev of ['pointermove', 'keydown', 'scroll', 'pointerdown'] as const) removeEventListener(ev, poke) }
+    return () => { dead = true; clearTimeout(timer); clearInterval(foot); clearInterval(reactTimer); clearInterval(beat); clearTimeout(sayTimer); removeEventListener('resize', onResize); for (const ev of ['pointermove', 'keydown', 'scroll', 'pointerdown'] as const) removeEventListener(ev, poke) }
   })
   // a new page: where it stood may be gone
   $effect(() => {
@@ -458,6 +479,17 @@
     addEventListener('pointerdown', close); addEventListener('keydown', esc)
     return () => { removeEventListener('pointerdown', close); removeEventListener('keydown', esc) }
   })
+  async function makeCard() {
+    const m = pal.adopted
+    const base = m ? watched()[m] : null
+    if (!m || !followed || !base) { say('There is nothing to put on a card yet.'); return }
+    let paid = '0'
+    try { paid = (BigInt(followed.rewards.paidSolanaZec || '0') + BigInt(followed.rewards.paidShieldedZec || '0')).toString() } catch { /* an unreadable total is left at 0 and the row says so */ }
+    const r = epochs?.[0]
+    const model = cardModel(followed.symbol, base, { holders: followed.holders ?? null, paidZats: paid }, r ? { n: epochs!.length, sha256: r.snapshot?.sha256 ?? null } : null, padMode && padMode !== 'mainnet' ? 'Test network' : null)
+    const res = await saveFollowCard(model)
+    say(res === 'copied' ? 'Card copied. Paste it into a post.' : res === 'saved' ? 'Card saved.' : 'The card could not be made.')
+  }
   const MODES: { id: 'roam' | 'stay' | 'away'; label: string }[] = [{ id: 'roam', label: 'Roam' }, { id: 'stay', label: 'Stay here' }, { id: 'away', label: 'Away' }]
   function onKey(e: KeyboardEvent) {
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); say(facts()) }
@@ -496,6 +528,7 @@
       <div class="menu" role="menu" aria-label="Snarks">
         {#each MODES as m (m.id)}<button type="button" role="menuitemradio" aria-checked={pal.mode === m.id} onclick={() => { pal.setMode(m.id); menu = false }}>{m.label}</button>{/each}
         {#if routeMint && pal.adopted !== routeMint}<button type="button" role="menuitem" onclick={() => { const m = routeMint; menu = false; void adopt(m) }}>Follow this coin</button>{/if}
+        {#if pal.adopted && followed && watched()[pal.adopted]}<button type="button" role="menuitem" onclick={() => { menu = false; void makeCard() }}>Save a card of ${followed.symbol}</button>{/if}
         {#if pal.adopted}<button type="button" role="menuitem" onclick={() => { pal.adopt(null); menu = false; say('Not following any coin now.') }}>Stop following{followed ? ` $${followed.symbol}` : ''}</button>{/if}
       </div>
     {/if}

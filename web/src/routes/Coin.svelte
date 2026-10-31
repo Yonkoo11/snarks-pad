@@ -14,6 +14,7 @@
   import { hostOf, LINKS_WARNING } from '../lib/socials'
   import { poll } from '../lib/poll'
   import { layers, dossierKey, type DossierTab } from '../lib/layers.svelte'
+  import { rememberCoin } from '../lib/returning'
   import { reducedMotion } from '../lib/motion'
   import { monoNow, secondsLeft } from '../lib/window'
   import TradeChart from '../components/TradeChart.svelte'
@@ -75,6 +76,8 @@
   // a quarter-second beat while a window is open, so the seconds change on time
   $effect(() => { if (windowLeft === 0) return; const t = setInterval(() => (mono = monoNow()), 250); return () => clearInterval(t) })
   $effect(() => { if (coin) document.title = `${coin.name} ($${coin.symbol}), SNARKS pad` })
+  // the next visit can say what moved on the coin that was open when you left
+  $effect(() => { rememberCoin(mint) })
   // the breadcrumb names this page by its ticker, and forgets it when the page goes
   $effect(() => { if (coin) layers.routeLabel = `$${coin.symbol}`; return () => { layers.routeLabel = null } })
 
