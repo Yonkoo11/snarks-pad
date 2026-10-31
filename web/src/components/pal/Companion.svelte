@@ -277,8 +277,8 @@
     return () => { stopA(); stopB() }
   })
 
-  // ---- the envelope on the front page: it hops onto the mouth, steps in (the envelope's own drawing takes over at the same spot, so
-  // there is one figure on the page throughout), plays inside, and steps out again. Any press on it, a change of mode or of page ends the visit.
+  // ---- the slip pile on the front page: it hops onto the top slip's edge, steps in behind the paper (the pile's own drawing takes over at the same
+  // spot, so there is one figure on the page throughout), plays there, and steps out again. A press on it, a change of mode or of page ends the visit.
   let inEnv = false
   let lastVisit = 0
   const sleep = (ms: number) => new Promise<void>((res) => setTimeout(res, ms))
@@ -287,16 +287,17 @@
     if (!el || !host || !body || still) return false
     measureOrigin()
     const r = el.getBoundingClientRect()
-    if (r.top < 100 || r.bottom > innerHeight - 40 || r.width < 200) return false // the whole envelope must be on screen
-    const to = toPage(r.left + r.width / 2 - W / 2, r.top + 18)
+    if (r.top < H + 100 || r.bottom > innerHeight - 40 || r.width < W + 120) return false // the figure and the whole pile must be on screen
+    const dx = Math.round(30 + Math.random() * Math.max(0, r.width - W - 100))
+    const to = toPage(r.left + dx, r.top - H + 4)
     perch = null; hovering = false
     await hop(to)
     const at = livePos()
     if (moving || Math.hypot(at.x - to.x, at.y - to.y) > 4) return false // grabbed or superseded on the way
     inEnv = true; lastVisit = Date.now()
     try {
-      host.style.clipPath = `inset(-70px -70px ${H - 74}px -70px)` // below the pocket's edge it is behind the paper
-      homeEnv.phase = 'in'
+      host.style.clipPath = 'inset(-70px -70px 4px -70px)' // its feet are behind the paper
+      homeEnv.dx = dx; homeEnv.phase = 'in'
       await tick()
       host.style.visibility = 'hidden'
       const until = Date.now() + 14_000 + Math.random() * 10_000
