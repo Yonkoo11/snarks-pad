@@ -351,7 +351,7 @@
           {:else if !shown}<small class="hint">No art yet: your coin will wear a drawn stand-in. Coins with their own art get seen.</small>{/if}
         </div>
       {:else}
-        <div class="connect"><WalletButton primary label="Connect wallet to launch" /></div>
+        <div class="connect"><WalletButton primary align="left" label="Connect wallet to launch" /></div>
       {/if}
       {#if err}<p class="error" role="alert">{err}</p>{/if}
     </form>

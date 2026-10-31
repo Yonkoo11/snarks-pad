@@ -142,7 +142,7 @@
               {#if wallet.address}
                 <p class="muted">Connected: <span class="mono">{short(wallet.address, 6, 6)}</span></p>
               {:else}
-                <WalletButton primary />
+                <WalletButton primary align="left" />
               {/if}
             </div>
           </li>

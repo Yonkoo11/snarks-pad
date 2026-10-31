@@ -323,7 +323,7 @@
         {#if link}
           <div class="ref-row"><input class="input mono" readonly value={link} aria-label="Your referral link" onfocus={(e) => e.currentTarget.select()} /><button class="btn" onclick={copyLink}>{copied ? 'Copied' : 'Copy'}</button></div>
         {:else}
-          <WalletButton label="Get my referral link" />
+          <WalletButton align="left" label="Get my referral link" />
         {/if}
         <!-- the drawn card folds away: the rail stays short, the card one tap deep -->
         <details class="cardfold">

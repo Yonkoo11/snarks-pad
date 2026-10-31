@@ -37,6 +37,8 @@
   const frontFlap = $derived(Math.max(0, 1 - 2 * flap)) // 1 closed .. 0 on its edge
   const backFlap = $derived(Math.max(0, 2 * flap - 1)) // 0 .. 1 open, pointing up behind the figure
   const sealed = $derived(flow.done && landed)
+  // while it is inside, whatever would hang below the envelope's bottom edge is not drawn (its feet must not poke out under the paper)
+  const clipBottom = $derived(front ? 0 : Math.max(0, top + MH - (ENV_H - 6)))
 
   // ---- the leap out: it rises from inside to the top of the envelope on one arc, with the same squash and stretch as the companion's hops
   // the mark the effect below compares against: the state at arrival
@@ -104,7 +106,7 @@
   </svg>
 
   <!-- the figure, between the back and the pocket -->
-  <div class="who" class:front class:popping bind:this={who} style:left="{left}px" style:top="{top}px" style:width="{MW}px" style:height="{MH}px">
+  <div class="who" class:front class:popping bind:this={who} style:left="{left}px" style:top="{top}px" style:width="{MW}px" style:height="{MH}px" style:clip-path={front ? undefined : `inset(-90px -40px ${clipBottom}px -40px)`}>
     <div class="tilt" style:transform="rotate({sitting ? 0 : tilt}deg)"><img bind:this={img} src="/mascot-cut.webp" alt="" width={MW} height={MH} draggable="false" /></div>
   </div>
 

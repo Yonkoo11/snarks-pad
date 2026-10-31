@@ -12,7 +12,7 @@
   // the items, Escape closes it and returns to the button): who is connected with Copy (the first item, so it is a keyboard action too), then View my profile, Rewards, Shielded
   // delivery, My coins (only for a wallet that has launched a coin), View on Solscan and Disconnect. No amounts: a menu is read over a shoulder, and what a wallet was paid is the
   // profile's to show.
-  let { primary = false, label = 'Connect wallet' }: { primary?: boolean; label?: string } = $props()
+  let { primary = false, label = 'Connect wallet', align = 'right' }: { primary?: boolean; label?: string; align?: 'left' | 'right' } = $props() // where the menu hangs from: a button at the left of a page opens its menu to the right, not off the edge
   const menuId = $props.id()
   let open = $state(false)
   // a page change closes the menu, whatever caused it (a menu item, a link elsewhere, the back button)
@@ -111,13 +111,13 @@
 <svelte:document onmousedown={onDoc} onkeydown={(e) => { if (e.key === 'Escape' && open) closeMenu() }} />
 
 <!-- every button here is type="button": the wallet button sits inside forms (Launch, Shielded), and a button without a type submits the form it is in, which showed the form's errors before anything was typed -->
-<div class="wb" bind:this={root} onfocusout={onFocusOut}>
+<div class="wb" class:wide={align === 'left'} bind:this={root} onfocusout={onFocusOut}>
   {#if wallet.address}
     <button class="btn ghost addr" type="button" bind:this={trigger} onclick={() => (open ? closeMenu(false) : openMenu('first'))} onkeydown={onTriggerKey} aria-haspopup="menu" aria-expanded={open} aria-controls={open ? menuId : undefined}>
       <span class="dot" aria-hidden="true"></span><span class="mono">{short(wallet.address)}</span>
     </button>
     {#if open}
-      <div class="menu panel">
+      <div class="menu panel" class:left={align === 'left'}>
         <div class="items" id={menuId} role="menu" aria-label="Connected wallet {short(wallet.address, 6, 6)}" tabindex="-1" bind:this={menu} onkeydown={onMenuKey}>
           <div class="who" role="none">
             <p class="label">Connected with {wallet.kind === 'test' ? 'the test wallet' : wallet.kind}</p>
@@ -141,7 +141,7 @@
       {wallet.busy ? 'Waiting for wallet…' : label}
     </button>
     {#if open}
-      <div class="menu panel">
+      <div class="menu panel" class:left={align === 'left'}>
         <p class="label">Solana wallet</p>
         {#each opts as o (o.id)}
           {#if o.installed}
@@ -160,6 +160,9 @@
   .wb { position: relative; }
   .addr { gap: var(--s-2); }
   .dot { width: 8px; height: 8px; border-radius: var(--r-full); background: var(--ink); }
+  /* a button at the left of a page opens its menu in the flow under it: it can neither hang off the edge nor be cut by its panel */
+  .menu.left { position: static; width: 100%; max-width: 300px; min-width: 0; box-sizing: border-box; margin-top: var(--s-2); }
+  .wb.wide { width: 100%; min-width: 0; }
   .menu {
     position: absolute; right: 0; top: calc(100% + var(--s-2)); z-index: 20;
     width: min(300px, calc(100vw - 32px)); display: grid; gap: var(--s-2); padding: var(--s-4);

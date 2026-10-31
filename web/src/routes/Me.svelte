@@ -15,7 +15,7 @@
   {:else}
     <h1 class="display">Connect a wallet to see your profile.</h1>
     <p class="muted measure">What you hold, the coins you launched, your trades and what the pad has paid you, in one place.</p>
-    <WalletButton primary />
+    <WalletButton primary align="left" />
   {/if}
 </section>
 
