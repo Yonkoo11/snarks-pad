@@ -27,6 +27,6 @@
   .clear { border: 0; background: none; font-size: 20px; line-height: 1; min-width: 40px; min-height: 40px; border-radius: var(--r-full); color: var(--ink-3); cursor: pointer; }
   @media (hover: hover) { .clear:hover { background: var(--hover); color: var(--ink); } }
   @keyframes tray-in { from { opacity: 0; transform: translateY(8px); } }
-  @media (max-width: 640px) { .tray { bottom: calc(68px + env(safe-area-inset-bottom, 0px)); } }
+  @media (max-width: 640px) { .tray { bottom: calc(104px + env(safe-area-inset-bottom, 0px)); } }
   @media (prefers-reduced-motion: reduce) { .tray { animation: none; } }
 </style>

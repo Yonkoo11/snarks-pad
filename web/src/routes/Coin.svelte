@@ -19,6 +19,7 @@
   import PriceChart from '../components/PriceChart.svelte'
   import CoinImage from '../components/CoinImage.svelte'
   import DecisionStrip from '../components/DecisionStrip.svelte'
+  import Prov from '../components/Prov.svelte'
   import LiveNumber from '../components/LiveNumber.svelte'
   import WalletButton from '../components/WalletButton.svelte'
   import FeeSplit from '../components/FeeSplit.svelte'
@@ -52,6 +53,7 @@
   // The launch window's countdown runs on the page's own monotonic clock from the moment the engine's answer arrived, never on `endsAt` against the visitor's wall clock.
   let mono = $state(monoNow())
   let receivedAt = $state<number | null>(null)
+  let readAt = $state<number | null>(null) // wall-clock moment of the last good read, for the "how we know" lines
   let asked = 0
   let applied = 0
   async function load() {
@@ -60,7 +62,7 @@
       const c = await api.coin(mint)
       if (mine < applied) return // an older answer arriving after a newer one must not undo it: a window that read closed stays closed
       applied = mine
-      coin = c; err = null; pollErr = false; receivedAt = monoNow()
+      coin = c; err = null; pollErr = false; receivedAt = monoNow(); readAt = Date.now()
     } catch (e) {
       if (coin) pollErr = true
       else err = e instanceof ApiError && e.status === 404 ? 'No coin with that address.' : 'Could not load this coin.'
@@ -246,11 +248,11 @@
 
       <dl class="stats">
         <!-- price and market cap are absent while the engine cannot read the chain and never has for this coin (contract v2.8.1): a dash, never 0 -->
-        <div><dt class="label">Price per 1M {coin.symbol}</dt>{#if coin.priceZec === undefined}<dd class="mono">–</dd>{:else}<dd><LiveNumber value={Number(coin.priceZec)} format={(v) => `${pricePerMillion(String(v))} ZEC`} /></dd>{#if usdOfZats(Number(coin.priceZec) * 1e6, zecUsd.rate)}<dd class="usd mono">{usdOfZats(Number(coin.priceZec) * 1e6, zecUsd.rate)}</dd>{/if}{/if}</div>
-        <div><dt class="label">Market cap</dt>{#if coin.marketCapZec === undefined}<dd class="mono">–</dd>{:else}<dd><LiveNumber value={Number(coin.marketCapZec)} format={(v) => `${zec(BigInt(Math.round(v)), 2)} ZEC`} /></dd>{#if usdOfZats(coin.marketCapZec, zecUsd.rate)}<dd class="usd mono">{usdOfZats(coin.marketCapZec, zecUsd.rate)}</dd>{/if}{/if}</div>
-        <div><dt class="label">24h volume on this pad</dt><dd class="mono">{coin.volume24hZats === undefined ? '–' : `${zec(coin.volume24hZats, 2)} ZEC`}</dd></div>
-        <div><dt class="label">Holders</dt>{#if coin.holders === null}<dd class="mono">–</dd>{:else}<dd><LiveNumber value={coin.holders} format={(v) => Math.round(v).toLocaleString('en-US')} /></dd>{/if}</div>
-        <div><dt class="label">Trading fee</dt><dd class="mono">{feeLabel(coin, true)}</dd></div>
+        <div><dt class="label">Price per 1M {coin.symbol}<Prov label="price" src="The coin record from the pad API (priceZec, ZEC per whole token)" at={readAt} {now} note="Not a quote: what a trade would actually fill at depends on size and fee." /></dt>{#if coin.priceZec === undefined}<dd class="mono">–</dd>{:else}<dd><LiveNumber value={Number(coin.priceZec)} format={(v) => `${pricePerMillion(String(v))} ZEC`} /></dd>{#if usdOfZats(Number(coin.priceZec) * 1e6, zecUsd.rate)}<dd class="usd mono">{usdOfZats(Number(coin.priceZec) * 1e6, zecUsd.rate)}</dd>{/if}{/if}</div>
+        <div><dt class="label">Market cap<Prov label="market cap" src="The coin record from the pad API (marketCapZec)" at={readAt} {now} /></dt>{#if coin.marketCapZec === undefined}<dd class="mono">–</dd>{:else}<dd><LiveNumber value={Number(coin.marketCapZec)} format={(v) => `${zec(BigInt(Math.round(v)), 2)} ZEC`} /></dd>{#if usdOfZats(coin.marketCapZec, zecUsd.rate)}<dd class="usd mono">{usdOfZats(coin.marketCapZec, zecUsd.rate)}</dd>{/if}{/if}</div>
+        <div><dt class="label">24h volume on this pad<Prov label="24 hour volume" src="ZEC of the trades this pad recorded in the last 24 hours" n={coin.trades24h ?? null} at={readAt} {now} note="A buy counts what was paid, fee included; a sell what was received. Trades made elsewhere are not counted." /></dt><dd class="mono">{coin.volume24hZats === undefined ? '–' : `${zec(coin.volume24hZats, 2)} ZEC`}</dd></div>
+        <div><dt class="label">Holders<Prov label="holders" src="Eligible wallets (pool vaults excluded) from the pad API" at={readAt} {now} /></dt>{#if coin.holders === null}<dd class="mono">–</dd>{:else}<dd><LiveNumber value={coin.holders} format={(v) => Math.round(v).toLocaleString('en-US')} /></dd>{/if}</div>
+        <div><dt class="label">Trading fee<Prov label="trading fee" src="Fixed at launch and readable on chain (the Token info tab links each account)" note="After graduation the pool fee can rise by up to a fifth when trading is volatile." /></dt><dd class="mono">{feeLabel(coin, true)}</dd></div>
       </dl>
 
       <DecisionStrip {coin} {pot} {now} />
@@ -355,8 +357,8 @@
   .trow { display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap; }
   .meta { font-size: var(--t-14); }
   .desc { font-size: var(--t-16); }
-  .stats { display: grid; grid-template-columns: repeat(5, auto); justify-content: start; gap: var(--s-6); margin: 0; }
-  .stats dd { margin: var(--s-1) 0 0; font-size: var(--t-20); font-weight: 500; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(max-content, 1fr)); justify-content: start; gap: var(--s-4) var(--s-6); margin: 0; }
+  .stats dd { margin: var(--s-1) 0 0; font-size: var(--t-20); font-weight: 500; white-space: nowrap; }
   .stats dd.usd { margin-top: 0; font-size: var(--t-14); font-weight: 400; color: var(--ink-2); }
   /* the trust line: a plain paper strip, the mark drawn like the Token info tab's own, the whole line a button into that tab */
   .fixedline {

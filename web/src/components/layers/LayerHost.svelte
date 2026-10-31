@@ -7,6 +7,7 @@
   import CompareTray from './CompareTray.svelte'
 
   const Compare = () => import('./CompareSheet.svelte')
+  const TapeSheet = () => import('./TapeSheet.svelte')
 
   function onKey(e: KeyboardEvent) {
     if (e.key !== 'Escape' || e.defaultPrevented || !layers.top) return
@@ -28,7 +29,8 @@
 {#each layers.stack as l, i (l.uid)}
   <Sheet layer={l} below={n - 1 - i}>
     {#if l.kind === 'dossier'}<DossierSheet layerKey={l.key} />
-    {:else if l.kind === 'compare'}{#await Compare()}<div class="skel" style="height: 160px" aria-busy="true"></div>{:then M}<M.default />{:catch e}<p class="error" role="alert">Could not open the shelf: {e?.message ?? 'load failed'}</p>{/await}{/if}
+    {:else if l.kind === 'compare'}{#await Compare()}<div class="skel" style="height: 160px" aria-busy="true"></div>{:then M}<M.default />{:catch e}<p class="error" role="alert">Could not open the shelf: {e?.message ?? 'load failed'}</p>{/await}
+    {:else}{#await TapeSheet() then M}<M.default />{/await}{/if}
   </Sheet>
 {/each}
 

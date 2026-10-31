@@ -19,6 +19,8 @@
   import { readHoldings } from '../lib/holdings'
   import { layers, dossierKey } from '../lib/layers.svelte'
   import { compare } from '../lib/compare.svelte'
+  import { audit } from '../lib/audit.svelte'
+  import AuditToggle from '../components/AuditToggle.svelte'
   import { leaveSpot, takeSpot } from '../lib/spot'
 
   // The catalog is its own page: one job (pick a coin), every coin, real pages. Launching is the one
@@ -260,6 +262,7 @@
         <span class="mono dglyph" aria-hidden="true">{dens === 1 ? '\u2261' : dens === 2 ? '\u2630' : '\u2637'}</span>{dens === 1 ? 'Tight' : dens === 2 ? 'Standard' : 'Full'}
       </button>
     {/if}
+    <AuditToggle />
     <input class="input search" type="search" placeholder="Search coins" aria-label="Search coins by name or ticker" autocomplete="off" bind:value={search} />
     <button class="chipbtn" type="button" aria-pressed={shieldedOnly} onclick={() => { shieldedOnly = !shieldedOnly; page = 1; history.replaceState(null, '', '#/coins') }}>
       <span class="key hatch" aria-hidden="true"></span>Shielded delivery
@@ -311,6 +314,15 @@
           <DeskRow coin={c} {now} {dens} returnedAt={back && back.mint === c.mint && restored ? back.at : null} bagZats={bag?.get(c.mint) ?? null} deltaBase={watchingOnly ? 'star' : 'look'} onstarchange={rereadWatch} />
         </div>
       {/each}
+      {#if audit.on}
+        <dl class="auditl mono" aria-label="Where each column comes from">
+          <div><dt>Price, 24h, Mcap, Vol, Holders</dt><dd>The pad API coin list, read every {POLL_MS / 1000} s while this tab is visible.</dd></div>
+          <div><dt>Supply</dt><dd>Holder list aggregates (ten largest wallets, creator, pool vaults), one read per visible row, kept 60 s.</dd></div>
+          <div><dt>Paid ZEC, n=</dt><dd>What the pad API says this coin has paid its holders. n is the number of rounds that paid it, so a small n is a small sample.</dd></div>
+          <div><dt>Next / holder</dt><dd>The coin's pot for holders divided by its eligible holder count: an even split if the round closed now.</dd></div>
+          <div><dt>Trades</dt><dd>The last 40 trades the engine records for the coin, oldest to newest. A dotted stretch is a gap longer than a third of the window and at least 15 minutes.</dd></div>
+        </dl>
+      {/if}
       <p class="lnote muted small">Supply: the tick is the ten largest wallets, the notch the dev, the block the pool. Next / holder: what the round would pay each holder if it closed now. Trade lines cover each coin's last recorded trades; a dashed stretch is time with no trades. Click a row for its sheet, its name for its page. Keys: <kbd>j</kbd>/<kbd>k</kbd> walk the rows, <kbd>o</kbd> opens the sheet, <kbd>Enter</kbd> the page, <kbd>p</kbd> pins to compare, <kbd>s</kbd> opens the shelf, <kbd>d</kbd> changes the row density, <kbd>/</kbd> finds anything.</p>
     </div>
   {:else}
@@ -376,6 +388,10 @@
     padding: 0 var(--s-2) var(--s-2); border-bottom: 1.5px solid var(--ink-3); }
   .dhead .label { font-size: var(--t-11); }
   .lnote { padding-top: var(--s-2); max-width: 86ch; }
+  .auditl { display: grid; gap: var(--s-2); margin: var(--s-3) 0 0; padding: var(--s-3); border: 1px dashed var(--ink-3); border-radius: var(--r-sm); font-size: var(--t-11); max-width: 86ch; }
+  .auditl div { display: grid; grid-template-columns: minmax(120px, 190px) 1fr; gap: var(--s-3); }
+  .auditl dt { font-weight: 700; } .auditl dd { margin: 0; color: var(--ink-2); }
+  @media (max-width: 640px) { .auditl div { grid-template-columns: 1fr; gap: 0; } }
   .lnote kbd { font-family: var(--f-mono); font-size: var(--t-11); border: 1px solid var(--line); border-radius: var(--r-xs); padding: 0 4px; }
   .rowcell { transition: opacity var(--d-fn) var(--ease), transform var(--d-fn) var(--ease), box-shadow var(--d-fn) var(--ease); }
   /* the row under the cursor lifts off the page; once you are walking, the others sit back a little */

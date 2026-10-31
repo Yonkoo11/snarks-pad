@@ -5,6 +5,8 @@
   // A cadence in words from its milliseconds: "48 hours", "7 days". Under a day it is said in hours; the drills set odd values and this still reads.
   const every = (ms: number): string => (ms >= 3 * 86_400_000 && ms % 86_400_000 === 0 ? `${ms / 86_400_000} days` : `${Math.max(1, Math.round(ms / 3_600_000))} hours`)
   import { sharesFromPolicy } from '../lib/fees'
+  import { tick } from 'svelte'
+  import { reducedMotion } from '../lib/motion'
   import { poll } from '../lib/poll'
   import { setHashQuery } from '../lib/query'
   import FeeSplit from '../components/FeeSplit.svelte'
@@ -14,6 +16,7 @@
   import Pager from '../components/Pager.svelte'
   import CountUp from '../components/CountUp.svelte'
   import VerifyRound from '../components/VerifyRound.svelte'
+  import Strata from '../components/Strata.svelte'
   import Lamp from '../components/room/Lamp.svelte'
 
   let t = $state<Treasury | null>(null)
@@ -64,6 +67,14 @@
     page = Math.min(Math.max(1, p), pages)
     setHashQuery('page', page > 1 ? String(page) : null)
     document.getElementById('ep-h')?.scrollIntoView()
+  }
+  // from the layers to the round's own entry: turn to its page, then bring it into view
+  async function showRound(id: string) {
+    const i = epochs?.findIndex((e) => e.id === id) ?? -1
+    if (i < 0) return
+    goPage(Math.floor(i / PAGE) + 1)
+    await tick()
+    document.getElementById(`round-${id}`)?.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'center' })
   }
   // the stamp's date, set like a cancellation mark: "28 OCT 2026"
   const stampDate = (iso: string) => new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase()
@@ -169,9 +180,10 @@
     {:else if epochs.length === 0}
       <p class="muted">No payout rounds yet.</p>
     {:else}
+      <Strata {epochs} {checked} onshow={showRound} />
       <div class="rows onpaper">
         {#each shownEpochs as e (e.id)}
-          <article class="row" class:stamped={e.solanaPayouts.sigs.length > 0 && e.shielded.zcashTxids.length > 0}>
+          <article class="row" id="round-{e.id}" class:stamped={e.solanaPayouts.sigs.length > 0 && e.shielded.zcashTxids.length > 0}>
             {#if e.solanaPayouts.sigs.length > 0 && e.shielded.zcashTxids.length > 0}
               <span class="stamp"><Postmark n={numberOf(e.id)} date={stampDate(e.at)} /></span>
             {/if}

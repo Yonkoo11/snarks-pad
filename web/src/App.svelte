@@ -8,7 +8,10 @@
   import LayerHost from './components/layers/LayerHost.svelte'
   import Crumbs from './components/layers/Crumbs.svelte'
   import PeekCard from './components/layers/PeekCard.svelte'
+  import TapeRail from './components/layers/TapeRail.svelte'
   import { layers } from './lib/layers.svelte'
+  import { audit } from './lib/audit.svelte'
+  import AuditToggle from './components/AuditToggle.svelte'
   import { router } from './lib/router.svelte'
   import { reducedMotion } from './lib/motion'
   import Home from './routes/Home.svelte'
@@ -52,6 +55,17 @@
     addEventListener('pointermove', onMove, { passive: true })
     return () => { removeEventListener('pointermove', onMove); cancelAnimationFrame(raf) }
   })
+  // a: the audit view, anywhere outside a field; never while a modifier is held
+  $effect(() => {
+    const onA = (e: KeyboardEvent) => {
+      if (e.key !== 'a' || e.metaKey || e.ctrlKey || e.altKey || e.defaultPrevented) return
+      const t = e.target
+      if (t instanceof HTMLElement && t.closest('input, select, textarea, [contenteditable]')) return
+      audit.toggle()
+    }
+    addEventListener('keydown', onA)
+    return () => removeEventListener('keydown', onA)
+  })
   let firstRoute = true
   $effect(() => {
     r.name
@@ -68,7 +82,7 @@
 <ModeBanner />
 <PauseBanner />
 <Nav />
-{#if r.name === 'coin'}<div class="wrap pathbar"><Crumbs /></div>{/if}
+{#if r.name === 'coin'}<div class="wrap pathbar"><Crumbs /><AuditToggle /></div>{/if}
 <main bind:this={mainEl} tabindex="-1">
   {#if r.name === 'home'}<Home />
   {:else if r.name === 'coin'}{#key r.mint}<CoinPage mint={r.mint} />{/key}
@@ -90,10 +104,11 @@
 </main>
 <Footer />
 <BottomBar />
+<TapeRail />
 </div>
 
 <style>
   .base { display: contents; }
-  .pathbar { padding-top: 0; padding-bottom: 0; margin-top: calc(-1 * var(--s-2)); }
+  .pathbar { padding-top: 0; padding-bottom: 0; margin-top: calc(-1 * var(--s-2)); display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; }
   .missing { padding-top: var(--s-8); display: grid; gap: var(--s-5); justify-items: start; }
 </style>

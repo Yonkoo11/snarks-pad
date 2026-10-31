@@ -1,6 +1,9 @@
 <script lang="ts">
   import { api } from '../../lib/api'
   import type { IndexCoin } from '../../lib/types'
+  import { layers, dossierKey, type DossierTab } from '../../lib/layers.svelte'
+  import { compare } from '../../lib/compare.svelte'
+  import { audit } from '../../lib/audit.svelte'
   // The paper index: press / anywhere (outside a field) and a slip of destinations opens - the four
   // places, the acts, and every coin by name or ticker. One keyboard model: arrows move, Enter goes,
   // Escape closes; the list is a listbox with aria-activedescendant. Fast travel for traders, and
@@ -20,14 +23,36 @@
     { label: 'Shielded delivery', hint: 'seal the envelope', href: '#/shielded' },
     { label: 'How the pad works', hint: 'the route a fee takes', href: '#/how' },
   ]
-  type Row = { id: string; label: string; hint: string; href: string }
+  // a row goes to a page (href) or runs an act (run); on a coin, Shift+Enter opens its sheet instead of its page
+  type Row = { id: string; label: string; hint: string; href?: string; run?: () => void; sheet?: () => void }
+  const openSheet = (c: IndexCoin, tab: DossierTab = 'trades') => () => layers.open({ kind: 'dossier', key: dossierKey(c.mint, tab), title: `$${c.symbol}` })
+  const ACTS: { label: string; hint: string; run: () => void }[] = [
+    { label: 'compare', hint: 'open the compare shelf', run: () => layers.open({ kind: 'compare', key: 'compare', title: 'Compare' }) },
+    { label: 'tape', hint: 'the live tape, full height', run: () => layers.open({ kind: 'tape', key: 'tape', title: 'Live tape' }) },
+    { label: 'audit', hint: 'show where every number comes from', run: () => audit.toggle() },
+    { label: 'clear', hint: 'empty the compare shelf', run: () => compare.clear() },
+  ]
+  const TABS = ['trades', 'holders', 'rewards'] as const
   const rows = $derived.by<Row[]>(() => {
-    const needle = q.trim().toLowerCase()
+    const raw = q.trim().toLowerCase()
+    // "> compare": the acts
+    if (raw.startsWith('>')) {
+      const w = raw.slice(1).trim()
+      return ACTS.filter((a) => !w || a.label.includes(w)).map((a, i) => ({ id: `pal-a${i}`, label: `> ${a.label}`, hint: a.hint, run: a.run }))
+    }
+    // "snarks holders" or "coin:snarks holders": a coin's tab, as a sheet
+    const m = raw.match(/^(?:coin:)?(.+?)\s+(trades|holders|rewards)$/)
+    if (m) {
+      const tab = m[2] as DossierTab
+      return coins.filter((c) => c.name.toLowerCase().includes(m[1]) || c.symbol.toLowerCase().includes(m[1])).slice(0, 8)
+        .map((c, i) => ({ id: `pal-t${i}`, label: `${c.name} / ${tab}`, hint: `$${c.symbol}, opens as a sheet`, run: openSheet(c, tab) }))
+    }
+    const needle = raw
     const places = PLACES.filter((p) => !needle || p.label.toLowerCase().includes(needle) || p.hint.includes(needle))
       .map((p, i) => ({ id: `pal-p${i}`, ...p }))
     const cs = (needle ? coins.filter((c) => c.name.toLowerCase().includes(needle) || c.symbol.toLowerCase().includes(needle)) : coins)
       .slice(0, 8)
-      .map((c, i) => ({ id: `pal-c${i}`, label: c.name, hint: `$${c.symbol}`, href: `#/coin/${c.mint}` }))
+      .map((c, i) => ({ id: `pal-c${i}`, label: c.name, hint: `$${c.symbol}`, href: `#/coin/${c.mint}`, sheet: openSheet(c) }))
     return [...places, ...cs]
   })
   $effect(() => { rows; active = 0 })
@@ -38,10 +63,12 @@
     if (coins.length === 0) api.coinIndex().then((r) => (coins = r.coins), () => {})
     setTimeout(() => box?.focus(), 0)
   }
-  function go(r: Row | undefined) {
+  function go(r: Row | undefined, asSheet = false) {
     if (!r) return
     open = false
-    location.hash = r.href.slice(1)
+    if (asSheet && r.sheet) { r.sheet(); return }
+    if (r.run) { r.run(); return }
+    if (r.href) location.hash = r.href.slice(1)
   }
   function onGlobalKey(e: KeyboardEvent) {
     if (open) return
@@ -55,7 +82,7 @@
     if (e.key === 'Escape') { e.stopPropagation(); open = false; return }
     if (e.key === 'ArrowDown') { e.preventDefault(); active = Math.min(active + 1, rows.length - 1) }
     else if (e.key === 'ArrowUp') { e.preventDefault(); active = Math.max(active - 1, 0) }
-    else if (e.key === 'Enter') { e.preventDefault(); go(rows[active]) }
+    else if (e.key === 'Enter') { e.preventDefault(); go(rows[active], e.shiftKey) }
   }
   $effect(() => {
     addEventListener('keydown', onGlobalKey)
@@ -70,7 +97,7 @@
     <input
       bind:this={box}
       class="input mono q"
-      placeholder="Type a coin or a page&hellip;"
+      placeholder="A coin, a page, 'snarks holders' or '> compare'&hellip;"
       role="combobox"
       aria-expanded="true"
       aria-controls="pal-list"
@@ -87,7 +114,7 @@
       {/each}
       {#if rows.length === 0}<li class="none muted">Nothing matches.</li>{/if}
     </ul>
-    <p class="foot muted">&uarr;&darr; move &middot; Enter go &middot; Esc close</p>
+    <p class="foot muted">&uarr;&darr; move &middot; Enter go &middot; Shift+Enter a coin's sheet &middot; Esc close</p>
   </div>
 {/if}
 

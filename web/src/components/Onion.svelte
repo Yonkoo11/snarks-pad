@@ -78,7 +78,7 @@
       </li>
     {/each}
   </ul>
-  <p class="muted note">Time is shared. Each line is scaled to its own price range, so overlap means the coins moved together, not that they cost the same. Dotted stretches are time with no trades.</p>
+  <p class="muted onote">Time is shared. Each line is scaled to its own price range, so overlap means the coins moved together, not that they cost the same. Dotted stretches are time with no trades.</p>
 </div>
 
 <style>
@@ -90,5 +90,5 @@
   .key li { display: flex; align-items: center; gap: var(--s-3); flex-wrap: wrap; }
   .sw0 { color: var(--ink); } .sw1 { color: var(--ink-2); } .sw2 { color: var(--ink-3); }
   .rng { font-variant-numeric: tabular-nums; }
-  .note { font-size: var(--t-12); max-width: 64ch; }
+  .onote { font-size: var(--t-12); max-width: 64ch; }
 </style>

@@ -9,6 +9,7 @@
   import { zec, countdown } from '../lib/format'
   import { lastLook, lookDelta, recordLook, snapOf } from '../lib/looked'
   import ConcRule from './ConcRule.svelte'
+  import Prov from './Prov.svelte'
 
   const { coin, pot, now }: { coin: Coin; pot: Pot | null | undefined; now: number } = $props()
 
@@ -48,17 +49,17 @@
 
 <dl class="strip" aria-label="Before you buy">
   <div>
-    <dt class="label">Supply</dt>
+    <dt class="label">Supply<Prov label="supply split" src="Holder list aggregates from the pad API, the keeper's sample or the chain" note="Ten largest eligible wallets, the creator and the pool vaults as shares of total supply." {now} /></dt>
     <dd class="viz">{#if extras}<ConcRule top10={extras.top10Pct} dev={extras.devPct} pool={extras.poolPct} w={64} />{:else}<span class="mono">–</span>{/if}</dd>
     <dd class="mono sub">{extras?.top10Pct != null ? `top10 ${extras.top10Pct}%` : ''}{extras?.devPct != null ? ` · dev ${extras.devPct}%` : ''}</dd>
   </div>
   <div>
-    <dt class="label">Since you looked</dt>
+    <dt class="label">Since you looked<Prov label="since you looked" src="This browser's own record of the last time you opened this coin" note="Nobody else sees it and it is not on a server." {now} /></dt>
     <dd class="mono">{delta.length ? delta.join(', ') : 'no change'}</dd>
     <dd class="mono sub">this browser's own memory</dd>
   </div>
   <div>
-    <dt class="label">Trade lean</dt>
+    <dt class="label">Trade lean<Prov label="trade lean" src={lean ? `The last ${lean.buys + lean.sells} trades the engine records for this coin` : 'The coin\'s recorded trades'} n={lean ? lean.buys + lean.sells : null} note="Counts of buys and sells, not their size. It covers only the window printed under it." {now} /></dt>
     {#if lean}
       <dd class="mono">{lean.buys} buys / {lean.sells} sells</dd>
       <dd class="mono sub">{lean.all ? `all ${lean.buys + lean.sells} recorded trades` : `last 40 trades`} · covers {lean.covers}</dd>
@@ -67,12 +68,12 @@
     {/if}
   </div>
   <div>
-    <dt class="label">Next round / holder</dt>
+    <dt class="label">Next round / holder<Prov label="next round per holder" src="The coin's pot for holders from the pad API, divided by its eligible holder count" note="An even split if the round closed now. The real payout follows the least each wallet held at the round's random checks." {now} /></dt>
     <dd class="mono">{perHolder === null ? '–' : `${zec(perHolder, 6)} ZEC`}</dd>
     <dd class="mono sub">if the round closed now, spread evenly</dd>
   </div>
   <div>
-    <dt class="label">Round pays in</dt>
+    <dt class="label">Round pays in<Prov label="round countdown" src="The pad API's next payout time for this coin" note="A round that finds nothing to claim still ends the countdown." {now} /></dt>
     <dd class="mono">{pot?.nextPayoutAt ? countdown(pot.nextPayoutAt, now) : '–'}</dd>
   </div>
 </dl>
