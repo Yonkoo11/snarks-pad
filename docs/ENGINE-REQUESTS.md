@@ -93,3 +93,5 @@ These touch shared code rather than adding files.
 - `web/src/lib/mock/index.ts`: the mock memoizes key derivation. Opening the compare shelf with three coins went from 13.8 s to 0.6 s because `api.coin` derived dozens of key pairs per call.
 - `web/src/routes/Coin.svelte`: the stats row wraps by width instead of five fixed columns, and its values no longer break across lines.
 - Earlier work on this branch removed duplicated copy from the How page. That text is the owner's, so it needs the owner's yes at review.
+- `web/src/components/VerifyRound.svelte` and `web/src/lib/memoCheck.ts`: the round check now also reads the Solana memo from the chain through the site's RPC (`VITE_RPC`) and compares it with `snarks-pad snapshot <epoch> sha256:<hash>`, the text `engine/src/epoch/snapshotFile.ts` writes. Without a mainnet `VITE_RPC` the check reports that the memo could not be read, never a mismatch.
+- `web/package.json`: `canvas-confetti` (ISC, about 4 KB, loaded on first use) for the graduation cheer; `lightweight-charts` (Apache-2.0) for the coin chart.

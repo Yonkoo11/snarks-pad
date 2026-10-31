@@ -79,6 +79,7 @@ Snarks is one character with a scene per job, so the app does not need a differe
 
 1. **Verify** (built as a separate figure, to be folded in): leans toward the hash while your browser computes, settles beside the stamp on a match, turns away on a mismatch.
 2. **Envelope** (built, `EnvelopeScene.svelte`): the shielded opt-in's envelope with Snarks living in it. Its pose is the state of the flow (`lib/envelope.ts`, tested): only the horns show until a wallet is connected; it stands higher once a valid Zcash address is pasted; your own hold on the seal lifts it, never to the top; a pending request keeps it halfway; a refusal ducks it in and pulls the flap shut with a shake; only the pad's confirmation lets it out, in one arc onto the top of the envelope, the flap shuts behind it and the pink-hatched wax goes on (pink hatching marks shielded things only). While it waits it plays: it ducks inside, comes up somewhere else in the mouth of the envelope with a pop, and leans toward the pointer. With reduced motion every pose is a cut.
+2b. **The slip pile** (built, front page): the Round slip pile is the envelope the companion plays in. It hops onto the top slip's edge, growing to 1.5 times its size as it nears (a whole-figure scale about its feet), then ducks behind the paper, comes up somewhere else along the edge with a squash, leans toward the pointer, and after 14 to 24 seconds hops away and shrinks. It is the same floating figure throughout: a clip along the slip's edge hides what is below the paper, so there is never a second drawing and no box around the page can cut it. The first visit is about 3 seconds after the page loads, later ones about every 40 seconds or more; the menu's "Into the envelope" calls it at once. Only in Roam on a wide screen; a press, a mode change or leaving the page ends it.
 3. **Follow** (built): drag it onto any coin to follow it; it sits on that coin from then on and reports what changed.
 4. **Compare**: walks along the tops of the pinned coins when the compare shelf is open.
 5. **Tape**: sits on the tape rail's header and bounces once on a big trade.
@@ -105,7 +106,7 @@ One drawing carries everything above. The single biggest upgrade is a small set 
 ## Order of work
 
 1. **Engine and reactions** (this pass): robust footing, breathe, look, the full move set, the real-event reactions, the menu, the pose manifest.
-2. **Scenes folded in:** Verify and Envelope become Snarks moving, not separate figures.
+2. **Scenes folded in:** the slip pile is done as Snarks moving. Verify and the shielded envelope are still separate figures.
 3. **Follow, deepened and shared:** the shareable card, the compare walk, the tape and chart scenes.
 4. **Measured polish.**
 5. **Artist poses**, when available.

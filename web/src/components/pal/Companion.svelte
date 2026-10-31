@@ -20,7 +20,6 @@
   import { returning, touchSession } from '../../lib/returning'
   import { readLog, writeLog, remember, changedNote, type Said } from '../../lib/palLog'
   import { cardModel, saveFollowCard } from '../../lib/followcard'
-  import { homeEnv } from '../../lib/homeEnvelope.svelte'
   import { poseSrc, type PoseName } from '../../lib/palPoses'
 
   const W = 70, H = Math.round((70 * 373) / 260) // the drawing's own proportions
@@ -204,6 +203,7 @@
   }
   let sayTimer: ReturnType<typeof setTimeout> | undefined
   function say(text: string, ctx?: { mint: string | null; holders: number | null }) {
+    if (inEnv) return // behind the paper it has nothing to say, and a bubble would be cut by the clip
     if (ctx) { log = remember(log, { at: Date.now(), text, mint: ctx.mint, holders: ctx.holders }); writeLog(log) } // what it volunteered is kept, to be read back
     if (host) { const r = host.getBoundingClientRect(); bubbleSide = r.left < 140 ? 'left' : r.left > innerWidth - 260 ? 'right' : 'mid'; bubbleBelow = r.top < 200 } // under the header's controls, the bubble goes below the figure
     line = text; clearTimeout(sayTimer); sayTimer = setTimeout(() => (line = null), 5400)
@@ -277,39 +277,81 @@
     return () => { stopA(); stopB() }
   })
 
-  // ---- the slip pile on the front page: it hops onto the top slip's edge, steps in behind the paper (the pile's own drawing takes over at the same
-  // spot, so there is one figure on the page throughout), plays there, and steps out again. A press on it, a change of mode or of page ends the visit.
+  // ---- the slip pile on the front page: it hops onto the top slip's edge, growing as it nears, and ducks behind the paper. It is the same floating
+  // figure the whole time: a clip along the slip's top edge hides whatever is below it, so it goes behind the paper without ever being drawn by
+  // the page (and so without being cut by any box around it). It comes up elsewhere along the edge, leans to the pointer, and steps out again.
+  const NEAR = 1.5 // at the pile it stands at this multiple of its own size: closer to the paper, nearer to the viewer
+  const DEPTH = 160 // far enough down that the scaled figure is wholly behind the slip
   let inEnv = false
   let lastVisit = 0
   const sleep = (ms: number) => new Promise<void>((res) => setTimeout(res, ms))
+  const rand = (a: number, b: number) => a + Math.random() * (b - a)
+  const poly = (e: number) => `polygon(-90px -90px, 170px -90px, 170px ${e}px, -90px ${e}px)` // everything above the paper's edge, in the figure's own frame
+  // grows or shrinks about its feet, on the figure inside the host (a scale on the host itself would multiply its translate, its position)
+  function grow(to: number, ms: number, ease = 'ease-in') { if (!fig) return; fig.style.transformOrigin = '50% 100%'; fig.style.transition = `scale ${ms}ms ${ease}`; fig.style.scale = to === 1 ? '' : String(to) }
+  /** true when it went in, played and came back to stand on the edge; false when it could not, or was grabbed on the way */
   async function visitEnvelope(): Promise<boolean> {
     const el = document.querySelector('[data-env-home]')
     if (!el || !host || !body || still) return false
     measureOrigin()
-    const r = el.getBoundingClientRect()
-    if (r.top < H + 100 || r.bottom > innerHeight - 40 || r.width < W + 120) return false // the figure and the whole pile must be on screen
-    const dx = Math.round(30 + Math.random() * Math.max(0, r.width - W - 100))
-    const to = toPage(r.left + dx, r.top - H + 4)
+    const r0 = el.getBoundingClientRect()
+    if (r0.top < H * NEAR + 90 || r0.bottom > innerHeight - 40 || r0.width < W * NEAR + 120) return false // the larger figure and the whole pile must be on screen
+    const edge = () => toPage(0, el.getBoundingClientRect().top + 4).y // the top slip's edge, in page coordinates
+    const where = () => { const q = el.getBoundingClientRect(); return toPage(q.left + rand(30, Math.max(31, q.width - W * NEAR - 60)), q.top - H + 4) }
+    let pos = where()
     perch = null; hovering = false
-    await hop(to)
+    const going = hop(pos)
+    grow(NEAR, 1000) // set after the hop has started: the hop clears running animations as it begins
+    await going
     const at = livePos()
-    if (moving || Math.hypot(at.x - to.x, at.y - to.y) > 4) return false // grabbed or superseded on the way
+    if (moving || Math.hypot(at.x - pos.x, at.y - pos.y) > 4) { grow(1, 300); return false } // grabbed or superseded on the way
+    line = null; menu = false; shelf = false
+    const id = ++moveId // from here on it is this routine's figure; a grab or any other move changes moveId and ends the visit
     inEnv = true; lastVisit = Date.now()
-    try {
-      host.style.clipPath = 'inset(-70px -70px 4px -70px)' // its feet are behind the paper
-      homeEnv.dx = dx; homeEnv.phase = 'in'
-      await tick()
-      host.style.visibility = 'hidden'
-      const until = Date.now() + 14_000 + Math.random() * 10_000
-      while (Date.now() < until && pal.mode === 'roam' && el.isConnected && !dragging) await sleep(300)
-      homeEnv.phase = 'leaving'
-      await sleep(700)
-    } finally {
-      host.style.visibility = ''; host.style.clipPath = ''
-      homeEnv.phase = 'empty'; inEnv = false
+    const alive = () => id === moveId && !dragging && pal.mode === 'roam' && el.isConnected
+    const clip = (y: number) => { if (host) host.style.clipPath = poly(edge() - y) }
+    // one move of the host with the clip riding along, so the paper's edge stays where the paper is
+    const move = async (a: { x: number; y: number }, b: { x: number; y: number }, ms: number, ease: string): Promise<boolean> => {
+      if (!host) return false
+      const e = edge()
+      const anim = host.animate([{ transform: `translate(${a.x}px, ${a.y}px)`, clipPath: poly(e - a.y) }, { transform: `translate(${b.x}px, ${b.y}px)`, clipPath: poly(e - b.y) }], { duration: ms, easing: ease })
+      try { await anim.finished } catch { return false }
+      if (id !== moveId) return false
+      put(b); clip(b.y)
+      return true
     }
-    return true
+    let hidden = false
+    let done = false
+    try {
+      clip(pos.y)
+      await sleep(700)
+      const until = Date.now() + rand(14_000, 24_000)
+      while (alive() && Date.now() < until) {
+        if (!(await move(pos, { x: pos.x, y: pos.y + DEPTH }, 300, 'ease-in'))) break // down behind the paper
+        hidden = true
+        await sleep(rand(900, 2200))
+        if (!alive()) break
+        const n = where(); pos = n // comes up somewhere else along the edge
+        put({ x: pos.x, y: pos.y + DEPTH }); clip(pos.y + DEPTH)
+        if (!(await move({ x: pos.x, y: pos.y + DEPTH }, pos, 420, 'cubic-bezier(.2,.9,.3,1)'))) break
+        hidden = false
+        body.animate([{ transform: 'scale(.92,1.1)' }, { transform: 'scale(1.06,.94)', offset: 0.55 }, { transform: 'scale(1,1)' }], { duration: 520, easing: 'ease-out' })
+        await sleep(rand(1400, 3200))
+      }
+      if (alive() && hidden) { put({ x: pos.x, y: pos.y + DEPTH }); await move({ x: pos.x, y: pos.y + DEPTH }, pos, 420, 'cubic-bezier(.2,.9,.3,1)'); hidden = false }
+      done = alive() && !hidden
+    } finally {
+      if (host) { host.style.clipPath = ''; if (hidden && id === moveId) put(pos) }
+      inEnv = false
+      if (!done) grow(1, 300)
+    }
+    return done
   }
+  async function leaveTo(n: Spot | null) { if (!n) { grow(1, 500, 'ease-out'); return } const going = hopTo(n); grow(1, 700, 'ease-out'); await going }
+  // the menu offers the visit while the pile is on this page; asked for, it goes at once and then carries on
+  let hasPile = $state(false)
+  $effect(() => { void router.route; const t = setTimeout(() => (hasPile = !!document.querySelector('[data-env-home]')), 400); return () => clearTimeout(t) })
+  async function goIn() { if (inEnv) return; poke(); if (await visitEnvelope()) await leaveTo(pick()); else say('The envelope is not fully on screen.') }
 
   // ---- the life: arrive, stand, hop on, doze when nothing happens
   let lastActive = Date.now()
@@ -364,14 +406,14 @@
         void greet()
         if (!stillNow && !localStorage.getItem(hintKey) && !busy() && !returning) { try { localStorage.setItem(hintKey, '1') } catch { /* private window */ } say('Drag me onto a coin to follow it. Press and hold for my settings.') }
         while (!dead) {
-          await wait(12_000 + Math.random() * 12_000)
+          await wait(lastVisit === 0 && document.querySelector('[data-env-home]') ? 2500 : 12_000 + Math.random() * 12_000)
           if (dead) return
           await drain()
           if (mode !== 'roam' || stillNow || busy()) continue
+          if (Date.now() - lastVisit > 40_000 && document.querySelector('[data-env-home]') && (lastVisit === 0 || Math.random() < 0.7)) { poke(); if (await visitEnvelope()) { await leaveTo(pick()); continue } }
           const idle = Date.now() - lastActive
           if (idle > 120_000) { deep = true; continue }
           if (idle > 24_000) { doze = true; continue }
-          if (Date.now() - lastVisit > 75_000 && document.querySelector('[data-env-home]') && (lastVisit === 0 || Math.random() < 0.4)) { if (await visitEnvelope()) { const n = pick(); if (n) await hopTo(n); continue } }
           measureOrigin()
           const next = pick()
           if (next) await hopTo(next)
@@ -591,6 +633,7 @@
       <div class="menu" role="menu" aria-label="Snarks">
         {#each MODES as m (m.id)}<button type="button" role="menuitemradio" aria-checked={pal.mode === m.id} onclick={() => { pal.setMode(m.id); menu = false }}>{m.label}</button>{/each}
         {#if routeMint && pal.adopted !== routeMint}<button type="button" role="menuitem" onclick={() => { const m = routeMint; menu = false; void adopt(m) }}>Follow this coin</button>{/if}
+        {#if hasPile && !still && pal.mode !== 'away'}<button type="button" role="menuitem" onclick={() => { menu = false; void goIn() }}>Into the envelope</button>{/if}
         {#if log.length > 0}<button type="button" role="menuitem" onclick={() => { menu = false; shelf = true }}>Earlier lines ({log.length})</button>{/if}
         {#if pal.adopted && followed && watched()[pal.adopted]}<button type="button" role="menuitem" onclick={() => { menu = false; void makeCard() }}>Save a card of ${followed.symbol}</button>{/if}
         {#if pal.adopted}<button type="button" role="menuitem" onclick={() => { pal.adopt(null); menu = false; say('Not following any coin now.') }}>Stop following{followed ? ` $${followed.symbol}` : ''}</button>{/if}

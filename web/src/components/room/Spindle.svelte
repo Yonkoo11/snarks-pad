@@ -3,16 +3,12 @@
   import { zec, ago } from '../../lib/format'
   import { reducedMotion } from '../../lib/motion'
   import Postmark from '../Postmark.svelte'
-  import { homeEnv } from '../../lib/homeEnvelope.svelte'
-  import { pal } from '../../lib/pal.svelte'
-  import { lookAngle } from '../../lib/palMove'
 
   // The spindle: every payout round as a paper slip on a stack, the latest on top at full size.
   // This is the product's mechanism in the first frame: paid receipts, piled up, one more every
   // round. The stack is real (one slip per round the engine reports, capped at 13 visible), the
   // numbers are the round's own, and the drop choreography plays once on entrance. The one mascot on the page is the companion: it comes to
-  // the pile, steps in behind the paper (the drawing here takes over where it stood), plays, and steps out. With the companion set to Away
-  // the figure lives here instead, so a drawing of it is always on the page, and never two.
+  // the pile and ducks behind the top slip (the companion clips itself along the slip's edge).
   let { epochs, now, newSince = false, paidLine = null, animate = true }: {
     epochs: Epoch[] | null
     now: number
@@ -46,56 +42,6 @@
   const still = $derived(reducedMotion() || !animate)
   let opened = false
   $effect(() => { if (stack) opened = true })
-  const tenant = $derived(pal.mode === 'away' || homeEnv.phase !== 'empty')
-  let ducked = $state(false)
-  let arrived = $state(false) // standing on the top edge, as the companion stood
-  let slide = $state(0)
-  let tilt = $state(0)
-  let popping = $state(false)
-  let pileEl = $state<HTMLElement>()
-  $effect(() => {
-    const ph = homeEnv.phase
-    if (ph === 'in') {
-      slide = 0; arrived = true
-      const t1 = setTimeout(() => { arrived = false; ducked = true }, 650)
-      const t2 = setTimeout(() => { ducked = false }, 1650)
-      return () => { clearTimeout(t1); clearTimeout(t2) }
-    }
-    if (ph === 'leaving') { slide = 0; ducked = false; arrived = true; return () => { arrived = false } }
-    arrived = false
-  })
-  // while it is there it plays: ducks behind the slip, comes up elsewhere along the top edge, leans toward the pointer
-  $effect(() => {
-    if (!tenant || reducedMotion() || !stack || stack.length === 0) { ducked = false; return }
-    let dead = false
-    let t: ReturnType<typeof setTimeout> | undefined
-    const later = (fn: () => void, ms: number) => { t = setTimeout(() => { if (!dead) fn() }, ms) }
-    const loop = () => later(() => {
-      ducked = true
-      later(() => {
-        slide = Math.round((Math.random() * 2 - 1) * 110)
-        ducked = false; popping = true
-        later(() => { popping = false; loop() }, 560)
-      }, 1000)
-    }, 3600 + Math.random() * 3600)
-    later(loop, 2200)
-    return () => { dead = true; clearTimeout(t); ducked = false; popping = false }
-  })
-  $effect(() => {
-    if (!tenant || reducedMotion() || !pileEl) return
-    let raf = 0
-    const move = (e: PointerEvent) => {
-      if (raf) return
-      raf = requestAnimationFrame(() => {
-        raf = 0
-        if (!pileEl) return
-        const r = pileEl.getBoundingClientRect()
-        tilt = lookAngle(e.clientX - (r.left + homeEnv.dx + slide + 35), e.clientY - (r.top - 50), 280, 9)
-      })
-    }
-    addEventListener('pointermove', move, { passive: true })
-    return () => { removeEventListener('pointermove', move); cancelAnimationFrame(raf) }
-  })
   function drop(el: HTMLElement, p: { i: number; n: number; r: number }) {
     if (reducedMotion() || (!animate && !opened)) return
     el.animate(
@@ -116,12 +62,7 @@
     <p class="muted">The first round's receipt lands here once it pays.</p>
   {:else}
     <!-- a group, not an image: the top slip is a real link and must stay reachable to AT -->
-    <div class="pile" data-env-home bind:this={pileEl} role="group" aria-label="{stack.length} payout round receipts, newest on top">
-      {#if tenant}
-        <div class="mascot" class:ducked class:popping style:--dx="{homeEnv.dx}px" style:--slide="{arrived ? 0 : slide}px" aria-hidden="true">
-          <div class="lean" style:transform="rotate({tilt}deg)"><img src="/mascot-cut.webp" alt="" width="70" height="100" draggable="false" /></div>
-        </div>
-      {/if}
+    <div class="pile" data-env-home role="group" aria-label="{stack.length} payout round receipts, newest on top">
       {#each stack as e, i (e.id)}
         {@const p = seat(e.id, i, stack.length)}
         {#if i < stack.length - 1}
@@ -193,20 +134,7 @@
   .stamp { position: absolute; right: 4px; top: 8px; z-index: 3; pointer-events: none; }
   .stamp.pop { animation: pop 300ms var(--ease) 1.05s backwards; }
   @keyframes pop { from { transform: rotate(-9deg) scale(1.5); opacity: 0; } }
-  /* the figure behind the top slip: only its head and body above the edge show, the rest is behind the paper. The pad's one cutout,
-     moved as a whole: slid, tilted, squashed, never altered. 70 x 100 is the companion's own size, so the hand-over is exact. */
-  .mascot {
-    position: absolute; z-index: 1; width: 70px; height: 100px; top: -96px; pointer-events: none;
-    left: clamp(8px, calc(var(--dx) + var(--slide, 0px)), calc(100% - 78px));
-    filter: drop-shadow(0 2px 0 rgba(43, 36, 32, .2));
-    transition: transform 380ms var(--ease);
-  }
-  .mascot.ducked { transform: translateY(120px); transition: transform 240ms ease-in; }
-  .lean { width: 100%; height: 100%; transform-origin: 50% 100%; transition: transform 300ms var(--ease); }
-  .lean img { display: block; width: 100%; height: 100%; transform-origin: 50% 100%; }
-  .mascot.popping .lean img { animation: pop 560ms var(--ease); }
-  @keyframes pop { 0% { transform: scale(.92, 1.1); } 55% { transform: scale(1.06, .94); } 100% { transform: scale(1, 1); } }
-  @media (prefers-reduced-motion: reduce) { .mascot, .lean { transition: none; } .mascot.popping .lean img, .stamp.pop { animation: none; } }
+  @media (prefers-reduced-motion: reduce) { .stamp.pop { animation: none; } }
   /* this line sits on the enamel, inside a paper-pinned subtree: it takes the door's ink, not the paper's */
   .count { font-size: var(--t-14); color: light-dark(#564e46, #bdb2a4); }
   @media (max-width: 640px) {
