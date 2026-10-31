@@ -5,6 +5,7 @@
   import type { FeedTrade } from '../../lib/types'
   import { tradeFeed, type FeedState } from '../../lib/tape'
   import { zec, ago } from '../../lib/format'
+  import { hilite } from '../../lib/hilite.svelte'
 
   const { limit = 30, everyMs = 6000, onpick, now = Date.now() }: { limit?: number; everyMs?: number; onpick: (t: FeedTrade) => void; now?: number } = $props()
 
@@ -40,6 +41,8 @@
     hover = false; scrolled = false
     box?.scrollTo({ top: 0 })
   }
+  // the chart's crosshair lights the tape rows that fall in the candle under it
+  const lit = (t: FeedTrade) => hilite.chartMint === t.mint && hilite.chartAt !== null && Math.floor(Date.parse(t.at) / 1000 / hilite.chartSec) * hilite.chartSec === hilite.chartAt
   const tag = (t: FeedTrade) => (t.tags?.includes('dev') ? 'dev' : null)
 </script>
 
@@ -65,7 +68,7 @@
       <p class="muted pad">No trades yet.</p>
     {:else}
       {#each shown as t (t.sig)}
-        <button class="r" class:new={fresh.has(t.sig)} type="button" onclick={() => onpick(t)} title="Open ${t.symbol}">
+        <button class="r" class:new={fresh.has(t.sig)} class:lit={lit(t)} type="button" onclick={() => onpick(t)} onpointerenter={() => { hilite.tradeAt = Date.parse(t.at) / 1000; hilite.tradeMint = t.mint }} onpointerleave={() => { if (hilite.tradeMint === t.mint) hilite.tradeAt = null }} title="Open ${t.symbol}">
           <span class="side caps {t.side}">{t.side}</span>
           <span class="mono sym">${t.symbol}</span>
           <span class="mono amt">{zec(t.amountZec)}{#if tag(t)}<span class="tg">{tag(t)}</span>{/if}</span>
@@ -89,6 +92,7 @@
     padding: 6px var(--s-3); min-height: 32px; border: 0; border-bottom: 1px solid var(--line); background: none; color: inherit; font: inherit; font-size: var(--t-12); cursor: pointer;
   }
   @media (hover: hover) { .r:hover { background: var(--hover); } }
+  .r.lit { background: var(--pink-soft); box-shadow: inset 2px 0 0 var(--ink); }
   .r.new { animation: trow-in 500ms var(--ease) 1; }
   @keyframes trow-in { from { opacity: 0; transform: translateY(-6px); background: var(--pink-soft); } }
   .side { font-weight: 700; font-size: var(--t-11); letter-spacing: .06em; }

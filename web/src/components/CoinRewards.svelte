@@ -3,6 +3,7 @@
   import { zec, usdOfZats, ago, countdown } from '../lib/format'
   import { solanaTxUrl, zcashTxUrl } from '../lib/explorer'
   import Addr from './Addr.svelte'
+  import BuySim from './BuySim.svelte'
 
   // The Rewards tab: the pot the pool has accrued for this coin and the holders' part of it (contract v2.6 GET /coins/:mint/pot),
   // the countdown, the last round that paid this coin's holders with its public ids, and the running total. `pot` is undefined
@@ -59,6 +60,7 @@
       <div><dt><span class="key hatch" aria-hidden="true"></span>As shielded ZEC</dt><dd class="mono">{zec(paidShd)} ZEC</dd></div>
     </dl>
   </section>
+  <BuySim {coin} {now} />
 </div>
 
 <style>

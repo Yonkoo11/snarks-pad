@@ -6,6 +6,7 @@
   import { solanaAccountUrl } from '../lib/explorer'
   import Addr from './Addr.svelte'
   import Pager from './Pager.svelte'
+  import HolderMap from './HolderMap.svelte'
   import { setHashQuery } from '../lib/query'
 
   // The Holders tab (contract v2.6 GET /coins/:mint/holders): the largest wallets with their share of the total supply, the pool
@@ -14,6 +15,7 @@
   let { mint, coin, mode, now }: { mint: string; coin: Coin; mode: PadMode | null; now: number } = $props()
   let view = $state<Holders | null | undefined>(undefined) // undefined loading, null = this engine has no holder list
   let err = $state(false)
+  let shape = $state<'table' | 'map'>('table')
   // the house list standard: 20 rows a page, numbered, the page in the address (#/coin/:mint?hpage=N)
   const PER = 20
   let page = $state(Math.max(1, Number(new URLSearchParams(location.hash.split('?')[1] || '').get('hpage')) || 1))
@@ -35,7 +37,10 @@
 </script>
 
 <div class="holders">
-  {#if err}
+  <div class="seg shape" role="group" aria-label="How to show the holders"><button type="button" aria-pressed={shape === 'table'} onclick={() => (shape = 'table')}>Table</button><button type="button" aria-pressed={shape === 'map'} onclick={() => (shape = 'map')}>Map</button></div>
+  {#if shape === 'map'}
+    <HolderMap {coin} {now} />
+  {:else if err}
     <div class="state"><p class="error">Could not load the holders.</p><button class="btn" type="button" onclick={load}>Try again</button></div>
   {:else if view === undefined}
     <div class="skel sk" aria-busy="true" role="status" aria-label="Loading the holders"></div>
@@ -84,4 +89,6 @@
   .num { text-align: right; }
   .note { font-size: var(--t-14); max-width: 66ch; }
   @media (max-width: 640px) { .hrow { grid-template-columns: 40px minmax(0, 1fr) 72px; } }
+  .shape { width: max-content; margin-bottom: var(--s-3); }
+  .shape button { min-height: 36px; padding: 0 var(--s-4); font-size: var(--t-14); }
 </style>
