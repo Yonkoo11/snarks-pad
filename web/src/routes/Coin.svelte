@@ -16,7 +16,9 @@
   import { layers, dossierKey, type DossierTab } from '../lib/layers.svelte'
   import { reducedMotion } from '../lib/motion'
   import { monoNow, secondsLeft } from '../lib/window'
-  import PriceChart from '../components/PriceChart.svelte'
+  import TradeChart from '../components/TradeChart.svelte'
+  import MarketStrip from '../components/MarketStrip.svelte'
+  import ChainTrades from '../components/ChainTrades.svelte'
   import CoinImage from '../components/CoinImage.svelte'
   import DecisionStrip from '../components/DecisionStrip.svelte'
   import Prov from '../components/Prov.svelte'
@@ -25,7 +27,6 @@
   import FeeSplit from '../components/FeeSplit.svelte'
   import Addr from '../components/Addr.svelte'
   import BuyBox from '../components/BuyBox.svelte'
-  import TradesTape from '../components/TradesTape.svelte'
   import HoldersTable from '../components/HoldersTable.svelte'
   import CoinRewards from '../components/CoinRewards.svelte'
   import FixedPanel from '../components/FixedPanel.svelte'
@@ -42,7 +43,6 @@
   const POLL_MS = 6_000
   // While a launch window is open the coin is read every second: the engine's word that the window has closed is what opens Buy (lib/window.ts), so the page asks often.
   const WINDOW_POLL_MS = 1_000
-  const MAX_TRADES = 25 // the engine keeps no older trades to page to; the cap is said under the list
   let now = $state(Date.now())
   let pollErr = $state(false)
   let mode = $state<PadMode | null>(null)
@@ -77,9 +77,6 @@
   $effect(() => { if (coin) document.title = `${coin.name} ($${coin.symbol}), SNARKS pad` })
   // the breadcrumb names this page by its ticker, and forgets it when the page goes
   $effect(() => { if (coin) layers.routeLabel = `$${coin.symbol}`; return () => { layers.routeLabel = null } })
-  // The coin's own recent trades stand in for the tape on an engine without /coins/:mint/trades (v2.5).
-  const fallbackTrades = $derived<FeedTrade[]>(coin ? coin.recentTrades.slice(0, MAX_TRADES).map((t) => ({ ...t, mint, symbol: coin!.symbol, tags: t.wallet === coin!.creator ? ['dev' as const] : [] })) : [])
-  const liveNote = $derived(pollErr ? `Lost the connection to the pad. Trying again every ${POLL_MS / 1000}s.` : null)
 
   // ---- tabs: Trades, Holders, Rewards, What is fixed. A switch animates nothing; a tab's data loads when it is first shown.
   type Tab = 'trades' | 'holders' | 'rewards' | 'fixed'
@@ -244,7 +241,8 @@
         </div>
       </header>
 
-      <PriceChart {mint} symbol={coin.symbol} />
+      <TradeChart {coin} {epochs} {mode} />
+      <MarketStrip {coin} {mode} />
 
       <dl class="stats">
         <!-- price and market cap are absent while the engine cannot read the chain and never has for this coin (contract v2.8.1): a dash, never 0 -->
@@ -282,7 +280,7 @@
         </div>
         <div class="panel-body" role="tabpanel" id="panel-{tab}" aria-labelledby="tab-{tab}">
           {#if tab === 'trades'}
-            <TradesTape {mint} creators={{ [mint]: coin.creator }} fallback={fallbackTrades} fallbackNote={liveNote} limit={MAX_TRADES} everyMs={POLL_MS} {mode} {now} />
+            <ChainTrades {coin} {mode} {now} />
           {:else if tab === 'holders'}
             <HoldersTable {mint} {coin} {mode} {now} />
           {:else if tab === 'rewards'}
@@ -357,7 +355,7 @@
   .trow { display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap; }
   .meta { font-size: var(--t-14); }
   .desc { font-size: var(--t-16); }
-  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(max-content, 1fr)); justify-content: start; gap: var(--s-4) var(--s-6); margin: 0; }
+  .stats { display: flex; flex-wrap: wrap; gap: var(--s-4) var(--s-6); margin: 0; }
   .stats dd { margin: var(--s-1) 0 0; font-size: var(--t-20); font-weight: 500; white-space: nowrap; }
   .stats dd.usd { margin-top: 0; font-size: var(--t-14); font-weight: 400; color: var(--ink-2); }
   /* the trust line: a plain paper strip, the mark drawn like the Token info tab's own, the whole line a button into that tab */
@@ -430,7 +428,7 @@
     .stats { grid-template-columns: repeat(2, auto); gap: var(--s-4) var(--s-6); }
     .stats dd { font-size: var(--t-16); }
     .main, .side-col { display: contents; }
-    .head { order: 1; } .trade-slot { order: 2; } .pot-slot { order: 3; } .main > :global(.chart) { order: 3; } .stats { order: 4; } .main > :global(.strip) { order: 4; } .fixedline { order: 5; } .tabs-sec { order: 6; } .main > :global(.fs) { order: 7; } .creator, .ref { order: 8; } .cta { order: 9; }
+    .head { order: 1; } .trade-slot { order: 2; } .pot-slot { order: 3; } .main > :global(.tc) { order: 3; } .main > :global(.ms) { order: 3; } .stats { order: 4; } .main > :global(.strip) { order: 4; } .fixedline { order: 5; } .tabs-sec { order: 6; } .main > :global(.fs) { order: 7; } .creator, .ref { order: 8; } .cta { order: 9; }
   }
   @media (max-width: 640px) {
     /* the buy box sits inside the first screen: a tighter top, the description on two lines (the full text sits under the box in the tabs' pages anyway) */

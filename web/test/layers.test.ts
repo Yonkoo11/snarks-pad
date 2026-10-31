@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { parseLayerKey, dossierKey, dossierMint, dossierTab } from '../src/lib/layerKeys'
+import { parseLayerKey, dossierKey, dossierMint, dossierTab, walletKey, walletParts } from '../src/lib/layerKeys'
 import { tornClip } from '../src/lib/torn'
 
 const MINT = 'DhZPXBgZ2djguHoTcMByoHxFFQcaR1e1KyKx6gL8uybA'
@@ -18,6 +18,12 @@ describe('layer keys', () => {
   test('compare and tape are layers of their own', () => {
     expect(parseLayerKey('compare')?.kind).toBe('compare')
     expect(parseLayerKey('tape')?.kind).toBe('tape')
+  })
+  test('a wallet layer names a wallet and the coin it is looked at in', () => {
+    const k = walletKey(MINT, MINT)
+    expect(parseLayerKey(k)?.kind).toBe('wallet')
+    expect(walletParts(k)).toEqual({ wallet: MINT, mint: MINT })
+    expect(parseLayerKey('wallet:short:short')).toBeNull()
   })
   test('anything else is no layer: a mistyped link opens nothing', () => {
     expect(parseLayerKey(null)).toBeNull()

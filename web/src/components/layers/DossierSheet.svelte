@@ -3,7 +3,7 @@
   // over the page you were on, so the ledger keeps its place and the coin page keeps its chart. It reads the same endpoints
   // the coin page does and says where each came from in the line at the foot.
   import { api, onMode, routeAbsent } from '../../lib/api'
-  import type { CoinDetail, Epoch, FeedTrade, PadMode, Pot, Treasury } from '../../lib/types'
+  import type { CoinDetail, Epoch, PadMode, Pot, Treasury } from '../../lib/types'
   import { layers, dossierMint, dossierTab, dossierKey, type DossierTab } from '../../lib/layers.svelte'
   import { pricePerMillion, zec, ago, feeChip } from '../../lib/format'
   import { zecUsd } from '../../lib/usd.svelte'
@@ -14,7 +14,7 @@
   import CoinImage from '../CoinImage.svelte'
   import LiveNumber from '../LiveNumber.svelte'
   import DecisionStrip from '../DecisionStrip.svelte'
-  import TradesTape from '../TradesTape.svelte'
+  import ChainTrades from '../ChainTrades.svelte'
   import HoldersTable from '../HoldersTable.svelte'
   import CoinRewards from '../CoinRewards.svelte'
 
@@ -58,7 +58,6 @@
   $effect(() => poll(load, 6_000))
   $effect(() => poll(loadSide, 10_000))
 
-  const fallbackTrades = $derived<FeedTrade[]>(coin ? coin.recentTrades.slice(0, 25).map((t) => ({ ...t, mint, symbol: coin!.symbol, tags: t.wallet === coin!.creator ? ['dev' as const] : [] })) : [])
   const pinned = $derived(compare.has(mint))
 </script>
 
@@ -97,7 +96,7 @@
   </div>
   <div role="tabpanel" id="dp-{tab}" aria-labelledby="dt-{tab}" class="panel-body">
     {#if tab === 'trades'}
-      <TradesTape {mint} creators={{ [mint]: coin.creator }} fallback={fallbackTrades} limit={25} everyMs={6_000} {mode} {now} chartNote={false} />
+      <ChainTrades {coin} {mode} {now} />
     {:else if tab === 'holders'}
       <HoldersTable {mint} {coin} {mode} {now} />
     {:else}

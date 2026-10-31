@@ -5,6 +5,7 @@
   import Sheet from './Sheet.svelte'
   import DossierSheet from './DossierSheet.svelte'
   import CompareTray from './CompareTray.svelte'
+  import WalletSheet from './WalletSheet.svelte'
 
   const Compare = () => import('./CompareSheet.svelte')
   const TapeSheet = () => import('./TapeSheet.svelte')
@@ -29,6 +30,7 @@
 {#each layers.stack as l, i (l.uid)}
   <Sheet layer={l} below={n - 1 - i}>
     {#if l.kind === 'dossier'}<DossierSheet layerKey={l.key} />
+    {:else if l.kind === 'wallet'}<WalletSheet layerKey={l.key} />
     {:else if l.kind === 'compare'}{#await Compare()}<div class="skel" style="height: 160px" aria-busy="true"></div>{:then M}<M.default />{:catch e}<p class="error" role="alert">Could not open the shelf: {e?.message ?? 'load failed'}</p>{/await}
     {:else}{#await TapeSheet() then M}<M.default />{/await}{/if}
   </Sheet>

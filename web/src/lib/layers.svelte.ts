@@ -4,7 +4,7 @@
 // the stack. Peeks (hover cards) are not layers: they never touch history.
 import { setHashQuery, hashQuery } from './query'
 import { parseLayerKey, type Layer } from './layerKeys'
-export { parseLayerKey, dossierKey, dossierMint, dossierTab, type Layer, type LayerKind, type DossierTab } from './layerKeys'
+export { parseLayerKey, dossierKey, dossierMint, dossierTab, walletKey, walletParts, type Layer, type LayerKind, type DossierTab } from './layerKeys'
 
 const pathOf = () => location.hash.split('?')[0]
 let uids = 0
