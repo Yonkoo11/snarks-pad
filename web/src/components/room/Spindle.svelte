@@ -2,14 +2,13 @@
   import type { Epoch } from '../../lib/types'
   import { zec, ago } from '../../lib/format'
   import { reducedMotion } from '../../lib/motion'
-  import { lookAngle } from '../../lib/palMove'
   import Postmark from '../Postmark.svelte'
 
   // The spindle: every payout round as a paper slip on a stack, the latest on top at full size.
   // This is the product's mechanism in the first frame: paid receipts, piled up, one more every
   // round. The stack is real (one slip per round the engine reports, capped at 13 visible), the
-  // numbers are the round's own, and the drop choreography plays once on entrance. The mascot
-  // peeks from behind the pile, whole object, pixels untouched.
+  // numbers are the round's own, and the drop choreography plays once on entrance. The one mascot on the page is the companion; the
+  // envelope below the pile is where it goes to play.
   let { epochs, now, newSince = false, paidLine = null, animate = true }: {
     epochs: Epoch[] | null
     now: number
@@ -43,43 +42,6 @@
   const still = $derived(reducedMotion() || !animate)
   let opened = false
   $effect(() => { if (stack) opened = true })
-  // the figure behind the pile: it ducks out of sight, comes up somewhere else along the slip's top edge, and leans toward the pointer
-  let ducked = $state(false)
-  let slide = $state(0)
-  let tilt = $state(0)
-  let popping = $state(false)
-  let scene = $state<HTMLElement>()
-  $effect(() => {
-    if (reducedMotion() || !stack || stack.length === 0) return
-    let dead = false
-    let t: ReturnType<typeof setTimeout> | undefined
-    const later = (fn: () => void, ms: number) => { t = setTimeout(() => { if (!dead) fn() }, ms) }
-    const loop = () => later(() => {
-      ducked = true
-      later(() => {
-        slide = Math.round((Math.random() * 2 - 1) * 70)
-        ducked = false; popping = true
-        later(() => { popping = false; loop() }, 560)
-      }, 1000)
-    }, 7000 + Math.random() * 7000)
-    later(loop, 1800)
-    return () => { dead = true; clearTimeout(t); ducked = false; popping = false }
-  })
-  $effect(() => {
-    if (reducedMotion() || !scene) return
-    let raf = 0
-    const move = (e: PointerEvent) => {
-      if (raf) return
-      raf = requestAnimationFrame(() => {
-        raf = 0
-        if (!scene) return
-        const r = scene.getBoundingClientRect()
-        tilt = lookAngle(e.clientX - (r.left + 80 + slide), e.clientY - (r.top - 40), 280, 9)
-      })
-    }
-    addEventListener('pointermove', move, { passive: true })
-    return () => { removeEventListener('pointermove', move); cancelAnimationFrame(raf) }
-  })
   function drop(el: HTMLElement, p: { i: number; n: number; r: number }) {
     if (reducedMotion() || (!animate && !opened)) return
     el.animate(
@@ -93,15 +55,12 @@
   }
 </script>
 
-<div class="scene" bind:this={scene}>
+<div class="scene">
   {#if stack === null}
     <div class="skel" style="height: 380px; width: min(400px, 86vw)" aria-busy="true" role="status" aria-label="Loading the payout rounds"></div>
   {:else if stack.length === 0}
     <p class="muted">The first round's receipt lands here once it pays.</p>
   {:else}
-    <div class="mascot" class:ducked class:popping class:still style:--slide="{slide}px" aria-hidden="true">
-      <div class="lean" style:transform="rotate({tilt}deg)"><img src="/mascot-cut.webp" alt="" width="96" height="138" draggable="false" /></div>
-    </div>
     <!-- a group, not an image: the top slip is a real link and must stay reachable to AT -->
     <div class="pile" role="group" aria-label="{stack.length} payout round receipts, newest on top">
       {#each stack as e, i (e.id)}
@@ -175,29 +134,12 @@
   .stamp { position: absolute; right: 4px; top: 8px; z-index: 3; pointer-events: none; }
   .stamp.pop { animation: pop 300ms var(--ease) 1.05s backwards; }
   @keyframes pop { from { transform: rotate(-9deg) scale(1.5); opacity: 0; } }
-  /* the mascot genuinely peeks: its body sits BEHIND the top slip (z 1 under the slip's 2), only the head and horns rise over the
-     paper's edge. The drawing is the pad's one cutout, moved as a whole: slid, tilted, squashed, never altered. */
-  .mascot {
-    position: absolute; z-index: 1; width: 96px; height: 138px; left: calc(16px + var(--slide, 0px)); top: -94px; pointer-events: none;
-    filter: drop-shadow(0 2px 0 rgba(43, 36, 32, .2));
-    transition: transform 380ms var(--ease), left 0ms;
-    animation: peek 900ms var(--ease) both;
-  }
-  .mascot.ducked { transform: translateY(120px); transition: transform 240ms ease-in; }
-  .lean { width: 100%; height: 100%; transform-origin: 50% 100%; transition: transform 300ms var(--ease); }
-  .lean img { display: block; width: 100%; height: 100%; transform-origin: 50% 100%; animation: sway 14s ease-in-out 1.4s infinite; }
-  .mascot.popping .lean img { animation: pop 560ms var(--ease); }
-  @keyframes peek { from { transform: translateY(60px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-  @keyframes sway { 0%, 100% { rotate: 0deg; } 50% { rotate: -2deg; } }
-  @keyframes pop { 0% { transform: scale(.92, 1.1); } 55% { transform: scale(1.06, .94); } 100% { transform: scale(1, 1); } }
-  .mascot.still, .mascot.still .lean img { animation: none; }
-  @media (prefers-reduced-motion: reduce) { .mascot, .mascot .lean img { animation: none; transition: none; } .stamp.pop { animation: none; } }
+  @media (prefers-reduced-motion: reduce) { .stamp.pop { animation: none; } }
   /* this line sits on the enamel, inside a paper-pinned subtree: it takes the door's ink, not the paper's */
   .count { font-size: var(--t-14); color: light-dark(#564e46, #bdb2a4); }
   @media (max-width: 640px) {
     .topslip { padding-right: var(--s-5); padding-top: calc(var(--s-5) + 26px); }
     .stamp { top: -12px; right: 6px; }
     .stamp :global(.pm) { width: 64px; height: 64px; }
-    .mascot { width: 76px; height: 109px; left: calc(12px + var(--slide, 0px) * .4); top: -72px; }
   }
 </style>

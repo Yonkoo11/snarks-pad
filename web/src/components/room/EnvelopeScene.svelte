@@ -8,9 +8,17 @@
   import { envelopePose, type EnvState } from '../../lib/envelope'
   import { planHop, pathFrames, bodyFrames, lookAngle } from '../../lib/palMove'
   import { reducedMotion } from '../../lib/motion'
+  import { homeEnv } from '../../lib/homeEnvelope.svelte'
+  import { pal } from '../../lib/pal.svelte'
 
-  const { flow }: { flow: EnvState } = $props()
-  const W = 220, ENV_H = 165, MW = 64, MH = Math.round((64 * 373) / 260), POCKET = 92, FLAP_TOP = 62
+  // home: the envelope on the pad's front page. It holds no figure of its own: Snarks is inside only while the companion has
+  // gone in (homeEnv), or all the time when the companion is set to Away, so exactly one drawing of it is ever on the page.
+  const { flow, home = false, figW = 64 }: { flow: EnvState; home?: boolean; figW?: number } = $props()
+  const W = 220, ENV_H = 165, POCKET = 92, FLAP_TOP = 62
+  // svelte-ignore state_referenced_locally
+  const MW = figW, MH = Math.round((figW * 373) / 260)
+  const tenant = $derived(!home || pal.mode === 'away' || homeEnv.phase !== 'empty')
+  let arrived = $state(false) // just stepped in or about to step out: standing in the mouth at the height the companion stood
   const pose = $derived(envelopePose(flow))
 
   let who = $state<HTMLDivElement>()
@@ -28,7 +36,7 @@
   let popping = $state(false)
 
   // ---- where it stands in the envelope: how much of it shows above the pocket's edge
-  const rise = $derived(flow.done ? 1 : ducked ? 0 : Math.min(0.92, pose.rise + (near && (pose.mood === 'wait' || pose.mood === 'ready') ? 0.1 : 0)))
+  const rise = $derived(flow.done ? 1 : arrived ? 0.86 : ducked ? 0 : Math.min(0.92, pose.rise + (near && (pose.mood === 'wait' || pose.mood === 'ready') ? 0.1 : 0)))
   const sitting = $derived(flow.done && landed)
   const left = $derived(W / 2 - MW / 2 + (flow.done ? 0 : offsetX))
   const top = $derived(flow.done ? FLAP_TOP - MH + 8 : POCKET - rise * MH * 0.86)
@@ -61,9 +69,22 @@
   })
 
   // ---- while it waits, it plays: ducks in, comes up somewhere else in the mouth of the envelope
+  // the companion stepping in or out (home only): it stands in the mouth, then ducks and plays; on the way out it stands there again
+  $effect(() => {
+    if (!home) return
+    const ph = homeEnv.phase
+    if (ph === 'in') {
+      offsetX = 0; arrived = true
+      const t1 = setTimeout(() => { arrived = false; ducked = true }, 650)
+      const t2 = setTimeout(() => { ducked = false }, 1650)
+      return () => { clearTimeout(t1); clearTimeout(t2) }
+    }
+    if (ph === 'leaving') { offsetX = 0; ducked = false; arrived = true; return () => { arrived = false } }
+    arrived = false
+  })
   $effect(() => {
     const mood = pose.mood
-    if (reducedMotion() || (mood !== 'wait' && mood !== 'ready')) { ducked = false; return }
+    if (!tenant || reducedMotion() || (mood !== 'wait' && mood !== 'ready')) { ducked = false; return }
     let dead = false
     let t: ReturnType<typeof setTimeout> | undefined
     const later = (fn: () => void, ms: number) => { t = setTimeout(() => { if (!dead) fn() }, ms) }
@@ -98,7 +119,7 @@
   })
 </script>
 
-<div class="env" class:duck={pose.mood === 'duck'} class:hold={pose.mood === 'hold'} bind:this={root} style:width="{W}px" style:height="{ENV_H}px" aria-hidden="true">
+<div class="env" data-env-home={home ? '' : undefined} class:duck={pose.mood === 'duck'} class:hold={pose.mood === 'hold'} bind:this={root} style:width="{W}px" style:height="{ENV_H}px" aria-hidden="true">
   <!-- behind the figure: the back of the envelope and its open flap -->
   <svg class="layer" viewBox="0 0 {W} {ENV_H}" width={W} height={ENV_H}>
     <polygon class="flap-open" points="4,{FLAP_TOP} {W - 4},{FLAP_TOP} {W / 2},118" style:transform="scaleY({-backFlap})" style:transform-origin="0 {FLAP_TOP}px" />
@@ -106,9 +127,11 @@
   </svg>
 
   <!-- the figure, between the back and the pocket -->
+  {#if tenant}
   <div class="who" class:front class:popping bind:this={who} style:left="{left}px" style:top="{top}px" style:width="{MW}px" style:height="{MH}px" style:clip-path={front ? undefined : `inset(-90px -40px ${clipBottom}px -40px)`}>
     <div class="tilt" style:transform="rotate({sitting ? 0 : tilt}deg)"><img bind:this={img} src="/mascot-cut.webp" alt="" width={MW} height={MH} draggable="false" /></div>
   </div>
+  {/if}
 
   <!-- in front: the pocket, its creases, the shut flap and the wax -->
   <svg class="layer pocket" viewBox="0 0 {W} {ENV_H}" width={W} height={ENV_H}>

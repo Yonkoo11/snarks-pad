@@ -20,6 +20,7 @@
   import { returning, touchSession } from '../../lib/returning'
   import { readLog, writeLog, remember, changedNote, type Said } from '../../lib/palLog'
   import { cardModel, saveFollowCard } from '../../lib/followcard'
+  import { homeEnv } from '../../lib/homeEnvelope.svelte'
   import { poseSrc, type PoseName } from '../../lib/palPoses'
 
   const W = 70, H = Math.round((70 * 373) / 260) // the drawing's own proportions
@@ -212,7 +213,7 @@
   // ---- real events: each waits in a queue (one per kind, expiring, at most once a minute) and plays when nothing else is going on
   const queue = new ReactionQueue()
   let playing = false
-  const busy = () => dragging || menu || shelf || !!layers.top || document.hidden || !!document.querySelector('.slip[role="dialog"]') || (document.activeElement instanceof HTMLElement && !!document.activeElement.closest('input, textarea, select, [contenteditable]'))
+  const busy = () => inEnv || dragging || menu || shelf || !!layers.top || document.hidden || !!document.querySelector('.slip[role="dialog"]') || (document.activeElement instanceof HTMLElement && !!document.activeElement.closest('input, textarea, select, [contenteditable]'))
   async function drain() {
     if (playing || moving || busy() || pal.mode === 'away') return
     const r = queue.next(Date.now())
@@ -276,6 +277,39 @@
     return () => { stopA(); stopB() }
   })
 
+  // ---- the envelope on the front page: it hops onto the mouth, steps in (the envelope's own drawing takes over at the same spot, so
+  // there is one figure on the page throughout), plays inside, and steps out again. Any press on it, a change of mode or of page ends the visit.
+  let inEnv = false
+  let lastVisit = 0
+  const sleep = (ms: number) => new Promise<void>((res) => setTimeout(res, ms))
+  async function visitEnvelope(): Promise<boolean> {
+    const el = document.querySelector('[data-env-home]')
+    if (!el || !host || !body || still) return false
+    measureOrigin()
+    const r = el.getBoundingClientRect()
+    if (r.top < 100 || r.bottom > innerHeight - 40 || r.width < 200) return false // the whole envelope must be on screen
+    const to = toPage(r.left + r.width / 2 - W / 2, r.top + 18)
+    perch = null; hovering = false
+    await hop(to)
+    const at = livePos()
+    if (moving || Math.hypot(at.x - to.x, at.y - to.y) > 4) return false // grabbed or superseded on the way
+    inEnv = true; lastVisit = Date.now()
+    try {
+      host.style.clipPath = `inset(-70px -70px ${H - 74}px -70px)` // below the pocket's edge it is behind the paper
+      homeEnv.phase = 'in'
+      await tick()
+      host.style.visibility = 'hidden'
+      const until = Date.now() + 14_000 + Math.random() * 10_000
+      while (Date.now() < until && pal.mode === 'roam' && el.isConnected && !dragging) await sleep(300)
+      homeEnv.phase = 'leaving'
+      await sleep(700)
+    } finally {
+      host.style.visibility = ''; host.style.clipPath = ''
+      homeEnv.phase = 'empty'; inEnv = false
+    }
+    return true
+  }
+
   // ---- the life: arrive, stand, hop on, doze when nothing happens
   let lastActive = Date.now()
   function wake() {
@@ -336,6 +370,7 @@
           const idle = Date.now() - lastActive
           if (idle > 120_000) { deep = true; continue }
           if (idle > 24_000) { doze = true; continue }
+          if (Date.now() - lastVisit > 75_000 && document.querySelector('[data-env-home]') && (lastVisit === 0 || Math.random() < 0.4)) { if (await visitEnvelope()) { const n = pick(); if (n) await hopTo(n); continue } }
           measureOrigin()
           const next = pick()
           if (next) await hopTo(next)
@@ -344,7 +379,7 @@
     })()
     // every two seconds: is the footing still good (images loading, a panel opening move the page under it)?
     const foot = setInterval(async () => {
-      if (document.hidden || moving || playing || dragging || menu || stillNow) return
+      if (document.hidden || moving || playing || dragging || menu || stillNow || inEnv) return
       measureOrigin()
       if (!perch) { // hovering: no edge to keep, but the page may have moved a control under it
         const v = viewportOf(cur)

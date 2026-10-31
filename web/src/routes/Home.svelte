@@ -16,6 +16,7 @@
   import Lamp from '../components/room/Lamp.svelte'
   import Odometer from '../components/room/Odometer.svelte'
   import Spindle from '../components/room/Spindle.svelte'
+  import EnvelopeScene from '../components/room/EnvelopeScene.svelte'
   import PulseBoard from '../components/PulseBoard.svelte'
   import NextPayout from '../components/NextPayout.svelte'
   import TradesTape from '../components/TradesTape.svelte'
@@ -218,6 +219,7 @@
 
     <aside class="d-proof">
       <div class="art onpaper"><Spindle {epochs} {now} {newSince} paidLine={youWerePaid} animate={firstScene} /></div>
+      <div class="envspot"><EnvelopeScene home figW={70} flow={{ connected: true, ready: true, holdK: 0, busy: false, done: false, failed: false }} /></div>
       <section class="d-tape" aria-labelledby="tape-h" hidden={tapeState === 'absent'}>
         <h2 class="d-shelf-h" id="tape-h">Live trades</h2>
         <TradesTape compact limit={TAPE_ROWS} everyMs={POLL_MS} {creators} {mode} {now} onstate={(s) => (tapeState = s)} />
@@ -267,7 +269,8 @@
   .actions { display: flex; gap: var(--s-3); flex-wrap: wrap; }
   .shd { white-space: nowrap; }
   /* room above the pile for the whole of the mascot's head */
-  .art { display: grid; justify-items: center; padding-top: 84px; }
+  .art { display: grid; justify-items: center; padding-top: 28px; }
+  .envspot { display: flex; justify-content: center; margin-top: calc(var(--s-3) - 26px); }
   .key { display: inline-block; width: 12px; height: 12px; border-radius: var(--r-xs); flex: none; }
 
   /* the till and the pot wear the shared .note (app.css); only their tilts live here */
