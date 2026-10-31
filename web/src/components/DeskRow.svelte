@@ -85,6 +85,7 @@
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <div
   class="drow d{dens}"
+  data-coin-mint={coin.mint}
   class:bag={bagZats !== null}
   class:returned={returnedAt !== null}
   role="row"

@@ -237,3 +237,6 @@ textarea.input { resize: vertical; min-height: 96px; }
 
 /* focused by the router on route change; the pink ring is not wanted on a whole-page focus */
 main:focus { outline: none; }
+
+/* the coin Snarks is being carried over: where it will be followed */
+[data-pal-over] { outline: 2px dashed var(--ink); outline-offset: 3px; }

@@ -213,7 +213,7 @@
   <div class="door tgrid">
     <Lamp lastAt={treasury?.lastEpochAt ?? null} nextAt={treasury?.nextEpochAt ?? null} {now} />
     <div class="main">
-      <header class="head">
+      <header class="head" data-coin-mint={mint}>
         <CoinImage src={coin.imageUrl} symbol={coin.symbol} size={88} />
         <div class="title">
           <div class="trow">

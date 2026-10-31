@@ -56,7 +56,7 @@
     <span role="cell" class="num hide-md age">{ago(coin.createdAt, now)}</span>
   </a>
 {:else}
-  <a class="card panel" class:preview class:gallery href={preview ? undefined : `#/coin/${coin.mint}`} aria-label={preview ? 'Preview of your coin\'s card' : undefined}>
+  <a class="card panel" data-coin-mint={preview ? undefined : coin.mint} class:preview class:gallery href={preview ? undefined : `#/coin/${coin.mint}`} aria-label={preview ? 'Preview of your coin\'s card' : undefined}>
     <!-- the art is a tile beside the name, not a poster over the card: the information is the card.
          On the graduated wall (gallery) the art steps up and the lock line is the point. -->
     <span class="head">

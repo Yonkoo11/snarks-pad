@@ -4,6 +4,7 @@
   import { layers, dossierKey, type DossierTab } from '../../lib/layers.svelte'
   import { compare } from '../../lib/compare.svelte'
   import { audit } from '../../lib/audit.svelte'
+  import { pal } from '../../lib/pal.svelte'
   // The paper index: press / anywhere (outside a field) and a slip of destinations opens - the four
   // places, the acts, and every coin by name or ticker. One keyboard model: arrows move, Enter goes,
   // Escape closes; the list is a listbox with aria-activedescendant. Fast travel for traders, and
@@ -31,6 +32,9 @@
     { label: 'tape', hint: 'the live tape, full height', run: () => layers.open({ kind: 'tape', key: 'tape', title: 'Live tape' }) },
     { label: 'audit', hint: 'show where every number comes from', run: () => audit.toggle() },
     { label: 'clear', hint: 'empty the compare shelf', run: () => compare.clear() },
+    { label: 'snarks roam', hint: 'the mascot walks the page', run: () => pal.setMode('roam') },
+    { label: 'snarks stay', hint: 'the mascot stays where it is', run: () => pal.setMode('stay') },
+    { label: 'snarks away', hint: 'send the mascot away', run: () => pal.setMode('away') },
   ]
   const TABS = ['trades', 'holders', 'rewards'] as const
   const rows = $derived.by<Row[]>(() => {

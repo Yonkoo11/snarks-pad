@@ -9,6 +9,7 @@
   import Crumbs from './components/layers/Crumbs.svelte'
   import PeekCard from './components/layers/PeekCard.svelte'
   import TapeRail from './components/layers/TapeRail.svelte'
+  import Companion from './components/pal/Companion.svelte'
   import { layers } from './lib/layers.svelte'
   import { audit } from './lib/audit.svelte'
   import AuditToggle from './components/AuditToggle.svelte'
@@ -105,6 +106,7 @@
 <Footer />
 <BottomBar />
 <TapeRail />
+<Companion />
 </div>
 
 <style>
