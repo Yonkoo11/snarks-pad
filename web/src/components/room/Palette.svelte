@@ -52,7 +52,7 @@
     show()
   }
   function onBoxKey(e: KeyboardEvent) {
-    if (e.key === 'Escape') { open = false; return }
+    if (e.key === 'Escape') { e.stopPropagation(); open = false; return }
     if (e.key === 'ArrowDown') { e.preventDefault(); active = Math.min(active + 1, rows.length - 1) }
     else if (e.key === 'ArrowUp') { e.preventDefault(); active = Math.max(active - 1, 0) }
     else if (e.key === 'Enter') { e.preventDefault(); go(rows[active]) }

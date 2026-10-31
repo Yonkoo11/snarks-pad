@@ -6,6 +6,7 @@
   const every = (ms: number): string => (ms >= 3 * 86_400_000 && ms % 86_400_000 === 0 ? `${ms / 86_400_000} days` : `${Math.max(1, Math.round(ms / 3_600_000))} hours`)
   import { sharesFromPolicy } from '../lib/fees'
   import { poll } from '../lib/poll'
+  import { setHashQuery } from '../lib/query'
   import FeeSplit from '../components/FeeSplit.svelte'
   import NextPayout from '../components/NextPayout.svelte'
   import Addr from '../components/Addr.svelte'
@@ -61,7 +62,7 @@
   const shownEpochs = $derived(!epochs ? [] : epochs.slice((page - 1) * PAGE, page * PAGE))
   function goPage(p: number) {
     page = Math.min(Math.max(1, p), pages)
-    history.replaceState(null, '', page > 1 ? `#/treasury?page=${page}` : '#/treasury')
+    setHashQuery('page', page > 1 ? String(page) : null)
     document.getElementById('ep-h')?.scrollIntoView()
   }
   // the stamp's date, set like a cancellation mark: "28 OCT 2026"

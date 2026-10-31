@@ -17,6 +17,9 @@
   import { watched } from '../lib/looked'
   import { wallet } from '../lib/wallet.svelte'
   import { readHoldings } from '../lib/holdings'
+  import { layers, dossierKey } from '../lib/layers.svelte'
+  import { compare } from '../lib/compare.svelte'
+  import { leaveSpot, takeSpot } from '../lib/spot'
 
   // The catalog is its own page: one job (pick a coin), every coin, real pages. Launching is the one
   // act here, so it is the button in the header, not a nav destination. The Pad door stays one screen
@@ -156,21 +159,57 @@
   })
   const offerLaunch = $derived(!!coins && coins.length > 0 && coins.length < 4 && !filtering && page === 1)
 
-  // ledger keyboard: j/k walks the rows, Enter opens the coin. Inputs and the palette keep their keys.
+  // ledger keyboard: j/k walks the rows (the row lifts, the others sit back), Enter opens the coin's page, o opens its sheet,
+  // p pins it to the compare shelf, s opens the shelf, d cycles how much a row shows. Inputs, an open layer and the palette keep their keys.
   let cursor = $state(-1)
   $effect(() => { void shownCoins; cursor = -1 })
+
+  // how much a row shows: 1 one line, 2 the default, 3 the supply numbers written out. Kept in this browser.
+  let dens = $state<1 | 2 | 3>((() => { try { const v = Number(localStorage.getItem('snarks-density')); return v === 1 || v === 3 ? v : 2 } catch { return 2 } })())
+  function cycleDens() {
+    dens = dens === 2 ? 3 : dens === 3 ? 1 : 2
+    try { localStorage.setItem('snarks-density', String(dens)) } catch { /* private window */ }
+  }
+
+  // coming back from a coin's page: the ledger returns to the same scroll, the same row, and that row says what moved
+  // svelte-ignore state_referenced_locally
+  const back = takeSpot()
+  let restored = $state(false)
+  $effect(() => {
+    if (restored || !back || !shownCoins) return
+    const i = shownCoins.findIndex((c) => c.mint === back.mint)
+    if (i < 0) return
+    restored = true
+    view = 'list'
+    queueMicrotask(() => { scrollTo({ top: back.scrollY }); cursor = i })
+  })
+
   function onKeys(e: KeyboardEvent) {
-    if (view !== 'list' || !shownCoins?.length) return
+    if (view !== 'list' || !shownCoins?.length || layers.top) return
     if (e.metaKey || e.ctrlKey || e.altKey) return
     const t = e.target
     if (t instanceof HTMLElement && t.closest('input, select, textarea, [contenteditable]')) return
+    const at = cursor >= 0 ? shownCoins[cursor] : null
     if (e.key === 'j' || e.key === 'k') {
       e.preventDefault()
       cursor = e.key === 'j' ? Math.min(cursor + 1, shownCoins.length - 1) : Math.max(cursor - 1, 0)
       document.querySelector(`.list [data-row="${cursor}"]`)?.scrollIntoView({ block: 'nearest' })
-    } else if (e.key === 'Enter' && cursor >= 0) {
+    } else if (e.key === 'Enter' && at) {
       e.preventDefault()
-      location.hash = `#/coin/${shownCoins[cursor].mint}`
+      leaveSpot(at.mint)
+      location.hash = `#/coin/${at.mint}`
+    } else if (e.key === 'o' && at) {
+      e.preventDefault()
+      layers.open({ kind: 'dossier', key: dossierKey(at.mint), title: `$${at.symbol}` })
+    } else if (e.key === 'p' && at) {
+      e.preventDefault()
+      compare.toggle(at.mint)
+    } else if (e.key === 's' && compare.pins.length) {
+      e.preventDefault()
+      layers.open({ kind: 'compare', key: 'compare', title: 'Compare' })
+    } else if (e.key === 'd') {
+      e.preventDefault()
+      cycleDens()
     }
   }
   $effect(() => {
@@ -216,6 +255,11 @@
       <button type="button" aria-pressed={view === 'grid'} onclick={() => (view = 'grid')}>Cards</button>
       <button type="button" aria-pressed={view === 'list'} onclick={() => (view = 'list')}>Ledger</button>
     </div>
+    {#if view === 'list'}
+      <button class="chipbtn dens" type="button" onclick={cycleDens} title="How much each row shows (key d)" aria-label="Row density, now {dens === 1 ? 'one line' : dens === 2 ? 'standard' : 'full'}. Press to change.">
+        <span class="mono dglyph" aria-hidden="true">{dens === 1 ? '\u2261' : dens === 2 ? '\u2630' : '\u2637'}</span>{dens === 1 ? 'Tight' : dens === 2 ? 'Standard' : 'Full'}
+      </button>
+    {/if}
     <input class="input search" type="search" placeholder="Search coins" aria-label="Search coins by name or ticker" autocomplete="off" bind:value={search} />
     <button class="chipbtn" type="button" aria-pressed={shieldedOnly} onclick={() => { shieldedOnly = !shieldedOnly; page = 1; history.replaceState(null, '', '#/coins') }}>
       <span class="key hatch" aria-hidden="true"></span>Shielded delivery
@@ -247,7 +291,8 @@
   {:else if view === 'list'}
     <!-- the ledger: the one surface allowed past ten datapoints. One unit per column, the unit
          in the header; the slow cells fill in for the rows on screen only. -->
-    <div class="list" role="table" aria-label="Coins, as a ledger">
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div class="list" class:walking={cursor >= 0} style:--supply-col={dens === 3 ? '112px' : undefined} role="table" aria-label="Coins, as a ledger" onclickcapture={(e) => { const a = (e.target as HTMLElement).closest('a[href^="#/coin/"]'); if (a) leaveSpot(a.getAttribute('href')!.slice(7)) }}>
       <div class="dhead" role="row">
         <span role="columnheader" class="label">Coin</span>
         <span role="columnheader" class="label num">ZEC / 1M</span>
@@ -263,10 +308,10 @@
       </div>
       {#each shownCoins as c, i (c.mint)}
         <div animate:flip={dataTween()} data-row={i} class="rowcell" class:cur={cursor === i}>
-          <DeskRow coin={c} {now} bagZats={bag?.get(c.mint) ?? null} deltaBase={watchingOnly ? 'star' : 'look'} onstarchange={rereadWatch} />
+          <DeskRow coin={c} {now} {dens} returnedAt={back && back.mint === c.mint && restored ? back.at : null} bagZats={bag?.get(c.mint) ?? null} deltaBase={watchingOnly ? 'star' : 'look'} onstarchange={rereadWatch} />
         </div>
       {/each}
-      <p class="lnote muted small">Supply: the tick is the ten largest wallets, the notch the dev, the block the pool. Next / holder: what the round would pay each holder if it closed now. Trade lines cover each coin's last recorded trades; a dashed stretch is time with no trades. Keys: <kbd>j</kbd>/<kbd>k</kbd> walk the rows, <kbd>Enter</kbd> opens, <kbd>/</kbd> finds anything.</p>
+      <p class="lnote muted small">Supply: the tick is the ten largest wallets, the notch the dev, the block the pool. Next / holder: what the round would pay each holder if it closed now. Trade lines cover each coin's last recorded trades; a dashed stretch is time with no trades. Click a row for its sheet, its name for its page. Keys: <kbd>j</kbd>/<kbd>k</kbd> walk the rows, <kbd>o</kbd> opens the sheet, <kbd>Enter</kbd> the page, <kbd>p</kbd> pins to compare, <kbd>s</kbd> opens the shelf, <kbd>d</kbd> changes the row density, <kbd>/</kbd> finds anything.</p>
     </div>
   {:else}
     <div class="grid">
@@ -327,12 +372,17 @@
   .launch:active { transform: translateY(1px); transition-duration: var(--d-press); }
   .card-sk { height: 360px; border-radius: var(--r-md); }
   .list { display: grid; }
-  .dhead { display: grid; grid-template-columns: minmax(0, 2.4fr) .9fr .6fr .9fr .9fr .6fr 64px 1.1fr .9fr 84px .6fr; gap: var(--s-3);
+  .dhead { display: grid; grid-template-columns: minmax(0, 2.4fr) .9fr .6fr .9fr .9fr .6fr var(--supply-col, 64px) 1.1fr .9fr 84px .6fr; gap: var(--s-3);
     padding: 0 var(--s-2) var(--s-2); border-bottom: 1.5px solid var(--ink-3); }
   .dhead .label { font-size: var(--t-11); }
   .lnote { padding-top: var(--s-2); max-width: 86ch; }
   .lnote kbd { font-family: var(--f-mono); font-size: var(--t-11); border: 1px solid var(--line); border-radius: var(--r-xs); padding: 0 4px; }
-  .rowcell.cur { background: var(--hover-strong); outline: 1.5px solid var(--ink-3); outline-offset: -1.5px; }
+  .rowcell { transition: opacity var(--d-fn) var(--ease), transform var(--d-fn) var(--ease), box-shadow var(--d-fn) var(--ease); }
+  /* the row under the cursor lifts off the page; once you are walking, the others sit back a little */
+  .rowcell.cur { position: relative; z-index: 1; background: var(--paper-2); outline: 1.5px solid var(--ink-3); outline-offset: -1.5px; transform: translateY(-1px); box-shadow: var(--sh-2); }
+  .list.walking .rowcell:not(.cur) { opacity: .8; }
+  .dglyph { font-size: var(--t-14); line-height: 1; }
+  @media (prefers-reduced-motion: reduce) { .rowcell { transition: none; } .rowcell.cur { transform: none; } }
   .key.star { width: auto; height: auto; color: var(--pink); font-size: var(--t-12); line-height: 1; }
   .num { text-align: right; }
   .fail, .none { display: grid; gap: var(--s-3); justify-items: start; padding: var(--s-4) 0; }

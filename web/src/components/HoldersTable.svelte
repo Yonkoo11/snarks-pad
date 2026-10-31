@@ -6,6 +6,7 @@
   import { solanaAccountUrl } from '../lib/explorer'
   import Addr from './Addr.svelte'
   import Pager from './Pager.svelte'
+  import { setHashQuery } from '../lib/query'
 
   // The Holders tab (contract v2.6 GET /coins/:mint/holders): the largest wallets with their share of the total supply, the pool
   // vaults listed so the shares add up and marked as never paid, the creator tagged, the connected wallet "you". Since v2.9 nothing
@@ -19,8 +20,7 @@
   const pages = $derived(view ? Math.max(1, Math.ceil(view.total / PER)) : 1)
   function goPage(p: number) {
     page = Math.min(Math.max(1, p), pages)
-    const base = location.hash.split('?')[0]
-    history.replaceState(null, '', page > 1 ? `${base}?hpage=${page}` : base)
+    setHashQuery('hpage', page > 1 ? String(page) : null)
   }
   async function load() {
     err = false

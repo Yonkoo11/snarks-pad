@@ -13,6 +13,7 @@
   import { profileHref } from '../lib/profile'
   import { hostOf, LINKS_WARNING } from '../lib/socials'
   import { poll } from '../lib/poll'
+  import { layers, dossierKey, type DossierTab } from '../lib/layers.svelte'
   import { reducedMotion } from '../lib/motion'
   import { monoNow, secondsLeft } from '../lib/window'
   import PriceChart from '../components/PriceChart.svelte'
@@ -72,6 +73,8 @@
   // a quarter-second beat while a window is open, so the seconds change on time
   $effect(() => { if (windowLeft === 0) return; const t = setInterval(() => (mono = monoNow()), 250); return () => clearInterval(t) })
   $effect(() => { if (coin) document.title = `${coin.name} ($${coin.symbol}), SNARKS pad` })
+  // the breadcrumb names this page by its ticker, and forgets it when the page goes
+  $effect(() => { if (coin) layers.routeLabel = `$${coin.symbol}`; return () => { layers.routeLabel = null } })
   // The coin's own recent trades stand in for the tape on an engine without /coins/:mint/trades (v2.5).
   const fallbackTrades = $derived<FeedTrade[]>(coin ? coin.recentTrades.slice(0, MAX_TRADES).map((t) => ({ ...t, mint, symbol: coin!.symbol, tags: t.wallet === coin!.creator ? ['dev' as const] : [] })) : [])
   const liveNote = $derived(pollErr ? `Lost the connection to the pad. Trying again every ${POLL_MS / 1000}s.` : null)
@@ -263,12 +266,17 @@
       {/if}
 
       <section class="tabs-sec" aria-label="Trades, holders, rewards and token info">
+        <div class="tabrow">
         <div class="seg ctabs" role="tablist" aria-label="Coin details">
           {#each TABS as t (t.id)}
             <button type="button" role="tab" id="tab-{t.id}" aria-selected={tab === t.id} aria-controls="panel-{t.id}" tabindex={tab === t.id ? 0 : -1} class:on={tab === t.id} onclick={() => (tab = t.id)} onkeydown={onTabKey}>
               {#if t.id === 'fixed'}<span class="long">{t.label}</span><span class="short" aria-hidden="true">Info</span>{:else}{t.label}{/if}{#if t.id === 'holders' && coin.holders}<span class="cnt mono">{coin.holders.toLocaleString('en-US')}</span>{/if}
             </button>
           {/each}
+        </div>
+        {#if tab !== 'fixed'}
+          <button class="pull" type="button" onclick={() => layers.open({ kind: 'dossier', key: dossierKey(mint, tab as DossierTab), title: `$${coin!.symbol}` })} title="Open this tab as a sheet over the page; the chart keeps running behind it">Pull out <span aria-hidden="true">&#8599;</span></button>
+        {/if}
         </div>
         <div class="panel-body" role="tabpanel" id="panel-{tab}" aria-labelledby="tab-{tab}">
           {#if tab === 'trades'}
@@ -386,6 +394,9 @@
   .plink { color: var(--ink); text-underline-offset: 3px; text-decoration-color: var(--ink-3); }
   .payto .plink { color: inherit; }
   .tabs-sec { display: grid; gap: var(--s-4); }
+  .tabrow { display: flex; align-items: center; gap: var(--s-3); flex-wrap: wrap; justify-content: space-between; }
+  .pull { min-height: 44px; padding: 0 var(--s-3); border: 0; background: transparent; color: var(--ink-2); font: inherit; font-size: var(--t-14); font-weight: 700; cursor: pointer; border-radius: var(--r-md); text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 4px; }
+  @media (hover: hover) { .pull:hover { color: var(--ink); background: var(--hover); } }
   .ctabs { width: max-content; max-width: 100%; }
   .ctabs > button { display: inline-flex; align-items: center; gap: var(--s-2); white-space: nowrap; }
   .cnt { font-size: var(--t-12); font-weight: 500; color: var(--ink-2); }
@@ -427,6 +438,7 @@
     .desc { display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: var(--t-14); }
     /* four tabs across a phone: shorter padding and the short fourth label, so all four sit on one row at 390 */
     .ctabs { width: 100%; }
+    .pull { display: none; }
     .ctabs > button { padding: 0 var(--s-2); font-size: var(--t-14); flex: 1; justify-content: center; gap: var(--s-1); }
     .long { display: none; }
     .short { display: inline; }

@@ -12,7 +12,12 @@ import type { Coin, CoinRewards, CreatorFees, Epoch, FeedTrade, Fixed, HolderRow
 
 const enc = new TextEncoder()
 const h = (s: string) => nacl.hash(enc.encode(s)) // 64 bytes, deterministic
-const pubkey = (seed: string) => bs58.encode(nacl.sign.keyPair.fromSeed(h(seed).slice(0, 32)).publicKey)
+const pubkeys = new Map<string, string>() // a key pair per seed is milliseconds of JS maths, and a page asks for dozens
+const pubkey = (seed: string): string => {
+  let k = pubkeys.get(seed)
+  if (!k) { k = bs58.encode(nacl.sign.keyPair.fromSeed(h(seed).slice(0, 32)).publicKey); pubkeys.set(seed, k) }
+  return k
+}
 const sig = (seed: string) => bs58.encode(h(seed))
 const hex = (seed: string) => Array.from(h(seed).slice(0, 32), (b) => b.toString(16).padStart(2, '0')).join('')
 const ZEC = (x: number) => String(Math.round(x * 1e8))

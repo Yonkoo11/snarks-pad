@@ -5,6 +5,10 @@
   import Footer from './components/Footer.svelte'
   import BottomBar from './components/BottomBar.svelte'
   import Palette from './components/room/Palette.svelte'
+  import LayerHost from './components/layers/LayerHost.svelte'
+  import Crumbs from './components/layers/Crumbs.svelte'
+  import PeekCard from './components/layers/PeekCard.svelte'
+  import { layers } from './lib/layers.svelte'
   import { router } from './lib/router.svelte'
   import { reducedMotion } from './lib/motion'
   import Home from './routes/Home.svelte'
@@ -57,9 +61,14 @@
 </script>
 
 <Palette />
+<LayerHost />
+<PeekCard />
+<!-- everything under an open layer is inert: seen, not reachable, so focus and clicks stay on the top sheet -->
+<div class="base" inert={layers.stack.length > 0}>
 <ModeBanner />
 <PauseBanner />
 <Nav />
+{#if r.name === 'coin'}<div class="wrap pathbar"><Crumbs /></div>{/if}
 <main bind:this={mainEl} tabindex="-1">
   {#if r.name === 'home'}<Home />
   {:else if r.name === 'coin'}{#key r.mint}<CoinPage mint={r.mint} />{/key}
@@ -81,7 +90,10 @@
 </main>
 <Footer />
 <BottomBar />
+</div>
 
 <style>
+  .base { display: contents; }
+  .pathbar { padding-top: 0; padding-bottom: 0; margin-top: calc(-1 * var(--s-2)); }
   .missing { padding-top: var(--s-8); display: grid; gap: var(--s-5); justify-items: start; }
 </style>

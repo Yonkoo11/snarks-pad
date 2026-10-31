@@ -9,8 +9,8 @@
   // Rows come from the live feed (SSE, else a poll); on an engine without /trades the coin page passes the coin's own
   // recentTrades as `fallback`. A wallet is tagged "dev" when it is the coin's creator and "you" when it is the one connected.
   // A row that arrives after the first paint slides in once; rows already on screen stay put.
-  let { mint, creators = {}, fallback = null, fallbackNote = null, limit = 10, everyMs = 6_000, compact = false, mode, now, onstate }: {
-    mint?: string; creators?: Record<string, string>; fallback?: FeedTrade[] | null; fallbackNote?: string | null; limit?: number; everyMs?: number; compact?: boolean; mode: PadMode | null; now: number
+  let { mint, creators = {}, fallback = null, fallbackNote = null, limit = 10, everyMs = 6_000, compact = false, chartNote = true, mode, now, onstate }: {
+    mint?: string; creators?: Record<string, string>; fallback?: FeedTrade[] | null; fallbackNote?: string | null; limit?: number; everyMs?: number; compact?: boolean; chartNote?: boolean; mode: PadMode | null; now: number
     onstate?: (s: FeedState) => void // the parent can hide the whole block on an engine without the route
   } = $props()
 
@@ -71,7 +71,7 @@
       {/each}
     </div>
     {#if !compact && shown.length > 0}
-      <p class="cap muted">Trades 1 to {shown.length}{shown.length >= limit ? `, the newest ${limit} the engine serves (older ones are not kept)` : ''}. The chart above holds up to 300 price points.</p>
+      <p class="cap muted">Trades 1 to {shown.length}{shown.length >= limit ? `, the newest ${limit} the engine serves (older ones are not kept)` : ''}.{chartNote ? ' The chart above holds up to 300 price points.' : ''}</p>
     {/if}
   {/if}
 </div>
