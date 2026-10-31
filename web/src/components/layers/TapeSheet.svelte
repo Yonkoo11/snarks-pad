@@ -7,8 +7,8 @@
 </script>
 
 <div class="ts">
-  <p class="muted tnote">The newest trades on the pad, as the engine records them. Rest a finger or pointer on the list and new trades queue behind a bar instead of pushing the rows.</p>
-  <div class="box"><TapeList limit={40} {now} onpick={(t) => layers.open({ kind: 'dossier', key: dossierKey(t.mint), title: `$${t.symbol}` })} /></div>
+  <p class="muted tnote">The pad's pulse: trades, launches, graduations and payout rounds, newest first. Narrow it with the chips. Rest a finger or pointer on the list, or press Pause, and new items queue behind a bar instead of pushing the rows.</p>
+  <div class="box"><TapeList limit={80} {now} onpick={(mint, symbol) => layers.open({ kind: 'dossier', key: dossierKey(mint), title: `$${symbol}` })} /></div>
 </div>
 
 <style>

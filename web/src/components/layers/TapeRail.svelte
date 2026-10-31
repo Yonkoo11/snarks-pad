@@ -4,8 +4,8 @@
   // coin's dossier as a layer instead of leaving the page. Key t folds it away; this browser remembers.
   import { layers, dossierKey } from '../../lib/layers.svelte'
   import { tradeFeed } from '../../lib/tape'
-  import type { FeedTrade } from '../../lib/types'
   import { zec, ago } from '../../lib/format'
+  import type { FeedTrade } from '../../lib/types'
   import TapeList from './TapeList.svelte'
 
   const KEY = 'snarks-rail'
@@ -29,14 +29,14 @@
     addEventListener('keydown', onT)
     return () => removeEventListener('keydown', onT)
   })
-  const pick = (t: FeedTrade) => layers.open({ kind: 'dossier', key: dossierKey(t.mint), title: `$${t.symbol}` })
+  const pick = (mint: string, symbol: string) => layers.open({ kind: 'dossier', key: dossierKey(mint), title: `$${symbol}` })
 </script>
 
 {#if open}
   <aside class="rail" aria-label="Live tape">
-    <header><h2 class="label">Live tape</h2><button type="button" class="fold" onclick={() => set(false)} aria-label="Fold the tape away" title="Fold away (key t)">&rsaquo;</button></header>
-    <div class="body"><TapeList limit={30} {now} onpick={pick} /></div>
-    <p class="muted foot">Every trade the pad records, newest first. Click one to open its coin without leaving this page.</p>
+    <header><h2 class="label">The pulse</h2><button type="button" class="fold" onclick={() => set(false)} aria-label="Fold the tape away" title="Fold away (key t)">&rsaquo;</button></header>
+    <div class="body"><TapeList limit={80} {now} onpick={pick} /></div>
+    <p class="muted foot">Trades, launches, graduations and payout rounds, newest first. Click a coin to open it without leaving this page.</p>
   </aside>
 {:else}
   <button class="tab" type="button" onclick={() => set(true)} title="Open the live tape (key t)"><span>Tape</span></button>

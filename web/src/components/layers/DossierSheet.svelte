@@ -10,6 +10,7 @@
   import { poll } from '../../lib/poll'
   import { router } from '../../lib/router.svelte'
   import { compare } from '../../lib/compare.svelte'
+  import { isWatched, toggleWatch, snapOf } from '../../lib/looked'
   import { leaveSpot } from '../../lib/spot'
   import CoinImage from '../CoinImage.svelte'
   import LiveNumber from '../LiveNumber.svelte'
@@ -59,6 +60,9 @@
   $effect(() => poll(loadSide, 10_000))
 
   const pinned = $derived(compare.has(mint))
+  // svelte-ignore state_referenced_locally
+  let following = $state(isWatched(mint))
+  function follow() { if (coin) following = toggleWatch(mint, snapOf(coin)) }
 </script>
 
 {#if err}
@@ -76,6 +80,7 @@
     </div>
     <div class="acts">
       <a class="btn" href="#/coin/{mint}" onclick={() => leaveSpot(mint)}>Open the full page</a>
+      <button class="btn ghost" type="button" aria-pressed={following} onclick={follow} title="Follow: the pulse's Following chip and the ledger's Watching list show it">{following ? '★ Following' : '☆ Follow'}</button>
       <button class="btn ghost" type="button" aria-pressed={pinned} onclick={() => compare.toggle(mint)}>{pinned ? 'Unpin from compare' : 'Pin to compare'}</button>
     </div>
   </div>

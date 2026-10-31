@@ -79,5 +79,7 @@ export function toggleWatch(mint: string, snap: Looked): boolean {
   if (on) map[mint] = snap
   else delete map[mint]
   write(WATCH_KEY, map)
+  // anything showing the followed coins (the tape's Following chip) re-reads
+  if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('snarks-watch'))
   return on
 }
