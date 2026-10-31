@@ -1,5 +1,6 @@
 <script lang="ts">
   import { X_HANDLE } from '../lib/site'
+  import { pal } from '../lib/pal.svelte'
   const product = [
     ['#/', 'Pad'], ['#/coins', 'Coins'], ['#/launch', 'Launch a coin'], ['#/shielded', 'Shielded delivery'], ['#/payouts', 'Payouts'], ['#/how', 'How it works'],
   ] as const
@@ -30,6 +31,7 @@
       <p class="meta">
         <span>© 2026 SNARKS pad</span>
         {#if X_HANDLE}<a href="https://x.com/{X_HANDLE}" target="_blank" rel="noreferrer">X</a>{:else}<span>X: handle to come</span>{/if}
+        <button class="snarks" type="button" onclick={() => pal.cycle()} title="How the mascot behaves: roams the page, stays where it is, or is away">Snarks: {pal.mode === 'roam' ? 'roams' : pal.mode === 'stay' ? 'stays' : 'away'}</button>
       </p>
     </div>
   </div>
@@ -53,6 +55,8 @@
   .risk { color: var(--ink-2); max-width: 70ch; }
   .meta { display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-4); font-size: var(--t-14); color: var(--ink-3); }
   .meta a { color: var(--ink-2); display: inline-flex; align-items: center; min-height: 44px; margin: -12px 0; }
+  .snarks { border: 0; background: none; padding: 0; margin: -12px 0; min-height: 44px; display: inline-flex; align-items: center; font: inherit; color: var(--ink-2); cursor: pointer; }
+  @media (hover: hover) { .snarks:hover { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; color: var(--ink); } }
   @media (max-width: 800px) {
     .cols { grid-template-columns: 1fr 1fr; }
     .brandcol { grid-column: 1 / -1; }

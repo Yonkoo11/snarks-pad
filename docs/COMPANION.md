@@ -25,30 +25,33 @@ One figure, so the life comes from timing. Twelve moves, each named so they can 
 | Move | What it is | Timing | Notes |
 | --- | --- | --- | --- |
 | Arrive | Slides in from the right edge with a hop and a settle | 900 ms | once per visit |
-| Hop | Crouch (anticipation), arc, land squash, settle | 520 to 1150 ms by distance | arc height grows with distance; tilts into the direction of travel |
-| Leap | A long hop with a half turn of tilt for distances over 500 px | 900 to 1300 ms | |
-| Breathe | 1.5% scale swell on the feet | 3.2 s loop | while perched |
-| Look | Tilts up to 5 degrees toward the pointer when it is within 240 px | follows, eased | attention without eyes |
-| Doze | Slow rock, a little smaller | 3.4 s loop | after 24 s of no input |
+| Hop | A held crouch, a rise that slows to the apex, a fall that speeds up, a squash at the touchdown, a settle | 520 to 1150 ms by distance | path, body and ground shadow share their key offsets (apex .5, touchdown .92); tilts into the direction of travel |
+| Leap | A hop over 500 px, with twice the lean | up to 1150 ms | |
+| Breathe | A 3 to 4% swell on the feet | 3.2 s loop | while perched; a hovering figure bobs instead |
+| Look | Tilts up to 5 degrees toward the pointer within 240 px, fading out over the next 120 px | an eased 380 ms transition | attention without eyes |
+| Doze | Eases into a 4 degree lean with a slight sink; wakes with a 260 ms stretch | 3.6 s loop | after 24 s of no input |
 | Sleep | The doze deepens: smaller, quieter | after 2 minutes | wakes on any input |
-| Wave | Wiggle of ±12 degrees, three beats, on a small hop | 900 ms | round paid |
-| Cheer | Two quick hops, a full turn on the second | 1.2 s | a coin graduated |
-| Alert | Leans back 10 degrees and holds | 1.4 s | the creator of a coin it follows sold |
+| Wave | Four beats that die away (10, 8, 6, 3 degrees), a small lift on the first | 900 ms | round paid, followed coin gained holders |
+| Cheer | Two bounces leaning opposite ways, a landing squash after each; never inverted or turned over | 1.25 s | a coin graduated |
+| Alert | Snaps back, trembles, holds, eases upright with a small overshoot | 1.4 s | the creator of a coin it follows sold |
 | Carry | Hangs from the pointer and swings like a pendulum with spring damping | live | drag |
-| Settle | After a drop, a small overshoot then rest | 450 ms | |
+| Settle | After a drop on empty paper, a squash and rest where it was put | 300 ms | |
 
 Springs, not tweens, for everything that follows the pointer (Look, Carry): stiffness 170, damping 18, mass 1. Hops use authored keyframes so they read the same everywhere.
 
-**Reduced motion and phones.** With reduced motion every move collapses to a still frame and a cut. On a phone (800 px and under) it does not roam: it stands in the corner above the tape's line, and a press still hops it once and says a fact.
+**Reduced motion and phones.** With reduced motion every move collapses to a still frame and a cut: it is placed on a clear spot and stays. On a phone (800 px and under) it starts **away**, because a screen that small has no empty paper to stand on; the footer's "Snarks:" control (or the palette) brings it, and then it stands fixed in the corner above the tape's line, where a press still hops it once and says a fact.
 
 ## Behaviour
 
 States: Away, Arriving, Perched, Wandering, Curious, Dozing, Sleeping, Carried, Reacting, Hidden.
 
-- Wanders every 7 to 14 s while the tab is in use and nothing is happening, one hop at a time, preferring the coin it follows.
+- Wanders every 12 to 24 s while the tab is in use and nothing is happening, one hop at a time, preferring the coin it follows.
 - Never hops while you type, while a sheet or the palette is open, or when a control is under where it would land (checked against every clickable element's box, not a few sample points).
 - Re-checks its footing every two seconds: if the page shifted under it (images loading, a panel opening) it steps back to the edge.
-- One setting: Roam, Stay or Away, kept in this browser, reachable from the palette (`> snarks away`) and from its own menu.
+- One setting: Roam, Stay or Away, kept in this browser, reachable from the footer, the palette (`> snarks away`) and its own menu. Stay never travels (it only corrects its footing if the page moved under it); Away stops everything, including its reads of the pad.
+- One mover owns the figure: a new move cancels the old, starts from where the figure really is, and only the current move commits. Grabbing it mid-hop stops it where it is.
+- Reactions wait in a queue: one per kind (a newer replaces an older), none older than three minutes, at most one a minute, never while dragging or while its menu is open.
+- Everything it says carries the network it comes from ("Test network." off mainnet), says "Payouts are paused." when the pad says so, and says "Round data has not loaded." rather than "No round has paid yet." when a read has not landed.
 
 ## What it reacts to (real events only)
 

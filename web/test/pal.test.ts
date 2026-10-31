@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import { planHop, pathFrames, bodyFrames, springStep, lookAngle, cheerFrames } from '../src/lib/palMove'
+import { planHop, pathFrames, bodyFrames, springStep, lookAngle, cheerFrames, shadowFrames, OFF } from '../src/lib/palMove'
+import { ReactionQueue } from '../src/lib/palQueue'
 import { newRound, newGraduations, holdersGained, creatorSell } from '../src/lib/palEvents'
 import { poseSrc } from '../src/lib/palPoses'
 import type { Coin, Epoch, FeedTrade } from '../src/lib/types'
@@ -27,6 +28,21 @@ describe('hop plan', () => {
     expect(planHop({ x: 200, y: 0 }, { x: 0, y: 0 }).tilt).toBeLessThan(0)
     for (const k of [...bodyFrames(planHop({ x: 0, y: 0 }, { x: -300, y: 0 })), ...cheerFrames()]) expect(String(k.transform)).not.toMatch(/scaleX\(-|scale\(-/)
   })
+  test('the path and the body share their key offsets: the squash lands when the figure does', () => {
+    const h = planHop({ x: 0, y: 200 }, { x: 300, y: 100 })
+    const pOff = pathFrames(h).map((k) => k.offset), bOff = bodyFrames(h).map((k) => k.offset)
+    expect(pOff).toContain(OFF.apex); expect(bOff).toContain(OFF.apex)
+    expect(pOff).toContain(OFF.down); expect(bOff).toContain(OFF.down)
+    expect(shadowFrames(h).map((k) => k.offset)).toContain(OFF.down)
+  })
+  test('the fall is faster than the rise: gravity, not a balloon', () => {
+    const f = pathFrames(planHop({ x: 0, y: 0 }, { x: 100, y: 0 }))
+    expect(String(f[2].easing)).toBe('cubic-bezier(.33,0,1,1)')
+    expect(String(f[1].easing)).toBe('cubic-bezier(.33,0,.67,1)')
+  })
+  test('the cheer never inverts or turns the figure over', () => {
+    for (const k of cheerFrames()) { const m = String(k.transform).match(/rotate\((-?[\d.]+)deg\)/); if (m) expect(Math.abs(Number(m[1]))).toBeLessThanOrEqual(12) }
+  })
   test('the body frames start and end at rest', () => {
     const b = bodyFrames(planHop({ x: 0, y: 0 }, { x: 100, y: 0 }))
     expect(b[0].transform).toBe('scale(1,1) rotate(0deg)')
@@ -41,10 +57,12 @@ describe('spring', () => {
     expect(s.pos).toBeCloseTo(10, 1)
     expect(Math.abs(springStep(0, 0, 10, 0.5).pos)).toBeLessThan(50)
   })
-  test('it looks toward a near pointer and ignores a far one', () => {
+  test('it looks toward a near pointer, fades out smoothly and ignores a far one', () => {
     expect(lookAngle(100, 0)).toBe(5)
     expect(lookAngle(-100, 0)).toBe(-5)
     expect(lookAngle(500, 0)).toBe(0)
+    expect(lookAngle(300, 0)).toBeGreaterThan(0)
+    expect(lookAngle(300, 0)).toBeLessThan(5)
     expect(Math.abs(lookAngle(20, 0))).toBeLessThan(5)
   })
 })
@@ -82,5 +100,31 @@ describe('poses', () => {
   test('every pose resolves to a drawing, falling back to the standing one', () => {
     expect(poseSrc('cheer')).toMatch(/mascot-cut/)
     expect(poseSrc('nope' as never)).toMatch(/mascot-cut/)
+  })
+})
+
+describe('reaction queue', () => {
+  const run = async () => {}
+  test('a newer reaction of the same kind replaces the older one', () => {
+    const q = new ReactionQueue(0, 1000)
+    q.push('holders:A', run, 0); q.push('holders:A', run, 5)
+    expect(q.size).toBe(1)
+  })
+  test('nothing plays inside the cooldown, and old ones expire', () => {
+    const q = new ReactionQueue(60_000, 180_000)
+    q.push('round', run, 0)
+    const first = q.next(1)!
+    q.played(first, 1)
+    q.push('grad:X', run, 2)
+    expect(q.next(30_000)).toBeNull()
+    expect(q.next(61_500)?.key).toBe('grad:X')
+    expect(q.next(190_000)).toBeNull()
+    expect(q.size).toBe(0)
+  })
+  test('unfollowing a coin drops what was waiting for it', () => {
+    const q = new ReactionQueue(0, 1000)
+    q.push('holders:A', run, 0); q.push('sell:A', run, 0); q.push('round', run, 0)
+    q.drop('holders:A'); q.drop('sell:A')
+    expect(q.size).toBe(1)
   })
 })
