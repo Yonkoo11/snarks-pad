@@ -69,6 +69,10 @@ States: Away, Arriving, Perched, Wandering, Curious, Dozing, Sleeping, Carried, 
 
 Nothing fires from a guess, a timer, or a number it does not have.
 
+## The shelf of earlier lines
+
+Snarks is held to the same rule as the pad. The last ten lines it volunteered are kept in this browser, and its menu's "Earlier lines" shows them as they were said, with their time. Where a line quoted a holder count, the shelf adds what that count is now ("Then 2,300 holders, now 2,210."). A line is never quietly replaced and is never called an error: the shelf says what changed and leaves the reader to judge. Lines it cannot check (a round, a graduation) are shown as said. Clear empties it.
+
 ## The scenes
 
 Snarks is one character with a scene per job, so the app does not need a different mascot picture in every corner.

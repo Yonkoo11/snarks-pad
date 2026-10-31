@@ -18,6 +18,7 @@
   import { newRound, newGraduations, holdersGained, creatorSell } from '../../lib/palEvents'
   import { ReactionQueue } from '../../lib/palQueue'
   import { returning, touchSession } from '../../lib/returning'
+  import { readLog, writeLog, remember, changedNote, type Said } from '../../lib/palLog'
   import { cardModel, saveFollowCard } from '../../lib/followcard'
   import { poseSrc, type PoseName } from '../../lib/palPoses'
 
@@ -36,6 +37,8 @@
   let dragging = $state(false)
   let shown = $state(false)
   let menu = $state(false)
+  let shelf = $state(false)
+  let log = $state<Said[]>(readLog())
   let hovering = $state(false)
   let corner = $state(false) // a phone that asked for it: fixed at the foot of the screen
   let pose = $state<PoseName>('stand')
@@ -188,7 +191,8 @@
     return `${note()}No round has paid yet.`
   }
   let sayTimer: ReturnType<typeof setTimeout> | undefined
-  function say(text: string) {
+  function say(text: string, ctx?: { mint: string | null; holders: number | null }) {
+    if (ctx) { log = remember(log, { at: Date.now(), text, mint: ctx.mint, holders: ctx.holders }); writeLog(log) } // what it volunteered is kept, to be read back
     if (host) { const r = host.getBoundingClientRect(); bubbleSide = r.left < 140 ? 'left' : r.left > innerWidth - 260 ? 'right' : 'mid'; bubbleBelow = r.top < 200 } // under the header's controls, the bubble goes below the figure
     line = text; clearTimeout(sayTimer); sayTimer = setTimeout(() => (line = null), 5400)
   }
@@ -197,7 +201,7 @@
   // ---- real events: each waits in a queue (one per kind, expiring, at most once a minute) and plays when nothing else is going on
   const queue = new ReactionQueue()
   let playing = false
-  const busy = () => dragging || menu || !!layers.top || document.hidden || !!document.querySelector('.slip[role="dialog"]') || (document.activeElement instanceof HTMLElement && !!document.activeElement.closest('input, textarea, select, [contenteditable]'))
+  const busy = () => dragging || menu || shelf || !!layers.top || document.hidden || !!document.querySelector('.slip[role="dialog"]') || (document.activeElement instanceof HTMLElement && !!document.activeElement.closest('input, textarea, select, [contenteditable]'))
   async function drain() {
     if (playing || moving || busy() || pal.mode === 'away') return
     const r = queue.next(Date.now())
@@ -213,10 +217,10 @@
     const s = spotAt(el, dx)
     return s ? { el, dx, ...s } : null
   }
-  const react = (key: string, kind: 'wave' | 'cheer' | 'alert', text: string, goHome = false) => queue.push(key, async () => {
+  const react = (key: string, kind: 'wave' | 'cheer' | 'alert', text: string, goHome = false, ctx: { mint: string | null; holders: number | null } = { mint: null, holders: null }) => queue.push(key, async () => {
     measureOrigin()
     if (goHome && pal.mode === 'roam' && !still) { const h = homeSpot(); if (h) await hopTo(h) }
-    say(text); await play(kind)
+    say(text, ctx); await play(kind)
   }, Date.now())
 
   $effect(() => poll(async () => {
@@ -249,14 +253,14 @@
       followed = c
       const gained = holdersGained(announcedHolders, c.holders)
       announcedHolders = c.holders ?? announcedHolders
-      if (gained) react(`holders:${m}`, 'wave', `${note()}$${c.symbol}: +${gained} ${gained === 1 ? 'holder' : 'holders'} since the last check.`, true)
+      if (gained) react(`holders:${m}`, 'wave', `${note()}$${c.symbol}: +${gained} ${gained === 1 ? 'holder' : 'holders'} since the last check.`, true, { mint: m, holders: c.holders ?? null })
     }, 30_000)
     const stopB = poll(async () => {
       if (pal.mode === 'away') return
       const r = await api.trades({ mint: m, limit: 15 }).catch(() => null)
       if (!r || adoptedMint !== m) return
       const s = creatorSell(r.trades, sellMark)
-      if (s) { sellMark = Date.parse(s.at); react(`sell:${m}`, 'alert', `${note()}Creator sold on $${s.symbol}.`, true) }
+      if (s) { sellMark = Date.parse(s.at); react(`sell:${m}`, 'alert', `${note()}Creator sold on $${s.symbol}.`, true, { mint: m, holders: followed?.holders ?? null }) }
     }, 30_000)
     return () => { stopA(); stopB() }
   })
@@ -283,7 +287,7 @@
       measureOrigin()
       const el = document.querySelector(`[data-coin-mint="${CSS.escape(r.mint)}"]`)
       if (el && pal.mode === 'roam' && !still) { const dx = Math.min(Math.max(20, el.getBoundingClientRect().width * 0.3), Math.max(20, el.getBoundingClientRect().width - W - 20)); const s = spotAt(el, dx); if (s) await hopTo({ el, dx, ...s }) }
-      say(`${note()}$${c.symbol}: ${d.join(', ')} since you last opened it, ${ago(new Date(r.at).toISOString())}.`); await play('wave')
+      say(`${note()}$${c.symbol}: ${d.join(', ')} since you last opened it, ${ago(new Date(r.at).toISOString())}.`, { mint: r.mint, holders: c.holders ?? null }); await play('wave')
     }, Date.now())
   }
   const hintKey = 'snarks-pal-hint'
@@ -472,10 +476,10 @@
   // ---- its menu: how it behaves, following the coin on this page without a drag, and the coin it follows
   const routeMint = $derived(router.route.name === 'coin' ? router.route.mint : null)
   $effect(() => {
-    if (!menu) return
-    void tick().then(() => host?.querySelector<HTMLButtonElement>('.menu button')?.focus())
-    const close = (e: Event) => { if (!(e.target instanceof Node && host?.contains(e.target))) menu = false }
-    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') { menu = false; line = null; fig?.focus() } }
+    if (!menu && !shelf) return
+    void tick().then(() => host?.querySelector<HTMLButtonElement>(menu ? '.menu button' : '.shelf button')?.focus())
+    const close = (e: Event) => { if (!(e.target instanceof Node && host?.contains(e.target))) { menu = false; shelf = false } }
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') { menu = false; shelf = false; line = null; fig?.focus() } }
     addEventListener('pointerdown', close); addEventListener('keydown', esc)
     return () => { removeEventListener('pointerdown', close); removeEventListener('keydown', esc) }
   })
@@ -524,10 +528,23 @@
     <!-- said once to a screen reader, outside the button; the bubble below is its picture -->
     <p class="sr" role="status" aria-live="polite">{line ?? ''}</p>
     {#if line}<span class="bubble mono {bubbleSide}" class:below={bubbleBelow} aria-hidden="true">{line}</span>{/if}
+    {#if shelf}
+      <div class="shelf" role="dialog" aria-label="What Snarks said earlier">
+        <p class="sh-h">What I said earlier, as I said it.</p>
+        <ol>
+          {#each log as e (e.at + e.text)}
+            {@const note2 = changedNote(e, { mint: pal.adopted, holders: followed?.holders })}
+            <li><span class="when">{ago(new Date(e.at).toISOString())}</span> {e.text}{#if note2}{' '}<span class="then">{note2}</span>{/if}</li>
+          {/each}
+        </ol>
+        <div class="sh-b"><button type="button" onclick={() => { log = []; writeLog([]); shelf = false }}>Clear</button><button type="button" onclick={() => { shelf = false; fig?.focus() }}>Close</button></div>
+      </div>
+    {/if}
     {#if menu}
       <div class="menu" role="menu" aria-label="Snarks">
         {#each MODES as m (m.id)}<button type="button" role="menuitemradio" aria-checked={pal.mode === m.id} onclick={() => { pal.setMode(m.id); menu = false }}>{m.label}</button>{/each}
         {#if routeMint && pal.adopted !== routeMint}<button type="button" role="menuitem" onclick={() => { const m = routeMint; menu = false; void adopt(m) }}>Follow this coin</button>{/if}
+        {#if log.length > 0}<button type="button" role="menuitem" onclick={() => { menu = false; shelf = true }}>Earlier lines ({log.length})</button>{/if}
         {#if pal.adopted && followed && watched()[pal.adopted]}<button type="button" role="menuitem" onclick={() => { menu = false; void makeCard() }}>Save a card of ${followed.symbol}</button>{/if}
         {#if pal.adopted}<button type="button" role="menuitem" onclick={() => { pal.adopt(null); menu = false; say('Not following any coin now.') }}>Stop following{followed ? ` $${followed.symbol}` : ''}</button>{/if}
       </div>
@@ -570,8 +587,18 @@
     position: absolute; bottom: calc(100% + 8px); left: 50%; translate: -30% 0; display: grid; min-width: 170px; padding: 4px; background: var(--paper-2); border-radius: var(--r-sm);
     box-shadow: var(--sh-3), 0 0 0 1.5px var(--line); pointer-events: auto; animation: say 160ms var(--ease);
   }
+  .shelf {
+    position: absolute; bottom: calc(100% + 8px); left: 50%; translate: -30% 0; width: min(300px, calc(100vw - 24px)); padding: var(--s-3); background: var(--paper-2); border-radius: var(--r-sm);
+    box-shadow: var(--sh-3), 0 0 0 1.5px var(--line); pointer-events: auto; animation: say 160ms var(--ease); font-size: var(--t-12); line-height: 1.4;
+  }
+  .sh-h { margin: 0 0 var(--s-2); font-weight: 700; }
+  .shelf ol { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--s-2); max-height: 240px; overflow-y: auto; }
+  .shelf li { font-family: var(--f-mono, ui-monospace, monospace); }
+  .when { color: var(--ink-3); } .then { color: var(--ink); font-weight: 700; }
+  .sh-b { display: flex; gap: var(--s-2); margin-top: var(--s-3); }
+  .sh-b button { min-height: 44px; padding: 0 var(--s-3); border: 0; border-radius: var(--r-xs); background: var(--paper-3); color: var(--ink); font: inherit; font-size: var(--t-14); font-weight: 700; cursor: pointer; }
   .menu button { min-height: 44px; padding: 0 var(--s-3); border: 0; border-radius: var(--r-xs); background: none; color: var(--ink); font: inherit; font-size: var(--t-14); font-weight: 700; text-align: left; cursor: pointer; white-space: nowrap; }
   .menu button[aria-checked='true'] { background: var(--ink); color: var(--paper); }
   @media (hover: hover) { .menu button:hover:not([aria-checked='true']) { background: var(--hover); } }
-  @media (prefers-reduced-motion: reduce) { .breathe, .breathe.bob, .breathe.doze, .breathe.deep { animation: none; } .look { transition: none; } .bubble, .menu { animation: none; } .pal.on { transition: none; } .shadow { display: none; } }
+  @media (prefers-reduced-motion: reduce) { .breathe, .breathe.bob, .breathe.doze, .breathe.deep { animation: none; } .look { transition: none; } .bubble, .menu, .shelf { animation: none; } .pal.on { transition: none; } .shadow { display: none; } }
 </style>
