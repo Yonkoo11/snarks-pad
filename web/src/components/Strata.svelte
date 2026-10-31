@@ -5,6 +5,7 @@
   // the wax at the end of a band says whether THIS device has re-hashed that round's holder file.
   import type { Epoch } from '../lib/types'
   import { zec } from '../lib/format'
+  import RoundTrack from './room/RoundTrack.svelte'
 
   const { epochs, checked, onshow }: { epochs: Epoch[]; checked: string[]; onshow: (id: string) => void } = $props()
   const MAX = 24
@@ -59,6 +60,7 @@
       <div><dt class="label">To holders</dt><dd class="mono">{zec(cur.split.holdersZats)} ZEC</dd></div>
       <div><dt class="label">This device</dt><dd>{waxText[wax(cur)]}</dd></div>
     </dl>
+    <RoundTrack e={cur} />
     <button class="btn ghost jump" type="button" onclick={() => onshow(cur.id)}>Show it in the list</button>
   </div>
 </section>
