@@ -73,7 +73,7 @@ Nothing fires from a guess, a timer, or a number it does not have.
 Snarks is one character with a scene per job, so the app does not need a different mascot picture in every corner.
 
 1. **Verify** (built as a separate figure, to be folded in): leans toward the hash while your browser computes, settles beside the stamp on a match, turns away on a mismatch.
-2. **Envelope** (built as a separate figure): the hold lifts it halfway, a pending request keeps it there, only success lets it out.
+2. **Envelope** (built, `EnvelopeScene.svelte`): the shielded opt-in's envelope with Snarks living in it. Its pose is the state of the flow (`lib/envelope.ts`, tested): only the horns show until a wallet is connected; it stands higher once a valid Zcash address is pasted; your own hold on the seal lifts it, never to the top; a pending request keeps it halfway; a refusal ducks it in and pulls the flap shut with a shake; only the pad's confirmation lets it out, in one arc onto the top of the envelope, the flap shuts behind it and the pink-hatched wax goes on (pink hatching marks shielded things only). While it waits it plays: it ducks inside, comes up somewhere else in the mouth of the envelope with a pop, and leans toward the pointer. With reduced motion every pose is a cut.
 3. **Follow** (built): drag it onto any coin to follow it; it sits on that coin from then on and reports what changed.
 4. **Compare**: walks along the tops of the pinned coins when the compare shelf is open.
 5. **Tape**: sits on the tape rail's header and bounces once on a big trade.
