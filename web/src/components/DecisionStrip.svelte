@@ -14,9 +14,10 @@
   const { coin, pot, now }: { coin: Coin; pot: Pot | null | undefined; now: number } = $props()
 
   let extras = $state<RowExtras | null>(null)
+  const mint = $derived(coin.mint) // a primitive: the effect below is not re-run when the page hands over a fresh coin object
   $effect(() => {
     let live = true
-    const read = () => rowExtras(coin.mint).then((e) => { if (live) extras = e })
+    const read = () => rowExtras(mint).then((e) => { if (live) extras = e })
     read()
     const t = setInterval(read, 60_000)
     return () => { live = false; clearInterval(t) }

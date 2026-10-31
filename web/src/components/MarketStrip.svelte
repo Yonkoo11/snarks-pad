@@ -10,6 +10,9 @@
   import Prov from './Prov.svelte'
 
   const { coin, mode }: { coin: Coin; mode: PadMode | null } = $props()
+  // primitives: an effect reading these is not re-run when the page hands over a fresh coin object
+  const mint = $derived(coin.mint)
+  const poolId = $derived(coin.poolId)
   let win = $state<Win>('h24')
   let stats = $state<PoolStats | null>(null)
   let source = $state<'chain' | 'recorded'>('chain')
@@ -19,15 +22,15 @@
 
   async function load() {
     try {
-      if (mode === 'mainnet' && coin.poolId) { stats = await poolStats(coin.poolId); source = 'chain' }
+      if (mode === 'mainnet' && poolId) { stats = await poolStats(poolId); source = 'chain' }
       else {
-        const r = await api.trades({ mint: coin.mint, limit: 40 }).then((x) => x.trades as FeedTrade[])
+        const r = await api.trades({ mint, limit: 40 }).then((x) => x.trades as FeedTrade[])
         stats = statsFromTrades(chainFromRecorded(r), Date.now()); source = 'recorded'
       }
       failed = false
     } catch { failed = true }
   }
-  $effect(() => { void [coin.mint, coin.poolId, mode]; stats = null; return poll(load, 30_000) })
+  $effect(() => { void [mint, poolId, mode]; stats = null; return poll(load, 30_000) })
 
   const f = (v: number | null, dp = 2) => (v === null ? '–' : v.toLocaleString('en-US', { maximumFractionDigits: dp }))
   const z = (v: number | null) => (v === null ? '–' : `${v >= 100 ? f(v, 1) : f(v, 3)} ZEC`)

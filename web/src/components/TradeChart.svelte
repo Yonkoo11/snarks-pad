@@ -19,7 +19,9 @@
   import Prov from './Prov.svelte'
 
   const { coin, epochs, mode }: { coin: Coin; epochs: Epoch[] | null; mode: PadMode | null } = $props()
+  // primitives, so an effect that reads them is not re-run every time the page hands this component a fresh coin object (every few seconds)
   const mint = $derived(coin.mint)
+  const poolId = $derived(coin.poolId)
 
   let tf = $state<Timeframe>('15m')
   let unit = $state<'zec' | 'usd'>('zec')
@@ -35,10 +37,10 @@
 
   // ---- the data
   async function load() {
-    try { res = await loadCandles({ mint, pool: coin.poolId, tf, mode }); failed = false }
+    try { res = await loadCandles({ mint, pool: poolId, tf, mode }); failed = false }
     catch { failed = true }
   }
-  $effect(() => { void [mint, tf, mode, coin.poolId]; res = null; failed = false; return poll(load, 30_000) })
+  $effect(() => { void [mint, tf, mode, poolId]; res = null; failed = false; return poll(load, 30_000) })
   $effect(() => {
     void mint
     return poll(() => api.trades({ mint, limit: 40 }).then((r) => (trades = r.trades), () => {}), 30_000)
@@ -55,13 +57,17 @@
   const sec = $derived(secOf(tf))
   const livePrice = $derived(Number(coin.priceZec) / 1e8) // ZEC per whole token, the pad's own figure, read every few seconds
 
-  // the candles with the live price folded in, only when the price really moved off the last candle (a price moves on a trade)
-  const candles = $derived.by(() => {
-    const base = res?.candles ?? []
-    const last = base[base.length - 1]
-    if (!last || !Number.isFinite(livePrice) || livePrice <= 0) return base
-    if (Math.abs(livePrice - last.close) / last.close < 1e-6) return base
-    return pushObs(base, { t: now, v: livePrice }, sec)
+  // the source's candles; they change only when a read lands, so nothing downstream redraws on the clock
+  const candles = $derived(res?.candles ?? [])
+  // the bucket the clock is in: a primitive, so a derived reading it recomputes once per candle, not once per second
+  const bucket = $derived(Math.floor(now / 1000 / sec))
+  // the tail with the pad's live price folded in, only when the price really moved off the last candle (a price moves on a trade).
+  // It is drawn with series.update, one bar, never by resetting the chart's data.
+  const live = $derived.by((): Candle[] | null => {
+    const last = candles[candles.length - 1]
+    if (!last || !Number.isFinite(livePrice) || livePrice <= 0) return null
+    if (Math.abs(livePrice - last.close) / last.close < 1e-6) return null
+    return pushObs([last], { t: bucket * sec * 1000, v: livePrice }, sec).slice(-2)
   })
 
   // ---- the chart
@@ -86,7 +92,7 @@
     chart = createChart(el, {
       autoSize: true,
       layout: { background: { color: 'transparent' }, textColor: c.ink2, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: 11, attributionLogo: true },
-      grid: { vertLines: { color: a(c.line, 0.5) }, horzLines: { color: a(c.line, 0.5) } },
+      grid: { vertLines: { color: c.line }, horzLines: { color: c.line } },
       crosshair: { mode: CrosshairMode.Normal, vertLine: { color: c.ink3, style: LineStyle.Dashed, labelBackgroundColor: c.ink }, horzLine: { color: c.ink3, style: LineStyle.Dashed, labelBackgroundColor: c.ink } },
       rightPriceScale: { borderVisible: false, scaleMargins: { top: 0.1, bottom: 0.08 } },
       timeScale: { borderVisible: false, timeVisible: true, secondsVisible: false, rightOffset: 6 },
@@ -112,7 +118,7 @@
     void theme.effective
     if (!chart || !cs || probes.length < 6) return
     const c = col()
-    chart.applyOptions({ layout: { textColor: c.ink2 }, grid: { vertLines: { color: a(c.line, 0.5) }, horzLines: { color: a(c.line, 0.5) } } })
+    chart.applyOptions({ layout: { textColor: c.ink2 }, grid: { vertLines: { color: c.line }, horzLines: { color: c.line } } })
     cs.applyOptions({ upColor: c.good, downColor: c.bad, wickUpColor: c.good, wickDownColor: c.bad })
   })
 
@@ -157,6 +163,20 @@
     }
   })
 
+  // the live bar: one update of the last bar (and a new one when the clock has moved into a later bucket); the source's next read replaces it
+  $effect(() => {
+    const tail = live
+    if (!chart || !cs || !tail || candles.length === 0) return
+    const c = col()
+    const lastTime = candles[candles.length - 1].time
+    for (const x of tail) {
+      // buckets with no trade between the source's last candle and a new one stay empty
+      if (x.time > lastTime) for (let t = lastTime + sec; t < x.time && (x.time - lastTime) / sec <= GAP_CAP; t += sec) cs.update({ time: t as UTCTimestamp })
+      cs.update({ time: x.time as UTCTimestamp, open: x.open * k, high: x.high * k, low: x.low * k, close: x.close * k })
+      vs?.update({ time: x.time as UTCTimestamp, value: x.volume * (usd ?? 1), color: a(x.close >= x.open ? c.good : c.bad, 0.45) })
+    }
+  })
+
   // markers: graduation, the creator's sells, your own trades (only trades the page has: the newest 40), snapped to the candle they fall in
   $effect(() => {
     if (!markers || candles.length === 0) return
@@ -193,7 +213,7 @@
     pointer.set(t === null ? [] : [{ time: Math.floor(t / sec) * sec, label: '' }], { line: c.ink, text: c.ink })
   })
 
-  const last = $derived(candles[candles.length - 1])
+  const last = $derived(live ? live[live.length - 1] : candles[candles.length - 1])
   const shown = $derived(hover?.c ?? last)
   const fmt = (v: number) => {
     const d = priceDecimals([v * k]).precision

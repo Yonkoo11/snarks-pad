@@ -11,15 +11,16 @@
 
   const { coin, now }: { coin: Coin; now: number } = $props()
   const PRESETS = ['0.1', '0.5', '1', '5']
+  const mint = $derived(coin.mint) // a primitive: effects reading it are not re-run when the page hands over a fresh coin object
   let amount = $state('0.5')
   let q = $state<Awaited<ReturnType<typeof api.quote>> | null>(null)
   let qErr = $state<string | null>(null)
   let pot = $state<Pot | null | undefined>(undefined)
   let hold = $state<{ supply: bigint; poolPct: number } | null | undefined>(undefined)
 
-  $effect(() => { void coin.mint; return poll(() => api.pot(coin.mint).then((p) => (pot = p), () => (pot = null)), 20_000) })
+  $effect(() => { void mint; return poll(() => api.pot(mint).then((p) => (pot = p), () => (pot = null)), 20_000) })
   $effect(() => {
-    api.holders(coin.mint, { limit: 1 }).then((h) => { try { hold = { supply: BigInt(h.supply || '0'), poolPct: h.poolPct ?? 0 } } catch { hold = null } }, () => (hold = null))
+    api.holders(mint, { limit: 1 }).then((h) => { try { hold = { supply: BigInt(h.supply || '0'), poolPct: h.poolPct ?? 0 } } catch { hold = null } }, () => (hold = null))
   })
 
   const zats = $derived.by(() => {
@@ -28,7 +29,7 @@
   })
   // a quote is asked 300 ms after the amount stops changing
   $effect(() => {
-    const z = zats, m = coin.mint
+    const z = zats, m = mint
     q = null; qErr = null
     if (z === null) return
     const t = setTimeout(() => {

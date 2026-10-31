@@ -12,8 +12,9 @@
   const { coin, now }: { coin: Coin; now: number } = $props()
   const W = 640, H = 300
   let view = $state<Holders | null | undefined>(undefined)
+  const mint = $derived(coin.mint) // a primitive: the effect below is not re-run when the page hands over a fresh coin object
   $effect(() => {
-    const m = coin.mint
+    const m = mint
     view = undefined
     api.holders(m, { limit: 100 }).then((h) => (view = h), () => (view = null))
   })

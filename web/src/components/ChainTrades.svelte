@@ -14,6 +14,9 @@
   import Prov from './Prov.svelte'
 
   const { coin, mode, now }: { coin: Coin; mode: PadMode | null; now: number } = $props()
+  // primitives: an effect reading these is not re-run when the page hands over a fresh coin object
+  const mint = $derived(coin.mint)
+  const poolId = $derived(coin.poolId)
   let rows = $state<ChainTrade[] | null>(null)
   let source = $state<'chain' | 'recorded'>('chain')
   let failed = $state(false)
@@ -24,12 +27,12 @@
 
   async function load() {
     try {
-      if (mode === 'mainnet' && coin.poolId) { rows = await poolTrades(coin.poolId, coin.mint); source = 'chain' }
-      else { rows = chainFromRecorded((await api.trades({ mint: coin.mint, limit: 40 })).trades as FeedTrade[]); source = 'recorded' }
+      if (mode === 'mainnet' && poolId) { rows = await poolTrades(poolId, mint); source = 'chain' }
+      else { rows = chainFromRecorded((await api.trades({ mint, limit: 40 })).trades as FeedTrade[]); source = 'recorded' }
       failed = false; readAt = Date.now()
     } catch { failed = true }
   }
-  $effect(() => { void [coin.mint, coin.poolId, mode]; rows = null; take = 40; return poll(load, 15_000) })
+  $effect(() => { void [mint, poolId, mode]; rows = null; take = 40; return poll(load, 15_000) })
 
   const all = $derived(rows ?? [])
   const maxZec = $derived(Math.max(0, ...all.map((t) => t.zec)))
