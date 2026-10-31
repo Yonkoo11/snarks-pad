@@ -4,6 +4,19 @@ The revamp is built to the data the engine serves today. Each item below is some
 
 Priority is by how much of the UI it unlocks per unit of engine work.
 
+## 0. Candles and pool trades from the engine (highest priority)
+
+**What the chart does today.** The coin chart (TradingView Lightweight Charts 5.2.1, Apache-2.0, attribution shown) reads candles, pool statistics and the pool's trades straight from GeckoTerminal's free public API in the visitor's browser. Checked 2026-10-31 on mainnet: it answers for a bonding-curve pool and for a graduated pool, prices them in ZEC (the pool's quote token), and allows any origin. The engine's own price history is only the trades browsers confirmed through the pad's buy box (up to 300 points), so it is used only as a labelled fallback.
+
+**Why this should move into the engine.** The free tier allows about 30 reads a minute per address and its commercial-use terms were not confirmed. A company product should not depend on a third party's free tier for its main screen.
+
+**Ask.** Index the pool swap events (the Meteora DBC `EvtSwap2` and the DAMM v2 swap) into the engine, aggregate 1-minute candles with volume in ZEC, derive 5m, 15m, 1h, 4h and 1d from them, and serve:
+- `GET /coins/:mint/candles?tf=15m&before=<unix>` returning `[time, open, high, low, close, volumeZec]`, one source across the curve and the graduated pool;
+- `GET /coins/:mint/pool-trades` with signature, time, side, wallet, ZEC and tokens;
+- `GET /coins/:mint/pool-stats` with price change, volume, buys, sells, distinct buyers and sellers over 5m, 1h, 6h and 24h, liquidity and FDV.
+
+A webhook provider such as Helius (about $49 a month on its developer plan, to be re-checked before budgeting) or a self-run RPC subscription can feed it. Dedupe on signature, expect retries, and backfill history once from the provider. The web client already isolates its source in `web/src/lib/candleSource.ts` and `web/src/lib/pool.ts`, so switching is a one-file change per reader.
+
 ## 1. Pot and holder aggregates on the list endpoint
 
 **Ask.** Add to each coin in `GET /api/coins`: `holdersPotZats` (what the next round would pay this coin's holders), and the three holder aggregates `top10Pct`, `devPct`, `poolPct`.
