@@ -17,6 +17,7 @@
   import CountUp from '../components/CountUp.svelte'
   import VerifyRound from '../components/VerifyRound.svelte'
   import Strata from '../components/Strata.svelte'
+  import ChairSlot from '../components/room/ChairSlot.svelte'
   import Lamp from '../components/room/Lamp.svelte'
 
   let t = $state<Treasury | null>(null)
@@ -188,6 +189,7 @@
               <span class="stamp"><Postmark n={numberOf(e.id)} date={stampDate(e.at)} /></span>
             {/if}
             <div class="r-head">
+              {#if e.snapshot}<ChairSlot filled={checked.includes(e.id)} />{/if}
               <span class="eid mono" title={e.id}>#{numberOf(e.id)}</span>
               <span class="muted">{when(e.at)}</span>
               <span>claimed <span class="mono">{zec(e.harvestedZats)} ZEC</span> from {e.coinMints.length} {e.coinMints.length === 1 ? 'coin' : 'coins'}</span>

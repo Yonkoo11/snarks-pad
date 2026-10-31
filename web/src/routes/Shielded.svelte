@@ -6,6 +6,7 @@
   import { shieldedView } from '../lib/shielded.svelte'
   import WalletButton from '../components/WalletButton.svelte'
   import SealButton from '../components/room/SealButton.svelte'
+  import EnvelopePeek from '../components/room/EnvelopePeek.svelte'
   import HiddenList from '../components/HiddenList.svelte'
   import Taped from '../components/Taped.svelte'
   import MyRewards from '../components/MyRewards.svelte'
@@ -19,6 +20,10 @@
   let busy = $state<string | null>(null)
   let err = $state<string | null>(null)
   let justDone = $state(false)
+  let holdK = $state(0) // how far the user's own hold on the seal has gone
+  // where the mascot is: the hold carries it to halfway, a pending request keeps it there, the pad's success lets it out
+  const peekP = $derived(justDone ? 1 : busy ? 0.5 : holdK * 0.5)
+  const peekOn = $derived(justDone || !!busy || holdK > 0)
 
   // What this page knows about the wallet's shielded delivery. A page load learns nothing: since v2.9 the engine shows whether a wallet opted in, its masked address and
   // what is pending only against the wallet's own signature, so the page asks for one signature when the user wants to see their settings (`status`, shared with the
@@ -106,6 +111,7 @@
       <span class="band hatch" aria-hidden="true"></span>
       {#if isOn}
         <div class="on">
+          {#if justDone}<div class="sealrow"><EnvelopePeek p={1} settle /></div>{/if}
           <p class="label">Shielded delivery is on</p>
           <p class="h3">{justDone ? 'Done. ' : ''}Rewards for <span class="mono">{short(wallet.address ?? '')}</span> now go to <span class="mono">{status?.zcashAddressMasked ?? maskedNow}</span>.</p>
           {#if status}
@@ -162,7 +168,10 @@
               {:else}
                 <p class="muted">Your wallet shows the exact text before you sign: this wallet, this Zcash address, and a one-time code.</p>
               {/if}
-              <SealButton label="Hold to seal: get my rewards shielded" busy={busy} disabled={!wallet.address || !addr || !!hint} onseal={register} />
+              <div class="sealrow">
+                <div class="sealbtn"><SealButton label="Hold to seal: get my rewards shielded" busy={busy} disabled={!wallet.address || !addr || !!hint} onseal={register} onhold={(k) => (holdK = k)} /></div>
+                {#if peekOn}<EnvelopePeek p={peekP} />{/if}
+              </div>
               {#if !wallet.address}<p class="small muted">Connect a wallet above first.</p>{:else if !addr || hint}<p class="small muted">Paste a valid Zcash address above first.</p>{/if}
             </div>
           </li>
@@ -225,6 +234,8 @@
   .sdoor { display: grid; gap: var(--s-5); padding: clamp(20px, 3vw, 40px); }
   .grid > :first-child { position: sticky; top: var(--s-4); }
   .grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: var(--s-7); align-items: start; margin-top: var(--s-4); }
+  .sealrow { display: flex; align-items: flex-end; gap: var(--s-5); flex-wrap: wrap; }
+  .sealbtn { min-width: 0; }
   .steps { position: relative; overflow: hidden; padding: var(--s-6); display: grid; gap: var(--s-4); }
   .band { position: absolute; inset: 0 0 auto 0; height: 6px; }
   ol { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-6); }

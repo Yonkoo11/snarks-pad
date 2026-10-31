@@ -5,8 +5,9 @@
   // and it falls open again. The hold is theatre with a purpose - the choice should feel deliberate -
   // while the real safety stays where it was: the wallet shows the exact message before anything is
   // signed. Reduced motion (or any assistive pressure) gets a plain click; the wallet still confirms.
-  let { label, busy = null, disabled = false, onseal }: {
+  let { label, busy = null, disabled = false, onseal, onhold }: {
     label: string; busy?: string | null; disabled?: boolean; onseal: () => void
+    onhold?: (k: number) => void // the user's own hold, 0..1, for whatever should follow it
   } = $props()
 
   const HOLD_MS = 900
@@ -23,7 +24,8 @@
     t0 = performance.now()
     const step = (t: number) => {
       k = Math.min(1, (t - t0) / HOLD_MS)
-      if (k >= 1) { holding = false; k = 0; onseal(); return }
+      if (k >= 1) { holding = false; k = 0; onhold?.(0); onseal(); return }
+      onhold?.(k)
       if (holding) raf = requestAnimationFrame(step)
     }
     raf = requestAnimationFrame(step)
@@ -32,6 +34,7 @@
     holding = false
     cancelAnimationFrame(raf)
     k = 0
+    onhold?.(0)
   }
   function onKey(e: KeyboardEvent, down: boolean) {
     if (e.key !== ' ' && e.key !== 'Enter') return
