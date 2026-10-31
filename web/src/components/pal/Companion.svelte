@@ -163,11 +163,22 @@
     put(to)
   }
   async function hopTo(s: Spot) { perch = s.el ? { el: s.el, dx: s.dx } : null; hovering = !s.el; await hop(s) }
+  // paper-scrap confetti for a graduation: loaded on first use, never pink (pink marks shielded things only), and off under reduced motion
+  async function confettiFrom(el: HTMLElement) {
+    const r = el.getBoundingClientRect()
+    const { default: confetti } = await import('canvas-confetti')
+    confetti({
+      particleCount: 36, spread: 70, startVelocity: 22, ticks: 110, gravity: 1.1, scalar: 0.8, disableForReducedMotion: true,
+      origin: { x: (r.left + r.width / 2) / innerWidth, y: (r.top + r.height * 0.3) / innerHeight },
+      colors: ['#efe7da', '#e8dcc2', '#2b2420', '#b8a88a'],
+    })
+  }
   async function play(kind: 'wave' | 'cheer' | 'alert') {
     if (!body || reduced) return // with reduced motion a still frame: the words carry it
     pose = kind === 'wave' ? 'stand' : kind
     const frames = kind === 'wave' ? waveFrames() : kind === 'cheer' ? cheerFrames() : alertFrames()
     const a = body.animate(frames, { duration: kind === 'wave' ? 900 : kind === 'cheer' ? 1250 : 1400, easing: 'linear' })
+    if (kind === 'cheer') confettiFrom(body)
     try { await a.finished } catch { /* cancelled */ }
     pose = 'stand'
   }

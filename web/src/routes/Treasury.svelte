@@ -144,7 +144,7 @@
         {#if latestShielded.shielded.swap.provider === 'simulated'}<p class="muted small">The swap into native ZEC was simulated in this test setup.</p>{/if}
         {#if latestShielded.snapshot}
           <p class="muted small">Holder snapshot <span class="mono">{short(latestShielded.snapshot.sha256, 10, 8)}</span>, <a href={apiUrl(latestShielded.snapshot.url)} target="_blank" rel="noreferrer">open the file</a>{#if latestShielded.snapshot.memoSig}, hash written to Solana in memo <Addr value={latestShielded.snapshot.memoSig} head={6} tail={4} href={solUrl(latestShielded.snapshot.memoSig)} label="memo signature" />{/if}. To check that your own note arrived, look for it in your wallet.</p>
-          <VerifyRound sha256={latestShielded.snapshot.sha256} url={latestShielded.snapshot.url} onverified={() => markChecked(latestShielded.id)} />
+          <VerifyRound sha256={latestShielded.snapshot.sha256} url={latestShielded.snapshot.url} epochId={latestShielded.id} memoSig={latestShielded.snapshot.memoSig} onverified={() => markChecked(latestShielded.id)} />
         {/if}
       </article>
         {:else}
@@ -236,7 +236,7 @@
             {#if e.snapshot}
               <div class="check">
                 <span class="muted small">Holder snapshot <span class="mono">{short(e.snapshot.sha256, 8, 6)}</span>{#if e.snapshot.memoSig}, its hash in memo <Addr value={e.snapshot.memoSig} head={6} tail={4} href={solUrl(e.snapshot.memoSig)} label="memo signature" />{/if}</span>
-                <VerifyRound sha256={e.snapshot.sha256} url={e.snapshot.url} compact onverified={() => markChecked(e.id)} />
+                <VerifyRound sha256={e.snapshot.sha256} url={e.snapshot.url} epochId={e.id} memoSig={e.snapshot.memoSig} compact onverified={() => markChecked(e.id)} />
               </div>
             {/if}
           </article>
