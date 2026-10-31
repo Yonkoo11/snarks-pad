@@ -28,6 +28,7 @@
   let shadowEl = $state<HTMLSpanElement>()
   let line = $state<string | null>(null)
   let bubbleSide = $state<'mid' | 'left' | 'right'>('mid')
+  let bubbleBelow = $state(false)
   let doze = $state(false)
   let deep = $state(false)
   let dragging = $state(false)
@@ -186,7 +187,7 @@
   }
   let sayTimer: ReturnType<typeof setTimeout> | undefined
   function say(text: string) {
-    if (host) { const x = host.getBoundingClientRect().left; bubbleSide = x < 140 ? 'left' : x > innerWidth - 260 ? 'right' : 'mid' }
+    if (host) { const r = host.getBoundingClientRect(); bubbleSide = r.left < 140 ? 'left' : r.left > innerWidth - 260 ? 'right' : 'mid'; bubbleBelow = r.top < 200 } // under the header's controls, the bubble goes below the figure
     line = text; clearTimeout(sayTimer); sayTimer = setTimeout(() => (line = null), 5400)
   }
   $effect(() => pal.onSay(say))
@@ -490,7 +491,7 @@
     </button>
     <!-- said once to a screen reader, outside the button; the bubble below is its picture -->
     <p class="sr" role="status" aria-live="polite">{line ?? ''}</p>
-    {#if line}<span class="bubble mono {bubbleSide}" aria-hidden="true">{line}</span>{/if}
+    {#if line}<span class="bubble mono {bubbleSide}" class:below={bubbleBelow} aria-hidden="true">{line}</span>{/if}
     {#if menu}
       <div class="menu" role="menu" aria-label="Snarks">
         {#each MODES as m (m.id)}<button type="button" role="menuitemradio" aria-checked={pal.mode === m.id} onclick={() => { pal.setMode(m.id); menu = false }}>{m.label}</button>{/each}
@@ -529,6 +530,7 @@
     background: var(--paper-2); color: var(--ink); border-radius: var(--r-sm); box-shadow: var(--sh-2), 0 0 0 1.5px var(--line);
     font-size: var(--t-12); line-height: 1.4; pointer-events: none; animation: say 180ms var(--ease);
   }
+  .bubble.below { bottom: auto; top: calc(100% + 10px); }
   .bubble.mid { left: 50%; translate: -30% 0; } .bubble.left { left: 0; } .bubble.right { right: 0; }
   @keyframes say { from { opacity: 0; transform: translateY(4px); } }
   .menu {
