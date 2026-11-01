@@ -6,6 +6,7 @@ import { api } from './api'
 import { toCandles, type Candle, type Timeframe } from './candles'
 import type { PadMode } from './types'
 import { ProviderDown, ProviderLimited } from './providerErrors'
+import { poolProviderOn } from './chartSource'
 
 export type SourceId = 'geckoterminal' | 'recorded'
 export interface CandleResult { source: SourceId; candles: Candle[]; at: number; note?: string }
@@ -48,7 +49,7 @@ export function geckoCandles(pool: string, tf: Timeframe, before?: number): Prom
 /** The coin's candles from the best source this pad can honestly name. */
 export async function loadCandles(opts: { mint: string; pool: string; tf: Timeframe; mode: PadMode | null }): Promise<CandleResult> {
   const { mint, pool, tf, mode } = opts
-  if (mode === 'mainnet' && pool) {
+  if (poolProviderOn(mode) && pool) {
     try {
       const candles = await geckoCandles(pool, tf)
       return { source: 'geckoterminal', candles, at: Date.now() }

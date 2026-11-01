@@ -4,6 +4,7 @@
   // by you. A row points at its candle on the chart and the chart's crosshair lights its rows; a wallet opens as a layer.
   import type { Coin, FeedTrade, PadMode } from '../lib/types'
   import { poolTrades, chainFromRecorded, type ChainTrade } from '../lib/pool'
+  import { poolProviderOn } from '../lib/chartSource'
   import { api } from '../lib/api'
   import { poll } from '../lib/poll'
   import { ago, short } from '../lib/format'
@@ -27,7 +28,7 @@
 
   async function load() {
     try {
-      if (mode === 'mainnet' && poolId) { rows = await poolTrades(poolId, mint); source = 'chain' }
+      if (poolProviderOn(mode) && poolId) { rows = await poolTrades(poolId, mint); source = 'chain' }
       else { rows = chainFromRecorded((await api.trades({ mint, limit: 40 })).trades as FeedTrade[]); source = 'recorded' }
       failed = false; readAt = Date.now()
     } catch { failed = true }

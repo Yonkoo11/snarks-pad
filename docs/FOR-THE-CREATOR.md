@@ -8,6 +8,9 @@ Everything on this branch is built against the engine as it is today. This page 
 
 ## Configuration
 
+- **`VITE_CHART_SOURCE=recorded`** turns the third-party chart provider off for a build.
+- **Expose the keeper's address** (ENGINE-REQUESTS item 9) so the round check can compare the memo's signer.
+
 - **Set `VITE_RPC` to a mainnet RPC for the production build.** The round check reads the memo transaction through it. If it is missing or points at localhost the check says the memo could not be read.
 - **Confirm the ZEC mint the pad names on mainnet** answers on the RPC chosen, since holdings and the check both use it.
 

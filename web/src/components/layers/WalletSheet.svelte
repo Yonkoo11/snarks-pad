@@ -5,6 +5,7 @@
   import type { Coin, FeedTrade, Holders, PadMode, WalletProfile } from '../../lib/types'
   import { api, onMode } from '../../lib/api'
   import { poolTrades, chainFromRecorded, walletActivity, type ChainTrade } from '../../lib/pool'
+  import { poolProviderOn } from '../../lib/chartSource'
   import { walletParts } from '../../lib/layers.svelte'
   import { solanaAccountUrl } from '../../lib/explorer'
   import { profileHref } from '../../lib/profile'
@@ -30,7 +31,7 @@
       if (!live) return
       coin = c
       try {
-        if (mode === 'mainnet' && c.poolId) { trades = await poolTrades(c.poolId, m); source = 'chain' }
+        if (poolProviderOn(mode) && c.poolId) { trades = await poolTrades(c.poolId, m); source = 'chain' }
         else { trades = chainFromRecorded((await api.trades({ mint: m, limit: 40 })).trades as FeedTrade[]); source = 'recorded' }
       } catch { trades = [] }
     }, () => {})

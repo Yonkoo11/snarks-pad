@@ -51,3 +51,7 @@ backups-remote/
 # launch-post teaser runs (video, work tree with packages)
 brag-output*/
 ops/host.conf
+
+# QA screenshots stay out of the repo
+web/qa/**/*.png
+web/qa/*.png

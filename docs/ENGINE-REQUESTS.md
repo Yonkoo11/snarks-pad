@@ -82,6 +82,10 @@ A dated page of product updates, each with its receipt, in the pad's voice. Cont
 
 ---
 
+## 9. The keeper's address on the API
+
+The round check reads the memo transaction from the chain, but no endpoint publishes the keeper's address, so the page cannot compare the transaction's signer with it. Until then the page says only that a transaction at the listed signature carries the same hash. Ask: serve `keeperAddress` on `GET /treasury`. The check then also requires the memo transaction's fee payer to equal it, and the wording can say who wrote the memo.
+
 ## Behaviour changes worth a reviewer's eye
 
 These touch shared code rather than adding files.
@@ -94,4 +98,5 @@ These touch shared code rather than adding files.
 - `web/src/routes/Coin.svelte`: the stats row wraps by width instead of five fixed columns, and its values no longer break across lines.
 - Earlier work on this branch removed duplicated copy from the How page. That text is the owner's, so it needs the owner's yes at review.
 - `web/src/components/VerifyRound.svelte` and `web/src/lib/memoCheck.ts`: the round check now also reads the Solana memo from the chain through the site's RPC (`VITE_RPC`) and compares it with `snarks-pad snapshot <epoch> sha256:<hash>`, the text `engine/src/epoch/snapshotFile.ts` writes. Without a mainnet `VITE_RPC` the check reports that the memo could not be read, never a mismatch.
+- `web/src/lib/chartSource.ts`: one switch for the third-party pool provider. Building with `VITE_CHART_SOURCE=recorded` keeps visitors' browsers off GeckoTerminal and shows the pad's recorded trades, labelled.
 - `web/package.json`: `canvas-confetti` (ISC, about 4 KB, loaded on first use) for the graduation cheer; `lightweight-charts` (Apache-2.0) for the coin chart.
