@@ -23,8 +23,9 @@ export function sharesOfTier(t: Pick<Tier, 'feeBps' | 'holderShareBps' | 'teamSh
 }
 
 /** The published policy applied to a tier: Meteora's share comes off the top, the creator's next, and the pad splits what it claims. */
-export function sharesFromPolicy(p: FeePolicy, feeBps = 100, creatorBps = 0): FeeShares {
+// creatorBps defaults to the live 1% tier's creator part (GET /api/tiers, 2026-11-01)
+export function sharesFromPolicy(p: FeePolicy, feeBps = 100, creatorBps = 2000): FeeShares {
   const claimed = 10_000 - p.meteoraShareOfFeeBps - creatorBps
-  const holders = Math.floor((claimed * p.holdersShareOfClaimedBps) / 10_000)
+  const holders = p.holdersShareOfFeeBps ?? Math.floor((claimed * p.holdersShareOfClaimedBps) / 10_000)
   return { feeBps, holdersBps: holders, teamBps: claimed - holders, creatorBps, meteoraBps: p.meteoraShareOfFeeBps }
 }

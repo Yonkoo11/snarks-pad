@@ -158,7 +158,7 @@
   {#if !failed}
   <div class="door door2">
   <section class="policy">
-    <FeeSplit split={t ? sharesFromPolicy(t.policy) : undefined} line="Every tier pays holders the same 0.1% of each trade; the higher fees go to the coin's creator. A coin's own split, creator included, is on its page." />
+    <FeeSplit split={t ? sharesFromPolicy(t.policy) : undefined} line="Every tier pays holders 25% of the trading fee, so 0.25% to 2.5% of each trade depending on the tier; the creator takes 20% of the fee on the 1% tier and 40% above it. A coin's own split, creator included, is on its page." />
     <details class="how">
       <summary>How payouts work</summary>
       <div class="how-body">

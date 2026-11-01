@@ -224,7 +224,7 @@
   <header class="head">
     <div class="title">
       <h1 class="display" id="coins-h">Every coin on the pad.</h1>
-      <p class="lede muted">Each one pays its holders 0.1% of every trade, in ZEC.</p>
+      <p class="lede muted">Each one pays its holders in ZEC, a quarter of every trading fee.</p>
     </div>
     <dl class="day" aria-label="The pad today">
       <div><dt class="label">Coins</dt><dd class="mono">{nCoins ?? '–'}</dd></div>

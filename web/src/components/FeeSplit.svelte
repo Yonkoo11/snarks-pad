@@ -21,8 +21,8 @@
     : 'Holders are paid in ZEC each round.'))
   // the one figure both bases agree on, said first: what holders get of every TRADE. The legend's
   // percentages are shares of the fee; stating the trade share up front keeps every instance of
-  // this component telling the same story (a 1% fee with 10% to holders and a 10% fee with 1% to
-  // holders both read "0.1% of every trade").
+  // this component telling the same story (a 1% fee with 25% to holders and a 10% fee with 2.5% to
+  // holders read the same share of the fee but differ per trade: 0.25% and 2.5% of every trade).
   const tradePct = $derived(split ? String(Math.round((split.feeBps * split.holdersBps) / 10_000) / 100) : '')
 </script>
 

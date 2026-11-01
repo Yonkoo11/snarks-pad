@@ -42,12 +42,14 @@ const SQUADS_MULTISIG = pubkey('squads:multisig')
 const DBC_PROGRAM = 'dbcij3LWUppWqq96dh6gJWwBifmcGfLSB5D4DuSMaqN'
 const DAMM_V2_PROGRAM = 'cpamdpZCGKUy5JxQXB4dcpGPiikHawvSWAd6mEn1sGG'
 
-// The fee-tier menu, as the engine computes it (engine/src/dbc/tiers.ts): Meteora keeps 20% of every fee, the creator takes a share of
-// the rest, and the pad splits what it claims 12.5/87.5 between holders and the team. The mock builds the same numbers.
-const CREATOR_PCT: Record<number, number> = { 100: 0, 200: 50, 400: 75, 600: 83, 1000: 90 }
+// The fee-tier menu, as the engine computes it (engine/src/dbc/tiers.ts): Meteora keeps 20% of every fee,
+// the creator and holders take fixed parts, the team keeps the rest. Numbers read from the live GET /api/tiers on 2026-11-01: creator 20% of the fee on the 1% tier
+// and 40% above it, holders 25% of the fee on every tier (25.01% on the 1% tier), so the mock builds the same numbers.
+const CREATOR_SHARE_BPS: Record<number, number> = { 100: 2000, 200: 4000, 400: 4000, 600: 4000, 1000: 4000 }
+const HOLDER_SHARE_BPS: Record<number, number> = { 100: 2501, 200: 2500, 400: 2500, 600: 2500, 1000: 2500 }
 const POST_FEE: Record<number, number> = { 100: 100, 200: 200, 400: 400, 600: 600, 1000: 600 }
 // What each reviewed tier locks for good in the graduated pool (engine/src/dbc/reviewed.ts): the pad's part and the creator's, in percent. Every tier locks all of it.
-const LOCKED_LP: Record<number, [partner: number, creator: number]> = { 100: [100, 0], 200: [50, 50], 400: [25, 75], 600: [17, 83], 1000: [17, 83] }
+const LOCKED_LP: Record<number, [partner: number, creator: number]> = { 100: [100, 0], 200: [50, 50], 400: [50, 50], 600: [50, 50], 1000: [50, 50] }
 // The launch window every reviewed config carries (engine/src/dbc/reviewed.ts REVIEWED_WINDOW, contract v2.8): 99% in the pool's first second, 5 equal steps of 1 second down to the tier's own fee.
 const WINDOW_CLIFF_BPS = 9900
 const WINDOW_PERIODS = 5
@@ -59,11 +61,10 @@ const tierWindow = (feeBps: number): TierWindow => ({
   feeByPeriodBps: Array.from({ length: WINDOW_PERIODS + 1 }, (_, k) => windowFeeBps(feeBps, k)), firstSwapAtEndFee: true,
 })
 function tierOf(feeBps: number, available = true): Tier {
-  const creator = (8000 * CREATOR_PCT[feeBps]) / 100
+  const creator = CREATOR_SHARE_BPS[feeBps]!
   const claimed = 8000 - creator
-  // owner policy 2026-10-12, same split the policy object and the epochs state: holders 12.5% of the
-  // claimed part, the team the rest (1000 on the creatorless 1% tier = 0.10% of volume, types.ts)
-  const holders = Math.floor((claimed * 1250) / 10_000)
+  // live split (see the table above): holders 25% of the whole fee, the team the rest of the claimed part
+  const holders = HOLDER_SHARE_BPS[feeBps]!
   const f = feeBps / 10_000
   return {
     feeBps, available, postGraduationFeeBps: POST_FEE[feeBps], roundTripCostBps: Math.round((1 - (1 - f) ** 2) * 10_000),
@@ -248,7 +249,7 @@ function epochs(): Epoch[] {
     const fallback = i === 3 // this batch's swap did not complete, so its shielded holders were paid Solana ZEC
     const harvested = 18_000_000 + ((i * 3_331_777) % 22_000_000)
     const shieldedCount = batchRound && !fallback ? 6 + ((i * 5) % 9) : 0
-    const team = Math.floor(harvested * 0.875) // owner policy 2026-10-12: holders 12.5% of the claim, the team 87.5%
+    const team = Math.floor(harvested * 0.6875) // live policy: holders 31.25% of the claim (25% of the fee), the team 68.75%
     const holders = harvested - team
     const shieldedTotal = shieldedCount ? Math.round(holders * 0.21) : 0
     const fee = shieldedCount ? 5000 * (shieldedCount + 1) : 0
@@ -332,7 +333,7 @@ function fixedOf(c: Coin): Fixed {
     curveFee: { bps: c.feeBps, source: cfg },
     ...(v27() ? {} : { launchWindow: { ...launchWindowOf(c), firstSwapAtEndFee: true, source: cfg, poolSource: c.poolId } }),
     graduatedFee: { minBps: c.postGraduationFeeBps, maxBps: Math.round(c.postGraduationFeeBps * 1.2), source: pubkey(`damm-config:${c.postGraduationFeeBps}`) },
-    creatorShare: { bps: c.creatorShareBps, percentage: CREATOR_PCT[c.feeBps] ?? 0, source: cfg },
+    creatorShare: { bps: c.creatorShareBps, percentage: (CREATOR_SHARE_BPS[c.feeBps] ?? 0) / 100, source: cfg },
     migration: { thresholdZats: String(CURVE_TARGET_ZATS), source: cfg },
     liquidity: { partnerLockedPct: 100, creatorLockedPct: 0, unlockedPct: 0, source: cfg },
     tokenAuthorities: { mintAuthority: grad ? null : c.poolId, freezeAuthority: null, updateAuthority: null, source: c.mint },
@@ -729,8 +730,8 @@ export const mock: Api = {
       paused: /[?&]paused=1/.test(location.href), epochsNeedingAttention: 0,
       // Mock only, with ?devnet=1: ?faucet=dry is a faucet whose key is out of test money; ?faucet=race says it has some and then answers 503 (the last fill went just before the click).
       faucet: /[?&]devnet=1/.test(location.href) ? { available: !/[?&]faucet=dry/.test(location.href), fillsLeft: /[?&]faucet=dry/.test(location.href) ? 0 : 42 } : null,
-      // The same split the epochs above pay (holders 12.5% of the claim, owner policy 2026-10-12), so the bar and the rows tell one story.
-      policy: { holdersShareOfClaimedBps: 1250, teamShareOfClaimedBps: 8750, meteoraShareOfFeeBps: 2000 },
+      // The same split the epochs above pay (live GET /api/treasury policy, read 2026-11-01), so the bar and the rows tell one story.
+      policy: { holdersShareOfFeeBps: 2500, holdersShareOfClaimedBps: 3125, teamShareOfClaimedBps: 6875, meteoraShareOfFeeBps: 2000 },
       team: { wallet: null, grossZats: ZEC(0.5412), deliveryCostZats: ZEC(0.0066), nativeZats: ZEC(0.0021), heldInKeeperZats: ZEC(0.5345), sweptZats: '0' },
     }
   },

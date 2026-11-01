@@ -11,11 +11,11 @@ export interface Coin {
   creator: string
   createdAt: string
   feeBps: number // the coin's fee TIER: the pool trading fee ON THE BONDING CURVE, flat, fixed for life by the DBC config it launched on (100, 200, 400, 600 or 1000 = 1% to 10%), paid in ZEC on every buy and sell. After graduation the DAMM v2 pool charges postGraduationFeeBps rising by up to a fifth in volatile trading (feeLabel in format.ts)
-  // Of the whole trading fee (10000 bps), for THIS coin's tier (owner policy 2026-10-02). Meteora keeps 2000 at every tier.
-  claimedShareBps: number // what the pad claims from Meteora's pool: 8000 on the 1% tier, less the creator's part on the others
-  holderShareBps: number // what holders receive: 12.5% of the claimed part (1000 on the 1% tier = 0.10% of volume)
-  teamShareBps: number // the team: 25% of the claimed part, which first pays the cost of delivering shielded rewards
-  creatorShareBps: number // the creator's own part, claimed by the creator's wallet; 0 on the 1% tier
+  // Of the whole trading fee (10000 bps), for THIS coin's tier (live GET /api/tiers, read 2026-11-01). Meteora keeps 2000 at every tier.
+  claimedShareBps: number // what the pad claims from Meteora's pool: 6000 on the 1% tier (the 20% creator part is claimed separately), 4000 on the others
+  holderShareBps: number // what holders receive: 25% of the whole fee at every tier (2501 on the 1% tier = 0.25% of volume)
+  teamShareBps: number // the team: the rest after Meteora, the creator and holders (3499 on the 1% tier, 1500 above), which first pays the cost of delivering shielded rewards
+  creatorShareBps: number // the creator's own part, claimed by the creator's wallet; 2000 on the 1% tier, 4000 above
   postGraduationFeeBps: number // the fee of the graduated DAMM v2 pool before its dynamic part: equal to feeBps except the 10% tier, which drops to 600
   stage: 'curve' | 'graduated'
   venue: 'meteora-dbc' | 'meteora-damm-v2'
@@ -285,6 +285,7 @@ export interface Treasury {
 
 /** The published fee split (GET /treasury policy): Meteora's share of the whole fee, then how the pad splits what it claims. */
 export interface FeePolicy {
+  holdersShareOfFeeBps?: number
   holdersShareOfClaimedBps: number
   teamShareOfClaimedBps: number
   meteoraShareOfFeeBps: number

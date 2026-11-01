@@ -24,14 +24,14 @@
   <div class="door hdoor">
   <div class="top">
     <h1 class="display">How the pad works.</h1>
-    <p class="lede muted">Every coin here trades against ZEC. Every trade pays a fee, and 10% of it goes to the coin's holders each round: as Solana ZEC, or as native ZEC in your own shielded Zcash wallet if you opt in.</p>
+    <p class="lede muted">Every coin here trades against ZEC. Every trade pays a fee, and 25% of it goes to the coin's holders each round: as Solana ZEC, or as native ZEC in your own shielded Zcash wallet if you opt in.</p>
   </div>
 
   <!-- the whole mechanism as four stops, before any prose: a trade becomes a fee, the fee a round, the round a payout -->
   <section class="part" aria-label="The route a trade's fee takes">
     <ol class="route">
       <li class="stop s1"><span class="r-n mono" aria-hidden="true">1</span><strong>A trade</strong><span class="r-p">Someone buys or sells a coin. The trade pays its fee in ZEC.</span></li>
-      <li class="stop s2"><span class="r-n mono" aria-hidden="true">2</span><strong>The fee</strong><span class="r-p">10% of every fee belongs to the coin's holders.</span></li>
+      <li class="stop s2"><span class="r-n mono" aria-hidden="true">2</span><strong>The fee</strong><span class="r-p">25% of every fee belongs to the coin's holders.</span></li>
       <li class="stop s3"><span class="r-n mono" aria-hidden="true">3</span><strong>A round</strong><span class="r-p">Every 48 hours a round claims the fees and works out each share.</span></li>
       <li class="stop s4"><span class="r-n mono" aria-hidden="true">4</span><strong>You are paid</strong><span class="r-p">As Solana ZEC, or <em class="shd">shielded</em> into your own Zcash wallet.</span>{#if nRounds}<a class="chip r-chip" href="#/treasury">{nRounds} rounds so far</a>{/if}</li>
     </ol>
@@ -42,7 +42,7 @@
   <div class="colL">
   <!-- the fee split lives in one place; this page points at it instead of repeating it -->
   <section class="part">
-    <p class="pline">Where the rest of the fee goes, share by share, is on the <a href="#/treasury">Payouts page</a>, beside the rounds that prove it.{#if manyTiers}{' '}On the higher fee levels the extra goes to the coin's creator; holders still get 0.10% of every trade (0.102% on the 6% level).{/if}</p>
+    <p class="pline">Where the rest of the fee goes, share by share, is on the <a href="#/treasury">Payouts page</a>, beside the rounds that prove it.{#if manyTiers}{' '}Holders get 25% of the fee at every level, so 0.25% of each trade on the 1% level up to 2.5% on the 10% level; the creator takes 40% of the fee above the 1% level.{/if}</p>
   </section>
 
   <section class="part" aria-labelledby="why-h">
