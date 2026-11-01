@@ -4,6 +4,7 @@
   // on-chain reading; elsewhere it is counted from the trades the pad recorded, and the line says so. A dash is a figure not served.
   import type { Coin, FeedTrade, PadMode } from '../lib/types'
   import { poolStats, statsFromTrades, chainFromRecorded, WINDOWS, WIN_LABEL, type PoolStats, type Win } from '../lib/pool'
+  import { poolProviderOn } from '../lib/chartSource'
   import { api } from '../lib/api'
   import { poll } from '../lib/poll'
   import { zec } from '../lib/format'
@@ -22,7 +23,7 @@
 
   async function load() {
     try {
-      if (mode === 'mainnet' && poolId) { stats = await poolStats(poolId); source = 'chain' }
+      if (poolProviderOn(mode) && poolId) { stats = await poolStats(poolId); source = 'chain' }
       else {
         const r = await api.trades({ mint, limit: 40 }).then((x) => x.trades as FeedTrade[])
         stats = statsFromTrades(chainFromRecorded(r), Date.now()); source = 'recorded'

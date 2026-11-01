@@ -6,7 +6,7 @@
   // "Check this round yourself": the visitor's own browser fetches the round's holder-list file and recomputes
   // its SHA-256 with WebCrypto, then holds the result against the hash the pad published. A match is proof made
   // on the visitor's machine; the pad is never asked to vouch for itself. With the epoch id and the memo's signature it also reads
-  // the Solana memo from the chain and holds the same hash against that. (The mock's signatures are not on any chain: no read.) compact drops the explainer line for
+  // the Solana memo from the chain and holds the same hash against that. (The mock's signatures are not on any chain: no read. A match means some transaction at that signature carries the text; the signer is not compared with the keeper, because the API does not publish the keeper's address.) compact drops the explainer line for
   // the rounds list, where the row around it already says what the file is.
   let { sha256, url, epochId, memoSig, compact = false, onverified }: { sha256: string; url: string; epochId?: string; memoSig?: string | null; compact?: boolean; onverified?: () => void } = $props()
   const RPC: string = import.meta.env.VITE_RPC || 'http://127.0.0.1:8899'
@@ -49,7 +49,7 @@
   {:else if st === 'working'}
     <div class="wrow"><Witness state="working" size={compact ? 40 : 56} /><p class="muted run" role="status">{step === 'fetch' ? 'Fetching the file' : step === 'hash' ? `Hashing ${size.toLocaleString('en-US')} bytes in this browser` : step === 'memo' ? 'Reading the memo on Solana' : 'Comparing with the published hash'}&hellip;</p></div>
   {:else if st === 'match'}
-    <div class="wrow"><Witness state={chain === 'mismatch' ? 'mismatch' : 'match'} size={compact ? 40 : 56} /><p class="stamped" role="status"><span class="seal" aria-hidden="true">&#10003;</span> <strong>Hash matches.</strong> Your browser computed <span class="mono">{short(got ?? '', 8, 6)}</span>{at ? ` at ${at}` : ''}, the same hash the pad published.{#if chain === 'match'} The Solana memo says the same hash.{:else if chain === 'unreadable'} The Solana memo could not be read from here.{:else if chain === 'none'} No memo was found at the signature the pad lists.{/if}</p></div>
+    <div class="wrow"><Witness state={chain === 'mismatch' ? 'mismatch' : 'match'} size={compact ? 40 : 56} /><p class="stamped" role="status"><span class="seal" aria-hidden="true">&#10003;</span> <strong>Hash matches.</strong> Your browser computed <span class="mono">{short(got ?? '', 8, 6)}</span>{at ? ` at ${at}` : ''}, the same hash the pad published.{#if chain === 'match'} A transaction at the listed Solana signature carries the same hash. Who signed it is not checked here.{:else if chain === 'unreadable'} The Solana memo could not be read from here.{:else if chain === 'none'} No memo was found at the signature the pad lists.{/if}</p></div>
     {#if chain === 'mismatch'}<p class="error" role="alert"><span>The Solana memo does not carry this hash. Keep both and ask the operator.</span></p>{/if}
   {:else if st === 'mismatch'}
     <div class="wrow"><Witness state="mismatch" size={compact ? 40 : 56} /><div class="mm"><p class="error" role="alert"><span>The hash your browser computed (<span class="mono">{short(got ?? '', 8, 6)}</span>) does not match the published one (<span class="mono">{short(sha256, 8, 6)}</span>). The file changed after it was published. Keep both hashes and ask the operator.</span></p><button class="btn ghost" type="button" onclick={run}>Check again</button></div></div>
