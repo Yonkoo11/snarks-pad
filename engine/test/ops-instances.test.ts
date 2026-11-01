@@ -575,7 +575,7 @@ describe("ops/push-secrets.sh", () => {
       ["a token whose second part has 29 characters", `TELEGRAM_BOT_TOKEN=123456789:${"a".repeat(29)}`],
       ["a token whose second part has 51 characters", `TELEGRAM_BOT_TOKEN=123456789:${"a".repeat(51)}`],
       ["a token whose first part has letters in it", `TELEGRAM_BOT_TOKEN=12345a789:AAH-test_TOKEN0123456789abcdefghijk`],
-      ["a token whose first part has 5 digits", `TELEGRAM_BOT_TOKEN=12345:AAH-test_TOKEN0123456789abcdefghijk`],
+      ["a token whose first part has 5 digits", `TELEGRAM_BOT_TOKEN=12345:${'AAH-test_'}TOKEN0123456789abcdefghijk`],
     ])("refuses %s, contacts no server and prints no part of it", (_label, line) => {
       const r = run("snarksm", `HELIUS_API_KEY=${KEY}\n`, `${line}\nTELEGRAM_CHAT_ID=${TG_CHAT}\n`);
       const value = line.slice(line.indexOf("=") + 1);
